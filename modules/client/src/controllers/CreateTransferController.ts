@@ -157,6 +157,45 @@ export class CreateTransferController extends AbstractController {
 
         break;
       }
+      case ConditionalTransferTypes.GraphBatchedTransfer: {
+        const {
+          chainId,
+          verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
+          paymentId,
+        } = params as PublicParams.GraphBatchedTransfer;
+
+        const consumerSigner = this.connext.signerAddress;
+        const attestationSigner = getSignerAddressFromPublicIdentifier(recipient);
+        const swapRate = BigNumber.from(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
+
+        initialState = {
+          ...baseInitialState,
+          chainId,
+          verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
+          paymentId,
+          attestationSigner, // indexer
+          consumerSigner,
+          swapRate,
+        } as GraphBatchedTransferAppState;
+
+        transferMeta = {
+          attestationSigner,
+          consumerSigner,
+          chainId,
+          verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
+          swapRate,
+        } as CreatedGraphBatchedTransferMeta;
+
+        submittedMeta.paymentId = paymentId;
+
+        break;
+      }
       case ConditionalTransferTypes.SignedTransfer: {
         const {
           signerAddress,

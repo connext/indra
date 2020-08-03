@@ -134,7 +134,7 @@ type ResolveSignedTransferResponse = {
 };
 
 ////////////////////////////////////////
-// graph batched transfer
+// graph signed transfer
 
 type GraphSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphTransfer;
@@ -171,10 +171,10 @@ type ResolveGraphSignedTransferResponse = {
 };
 
 ////////////////////////////////////////
-// graph signed transfer
+// graph batched transfer
 
 type GraphBatchedTransferParameters = {
-  conditionType: typeof ConditionalTransferTypes.GraphTransfer;
+  conditionType: typeof ConditionalTransferTypes.GraphBatchedTransfer;
   amount: BigNumber;
   assetId: Address;
   paymentId: Bytes32;
@@ -192,7 +192,7 @@ type GraphBatchedTransferResponse = {
 };
 
 type ResolveGraphBatchedTransferParameters = {
-  conditionType: typeof ConditionalTransferTypes.GraphTransfer;
+  conditionType: typeof ConditionalTransferTypes.GraphBatchedTransfer;
   paymentId: Bytes32;
   responseCID: Bytes32;
   totalPaid: BigNumber;
@@ -237,7 +237,8 @@ type ResolveConditionParameters =
   | ResolveHashLockTransferParameters
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters
-  | ResolveGraphBatchedTransferParameters;
+  | ResolveGraphBatchedTransferParameters
+  | ResolveGraphSignedTransferParameters;
 
 // type ResolveConditionResponse =
 //   | ResolveHashLockTransferResponse
@@ -316,7 +317,8 @@ export namespace PublicParams {
   export type ResolveGraphTransfer = ResolveGraphSignedTransferParameters;
   export type ResolveGraphBatchedTransfer = ResolveGraphBatchedTransferParameters;
   export type SignedTransfer = SignedTransferParameters;
-  export type GraphTransfer = GraphBatchedTransferParameters;
+  export type GraphBatchedTransfer = GraphBatchedTransferParameters;
+  export type GraphTransfer = GraphSignedTransferParameters;
   export type Swap = SwapParameters;
   export type Transfer = TransferParameters;
   export type Withdraw = WithdrawParameters;
@@ -380,6 +382,7 @@ export type PublicResult =
   | ResolveGraphBatchedTransferResponse
   | SignedTransferResponse
   | GraphBatchedTransferResponse
+  | GraphSignedTransferResponse
   | SwapResponse
   | TransferResponse
   | WithdrawResponse;

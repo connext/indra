@@ -36,6 +36,8 @@ import {
   GraphSignedTransferAppAction,
   UnlockedGraphBatchedTransferMeta,
   ConditionalTransferAppNames,
+  GraphBatchedTransferAppName,
+  CreatedGraphSignedTransferMeta,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -371,6 +373,30 @@ export class ConnextListener {
           meta,
           sender: meta?.sender,
           transferMeta: {
+            signerAddress: initialState?.consumerSigner,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
+            requestCID: initialState?.requestCID,
+            subgraphDeploymentID: initialState?.subgraphDeploymentID,
+          } as CreatedGraphSignedTransferMeta,
+          type: ConditionalTransferTypes.GraphTransfer,
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
+        } as EventPayloads.GraphTransferCreated);
+        break;
+      }
+      case GraphBatchedTransferAppName: {
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as GraphSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta?.sender,
+          transferMeta: {
             consumerSigner: initialState?.consumerSigner,
             attestationSigner: initialState?.attestationSigner,
             swapRate: initialState?.swapRate,
@@ -379,10 +405,10 @@ export class ConnextListener {
             requestCID: initialState?.requestCID,
             subgraphDeploymentID: initialState?.subgraphDeploymentID,
           } as CreatedGraphBatchedTransferMeta,
-          type: ConditionalTransferTypes.GraphTransfer,
+          type: ConditionalTransferTypes.GraphBatchedTransfer,
           paymentId: initialState?.paymentId,
           recipient: meta?.recipient,
-        } as EventPayloads.GraphTransferCreated);
+        } as EventPayloads.GraphBatchedTransferCreated);
         break;
       }
       case SimpleSignedTransferAppName: {

@@ -10,6 +10,7 @@ import {
   SimpleLinkedTransferAppAction,
   GraphBatchedTransferAppAction,
   AppInstanceJson,
+  GraphSignedTransferAppAction,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
@@ -148,6 +149,7 @@ export class ResolveTransferController extends AbstractController {
       let action:
         | HashLockTransferAppAction
         | SimpleSignedTransferAppAction
+        | GraphSignedTransferAppAction
         | GraphBatchedTransferAppAction
         | SimpleLinkedTransferAppAction;
       switch (conditionType) {
@@ -156,13 +158,13 @@ export class ResolveTransferController extends AbstractController {
           action = preImage && ({ preImage } as HashLockTransferAppAction);
           break;
         }
-        case ConditionalTransferTypes.GraphTransfer: {
+        case ConditionalTransferTypes.GraphBatchedTransfer: {
           const {
             responseCID,
             consumerSignature,
             attestationSignature,
             totalPaid,
-          } = params as PublicParams.ResolveGraphTransfer;
+          } = params as PublicParams.ResolveGraphBatchedTransfer;
           action =
             responseCID &&
             consumerSignature &&
@@ -174,6 +176,17 @@ export class ResolveTransferController extends AbstractController {
               attestationSignature,
               totalPaid,
             } as GraphBatchedTransferAppAction);
+          break;
+        }
+        case ConditionalTransferTypes.GraphTransfer: {
+          const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
+          action =
+            responseCID &&
+            signature &&
+            ({
+              responseCID,
+              signature,
+            } as GraphSignedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
@@ -221,11 +234,15 @@ export class ResolveTransferController extends AbstractController {
         return !!preImage;
       }
       case ConditionalTransferTypes.GraphTransfer: {
+        const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
+        return !!responseCID && !!signature;
+      }
+      case ConditionalTransferTypes.GraphBatchedTransfer: {
         const {
           responseCID,
           consumerSignature,
           attestationSignature,
-        } = params as PublicParams.ResolveGraphTransfer;
+        } = params as PublicParams.ResolveGraphBatchedTransfer;
         return !!responseCID && !!consumerSignature && !!attestationSignature;
       }
       case ConditionalTransferTypes.SignedTransfer: {

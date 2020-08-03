@@ -17,6 +17,7 @@ import {
   GraphSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
   ConditionalTransferTypes,
+  GraphBatchedTransferAppAction,
 } from "@connext/types";
 import {
   stringify,
@@ -51,11 +52,13 @@ export const getCancelAction = (
   | HashLockTransferAppAction
   | SimpleSignedTransferAppAction
   | GraphSignedTransferAppAction
+  | GraphBatchedTransferAppAction
   | SimpleLinkedTransferAppAction => {
   let action:
     | HashLockTransferAppAction
     | SimpleSignedTransferAppAction
     | GraphSignedTransferAppAction
+    | GraphBatchedTransferAppAction
     | SimpleLinkedTransferAppAction;
   switch (transferType) {
     case ConditionalTransferTypes.LinkedTransfer:
@@ -65,6 +68,15 @@ export const getCancelAction = (
     }
     case ConditionalTransferTypes.GraphTransfer: {
       action = { responseCID: HashZero, signature: "0x" } as GraphSignedTransferAppAction;
+      break;
+    }
+    case ConditionalTransferTypes.GraphBatchedTransfer: {
+      action = {
+        responseCID: HashZero,
+        requestCID: HashZero,
+        consumerSignature: "0x",
+        attestationSignature: "0x",
+      } as GraphBatchedTransferAppAction;
       break;
     }
     case ConditionalTransferTypes.SignedTransfer: {
