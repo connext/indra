@@ -97,7 +97,11 @@ export class AppActionsService {
     this.log.debug(
       `Added new action to withdraw entity for this appInstance: ${appInstance.identityHash}`,
     );
-    await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
+    await this.withdrawService.submitWithdrawToChain(
+      appInstance.multisigAddress,
+      tx,
+      appInstance.identityHash,
+    );
   }
 
   private async handleTransferAppAction(senderApp: AppInstance, action: AppAction): Promise<void> {

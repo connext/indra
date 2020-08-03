@@ -9,7 +9,7 @@ import {
   WithdrawAppState,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify, appIdentityToHash } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, utils, providers } from "ethers";
 
@@ -106,6 +106,7 @@ export class WithdrawService {
     const txRes = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
+      appInstance.identityHash,
     );
 
     await this.cfCoreService.uninstallApp(
@@ -137,6 +138,7 @@ export class WithdrawService {
   async submitWithdrawToChain(
     multisigAddress: string,
     tx: MinimalTransaction,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -156,7 +158,11 @@ export class WithdrawService {
     }
 
     this.log.info(`Sending withdrawal to chain`);
-    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
+    const txRes = await this.onchainTransactionService.sendUserWithdrawal(
+      channel,
+      tx,
+      appIdentityHash,
+    );
     this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
     return txRes;
   }

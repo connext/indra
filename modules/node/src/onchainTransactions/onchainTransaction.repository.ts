@@ -104,6 +104,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     tx: providers.TransactionResponse,
     reason: TransactionReason,
     channel: Channel,
+    appIdentityHash?: string,
   ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
@@ -126,6 +127,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           blockNumber: tx.blockNumber,
           raw: tx.raw,
           gasUsed: Zero,
+          appIdentityHash,
         })
         .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
         .setParameter("nonce", toBN(tx.nonce).toNumber())

@@ -143,7 +143,7 @@ export class DepositService {
       this.log.info(
         `Requested deposit rights, sending deposit to chain on chain ${channel.chainId} for ${channel.multisigAddress}`,
       );
-      response = await this.sendDepositToChain(channel, amount, assetId);
+      response = await this.sendDepositToChain(channel, amount, assetId, appIdentityHash);
       this.log.info(
         `Deposit transaction broadcast on chain ${channel.chainId} for ${channel.multisigAddress}: ${response.hash}`,
       );
@@ -265,6 +265,7 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     tokenAddress: Address,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     // derive the proper minimal transaction for the
     // onchain transaction service
@@ -292,7 +293,7 @@ export class DepositService {
         channel.multisigAddress
       } for amount ${amount.toString()}: ${stringify(tx)}`,
     );
-    return this.onchainTransactionService.sendDeposit(channel, tx);
+    return this.onchainTransactionService.sendDeposit(channel, tx, appIdentityHash);
   }
 
   private async proposeDepositInstall(
