@@ -163,10 +163,10 @@ test-node: node
 	bash ops/test/node.sh
 
 test-tps: bot
-	bash ops/test/tps.sh 10 0 10
+	bash ops/test/tps.sh 5 0 10
 
 test-tps-prod:
-	bash ops/test/tps.sh 10 0 10
+	bash ops/test/tps.sh 5 0 10
 
 test-integration: test-runner
 	bash ops/test/integration.sh
