@@ -66,19 +66,19 @@ class ChannelMessaging extends AbstractMessagingProvider {
     userPublicIdentifier: string,
     chainId: number,
     data: { assetId?: string },
-  ): Promise<providers.TransactionReceipt | undefined> {
+  ): Promise<providers.TransactionResponse | undefined> {
     // do not allow clients to specify an amount to collateralize with
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       userPublicIdentifier,
       chainId,
     );
     try {
-      const tx = await this.channelService.rebalance(
-        channel,
+      const response = await this.channelService.rebalance(
+        channel.multisigAddress,
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
-      return onchainEntityToReceipt(tx);
+      return response;
     } catch (e) {
       this.log.warn(`Failed to collateralize: ${e.message}`);
       return undefined;

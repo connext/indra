@@ -84,6 +84,13 @@ pull_if_unavailable "$redis_image"
 # to access from other containers
 redis_url="redis://redis:6379"
 
+common="networks:
+      - '$project'
+    logging:
+      driver: 'json-file'
+      options:
+          max-size: '100m'"
+
 ####################
 # Proxy config
 
@@ -111,7 +118,7 @@ echo "Proxy configured"
 ########################################
 ## Node config
 
-node_port="8080"
+node_port="8888"
 
 if [[ $INDRA_ENV == "prod" ]]
 then
@@ -202,12 +209,10 @@ echo "Nats configured"
 ########################################
 # Chain provider config
 
-mnemonic_secret_name="${project}_mnemonic"
-INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
-
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
+  mnemonic_secret_name="${project}_mnemonic_dev"
   echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
@@ -218,6 +223,7 @@ then
 
 # If chain providers are provided, use those
 else
+  mnemonic_secret_name="${project}_mnemonic"
   echo "Using chain providers:" $INDRA_CHAIN_PROVIDERS
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
@@ -226,40 +232,78 @@ else
   fi
 fi
 
+INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
 ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
 
-# TODO: filter out contract addresses that are not for our chain providers
+# TODO: filter out extra contract addresses that we don't have any chain providers for?
 
 echo "Chain providers configured"
 
 ####################
-# LogDNA Config
+# Observability tools config
 
 logdna_image="logdna/logspout:v1.2.0";
 pull_if_unavailable "$logdna_image"
 
-if [[ "$INDRA_ENV" == "prod" ]]
-then logdna_service="logdna:
+grafana_image="grafana/grafana:latest"
+pull_if_unavailable "$grafana_image"
+
+prometheus_image="prom/prometheus:latest"
+pull_if_unavailable "$prometheus_image"
+
+cadvisor_image="gcr.io/google-containers/cadvisor:latest"
+pull_if_unavailable "$cadvisor_image"
+
+prometheus_services="prometheus:
+    image: $prometheus_image
+    $common
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - $root/ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  cadvisor:
+    image: $cadvisor_image
+    ports:
+      - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro"
+
+grafana_service="grafana:
+    image: '$grafana_image'
+    $common
+    networks:
+      - '$project'
+    ports:
+      - '3002:3000'
+    volumes:
+      - 'grafana:/var/lib/grafana'"
+
+logdna_service="logdna:
     $common
     image: '$logdna_image'
     environment:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'"
-else logdna_service=""
+
+# TODO we probably want to remove observability from dev env once it's working
+# bc these make indra take a log longer to wake up
+
+if [[ "$INDRA_ENV" == "prod" ]]
+then observability_services="$logdna_service
+  $prometheus_services
+  $grafana_service"
+else observability_services="$prometheus_services
+  $grafana_service"
 fi
 
 ####################
 # Launch Indra stack
 
 echo "Launching ${project}"
-
-common="networks:
-      - '$project'
-    logging:
-      driver: 'json-file'
-      options:
-          max-size: '100m'"
 
 cat - > $root/${project}.docker-compose.yml <<EOF
 version: '3.4'
@@ -275,6 +319,7 @@ secrets:
     external: true
 
 volumes:
+  grafana:
   certs:
   $db_volume:
 
@@ -324,11 +369,10 @@ services:
   database:
     $common
     image: '$database_image'
-    deploy:
-      mode: 'global'
     environment:
       AWS_ACCESS_KEY_ID: '$INDRA_AWS_ACCESS_KEY_ID'
       AWS_SECRET_ACCESS_KEY: '$INDRA_AWS_SECRET_ACCESS_KEY'
+      INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
@@ -349,7 +393,7 @@ services:
     $common
     image: '$redis_image'
 
-  $logdna_service
+  $observability_services
 
 EOF
 

@@ -9,7 +9,7 @@ docker swarm init 2> /dev/null || true
 docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 version="$1"
-shift || true
+cmd="${2:-test}"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
@@ -54,19 +54,22 @@ common="$interactive \
 if [[ "$INDRA_ENV" == "prod" ]]
 then
   git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-  if [[ -n "$git_tag" ]]
-  then version="`echo $git_tag | sed 's/indra-//'`"
-  else version="`git rev-parse HEAD | head -c 8`"
+  if [[ -z "$version" ]]
+  then
+    if [[ -n "$git_tag" ]]
+    then version="`echo $git_tag | sed 's/indra-//'`"
+    else version="`git rev-parse HEAD | head -c 8`"
+    fi
   fi
   image=${project}_test_runner:$version
-  echo "Executing image $image"
-  exec docker run --env=NODE_ENV=production $common $image
+  echo "Executing $cmd w image $image"
+  exec docker run --env=NODE_ENV=production $common $image $cmd
 
 else
-  echo "Executing image ${project}_builder"
+  echo "Executing $cmd w image ${project}_builder"
   exec docker run \
     $common \
     --entrypoint=bash \
     --volume="$root:/root" \
-    ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh"
+    ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $cmd"
 fi

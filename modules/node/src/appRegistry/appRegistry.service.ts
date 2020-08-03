@@ -115,21 +115,22 @@ export class AppRegistryService implements OnModuleInit {
           this.log.info(
             `Calculated collateral amount to cover payment and rebalance: ${amount.toString()}`,
           );
-          const depositReceipt = await this.depositService.deposit(
+          const depositResponse = await this.depositService.deposit(
             installerChannel,
             amount,
             proposeInstallParams.responderDepositAssetId,
           );
-          if (!depositReceipt) {
+          try {
+            await depositResponse.wait();
+          } catch (e) {
             throw new Error(
-              `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
+              `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}. ${e.message}`,
             );
           }
         }
       }
       await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
       // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
@@ -139,6 +140,12 @@ export class AppRegistryService implements OnModuleInit {
         e.message,
       );
       return;
+    }
+    try {
+      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
+    } catch (e) {
+      this.log.warn(`Run post install tasks failed: ${e.stack || e}`);
+      await this.cfCoreService.uninstallApp(appIdentityHash, installerChannel.multisigAddress);
     }
   }
 

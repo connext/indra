@@ -71,7 +71,7 @@ stop-all:
 	bash ops/stop.sh daicard
 	bash ops/stop.sh testnet
 
-restart: indra stop-indra
+restart: indra stop
 	bash ops/start-indra.sh
 
 restart-prod: stop
@@ -171,6 +171,9 @@ test-tps-prod:
 test-integration: test-runner
 	bash ops/test/integration.sh
 
+watch-integration:
+	bash ops/test/integration.sh latest watch
+
 test-integration-prod:
 	INDRA_ENV=prod bash ops/test/integration.sh
 
@@ -180,6 +183,9 @@ test-backwards-compatibility:
 
 test-daicard:
 	bash ops/test/daicard.sh
+
+watch-daicard:
+	bash ops/test/daicard.sh --watch
 
 test-docs: docs
 	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"

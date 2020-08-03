@@ -39,40 +39,40 @@ export class OnchainTransactionService implements OnModuleInit {
   async sendUserWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<OnchainTransaction> {
-    await this.queues
-      .get(channel.chainId)
-      .add(() => this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel));
-    return this.onchainTransactionRepository.findLatestTransactionToChannel(
-      channel.multisigAddress,
-      TransactionReason.USER_WITHDRAWAL,
-    );
+  ): Promise<providers.TransactionResponse> {
+    return new Promise((resolve, reject) => {
+      this.queues.get(channel.chainId).add(() => {
+        this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
   }
 
   async sendWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<OnchainTransaction> {
-    await this.queues
-      .get(channel.chainId)
-      .add(() => this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel));
-    return this.onchainTransactionRepository.findLatestTransactionToChannel(
-      channel.multisigAddress,
-      TransactionReason.NODE_WITHDRAWAL,
-    );
+  ): Promise<providers.TransactionResponse> {
+    return new Promise((resolve, reject) => {
+      this.queues.get(channel.chainId).add(() => {
+        this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
   }
 
   async sendDeposit(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<OnchainTransaction> {
-    await this.queues
-      .get(channel.chainId)
-      .add(() => this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel));
-    return this.onchainTransactionRepository.findLatestTransactionToChannel(
-      channel.multisigAddress,
-      TransactionReason.COLLATERALIZATION,
-    );
+  ): Promise<providers.TransactionResponse> {
+    return new Promise((resolve, reject) => {
+      this.queues.get(channel.chainId).add(() => {
+        this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
   }
 
   findByHash(hash: string): Promise<OnchainTransaction | undefined> {
@@ -106,8 +106,13 @@ export class OnchainTransactionService implements OnModuleInit {
     transaction: MinimalTransaction,
     reason: TransactionReason,
     channel: Channel,
-  ): Promise<void> {
+  ): Promise<providers.TransactionResponse> {
     const wallet = this.configService.getSigner(channel.chainId);
+    this.log.info(
+      `sendTransaction: Using provider URL ${
+        (wallet.provider as providers.JsonRpcProvider)?.connection?.url
+      } on chain ${channel.chainId}`,
+    );
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
@@ -118,18 +123,19 @@ export class OnchainTransactionService implements OnModuleInit {
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         const req = await wallet.populateTransaction({ ...transaction, nonce });
         tx = await wallet.sendTransaction(req);
-        // add fields from tx response
-        await this.onchainTransactionRepository.addResponse(tx, reason, channel);
-        this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
-        const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(
-          `Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`,
-        );
-        await this.onchainTransactionRepository.addReceipt(receipt);
-        return;
+        // add fields from tx response
+        await this.onchainTransactionRepository.addResponse(tx, reason, channel);
+        this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
+        tx.wait().then(async (receipt) => {
+          this.log.info(
+            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${channel.chainId}: ${receipt.transactionHash}`,
+          );
+          await this.onchainTransactionRepository.addReceipt(receipt);
+        });
+        return tx;
       } catch (e) {
         errors[attempt] = e.message;
         const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));

@@ -35,7 +35,7 @@ let memoryNonce = 0;
 
 export class DeployStateDepositController extends MethodController {
   public readonly methodName = MethodNames.chan_deployStateDepositHolder;
-  private inProgress = false;
+  private inProgress: { [multisig: string]: boolean } = {};
 
   public executeMethod = super.executeMethod;
 
@@ -100,11 +100,14 @@ export class DeployStateDepositController extends MethodController {
     await signer.connectProvider(provider);
 
     // If this is called twice concurrently, the second attempt should wait until the first is done
-    if (this.inProgress) {
+    if (this.inProgress[multisigAddress]) {
       log.warn(`Another deployment is in progress`);
       await new Promise(async (res) => {
         while (true) {
-          if (!this.inProgress || (await provider.getCode(multisigAddress)) !== "0x") {
+          if (
+            !this.inProgress[multisigAddress] ||
+            (await provider.getCode(multisigAddress)) !== "0x"
+          ) {
             log.info(`Other deployment completed`);
             return res();
           } else {
@@ -120,7 +123,7 @@ export class DeployStateDepositController extends MethodController {
     }
 
     // Get ready for multisig deployment
-    this.inProgress = true;
+    this.inProgress[multisigAddress] = true;
 
     // Create proxy factory + tx data
     const proxyFactory = new Contract(
@@ -197,6 +200,7 @@ export class DeployStateDepositController extends MethodController {
     if (!receipt) {
       throw new Error(`${CHANNEL_CREATION_FAILED}: Unable to deploy multisig`);
     }
+
     if (error) {
       throw new Error(`${CHANNEL_CREATION_FAILED}: ${stringify(error)}`);
     }
@@ -221,7 +225,7 @@ export class DeployStateDepositController extends MethodController {
 
     log.info(`Multisig deployment complete for ${preProtocolStateChannel.multisigAddress}`);
 
-    this.inProgress = false;
+    this.inProgress[multisigAddress] = false;
     return { transactionHash: receipt.transactionHash };
   }
 }

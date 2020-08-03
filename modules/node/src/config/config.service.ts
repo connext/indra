@@ -9,10 +9,11 @@ import {
   AllowedSwap,
   PriceOracleTypes,
   NetworkContexts,
+  JsonRpcProvider,
 } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet, Contract, providers, constants, utils } from "ethers";
+import { Wallet, Contract, providers, constants, utils, BigNumber } from "ethers";
 
 import { DEFAULT_DECIMALS } from "../constants";
 import { LoggerService } from "../logger/logger.service";
@@ -46,7 +47,7 @@ export class ConfigService implements OnModuleInit {
       const provider = new providers.JsonRpcProvider(urls[idx], chainId);
       this.providers.set(chainId, provider);
       this.signers.set(chainId, new ChannelSigner(this.getPrivateKey(), provider));
-      this.log.debug(`Registered new provider & signer for chain ${chainId}`);
+      this.log.info(`Registered new provider at url ${urls[idx]} & signer for chain ${chainId}`);
     });
   }
 
@@ -59,7 +60,10 @@ export class ConfigService implements OnModuleInit {
   }
 
   getSigner(chainId: number): IChannelSigner {
-    return this.signers.get(chainId);
+    const providers = this.getIndraChainProviders();
+    const provider = new JsonRpcProvider(providers[chainId], chainId === 61 ? "classic" : chainId);
+    const signer = new ChannelSigner(this.getPrivateKey(), provider);
+    return signer;
   }
 
   getProviderUrls(): string[] {
@@ -83,6 +87,10 @@ export class ConfigService implements OnModuleInit {
     return (
       Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map((k) => parseInt(k, 10)) || []
     );
+  }
+
+  getIndraChainProviders(): { [k: string]: string } {
+    return JSON.parse(this.get("INDRA_CHAIN_PROVIDERS") || "{}");
   }
 
   async getNetwork(chainId: number): Promise<providers.Network> {
@@ -324,15 +332,24 @@ export class ConfigService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    // Make sure all signers are properly connected
-    for (const signer of [...this.signers.values()]) {
-      const chain = await signer.getChainId();
-      const provider = this.providers.get(chain);
-      if (!provider) {
-        this.log.warn(`Unable to reconnect signer to provider to ${chain}`);
-        continue;
+    for (const [providerMappedChain, provider] of [...this.providers.entries()]) {
+      const actualChain = BigNumber.from(await provider.send("eth_chainId", [])).toNumber();
+      if (actualChain !== providerMappedChain) {
+        throw new Error(
+          `actualChain !== providerMappedChain, ${actualChain} !== ${providerMappedChain}`,
+        );
       }
-      await signer.connectProvider(provider);
+    }
+
+    // Make sure all signers are properly connected
+    for (const [signerMappedChain, signer] of [...this.signers.entries()]) {
+      const actualChain = await signer.getChainId();
+      if (actualChain !== signerMappedChain) {
+        throw new Error(
+          `actualChain !== signerMappedChain, ${actualChain} !== ${signerMappedChain}`,
+        );
+      }
+      await signer.connectProvider(this.getEthProvider(signerMappedChain));
     }
   }
 }

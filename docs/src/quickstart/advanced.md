@@ -20,7 +20,11 @@ if (!channelAvailable) {
 
 ### Event Monitoring
 
-The Connext client is an event emitter. You can trigger actions such as transfer confirmations in your application by listening for events using `connext.on()`. `connext.on()` accepts a string representing the event you'd like to listen for, as well as a callback. The callback has a single parameter `data` which contains contextual data from the event. Available events are:
+The Connext client is an event emitter. You can trigger actions such as transfer confirmations in your application by listening for events using `connext.on()`. `connext.on()` accepts a string representing the event you'd like to listen for, as well as a callback.
+
+Our event emitter uses the [EVT](https://www.evt.land/) package, which includes useful methods such as [`waitFor`](https://docs.evt.land/api/evt/waitfor) which can be more convenient than using `.on()` or `.once()`.
+
+The callback has a single parameter `data` which contains contextual data from the event. Available events are:
 
 Channel Events:
 
@@ -56,16 +60,19 @@ PROTOCOL_MESSAGE_EVENT,
 Transfer Events:
 
 ```javascript
-RECEIVE_TRANSFER_FAILED_EVENT, RECEIVE_TRANSFER_FINISHED_EVENT, RECEIVE_TRANSFER_STARTED_EVENT;
+CONDITIONAL_TRANSFER_CREATED,
+CONDITIONAL_TRANSFER_UNLOCKED,
+CONDITIONAL_TRANSFER_FAILED,
 ```
 
 Events exist in the types package as well, example:
 
 ```typescript
-import { ConnextEvents, DEPOSIT_STARTED_EVENT } from "@connext/types";
+import { ConnextEvents, EventNames } from "@connext/types";
 
-connext.on(DEPOSIT_STARTED_EVENT, (data) => {
+connext.on(EventNames.DEPOSIT_STARTED_EVENT, (data) => {
   console.log("Your deposit has begun");
+  // data type is inferred
   const { txHash, value } = data;
   showDepositStarted(value);
   showTxStatus(txHash);

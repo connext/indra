@@ -11,7 +11,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants, utils, providers } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -103,7 +103,7 @@ export class WithdrawService {
     );
 
     const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
-    const onchainTransaction = await this.submitWithdrawToChain(
+    const txRes = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
     );
@@ -114,7 +114,7 @@ export class WithdrawService {
       {
         signature: counterpartySignatureOnWithdrawCommitment,
       } as WithdrawAppAction,
-      { withdrawTx: onchainTransaction.hash },
+      { withdrawTx: txRes.hash },
     );
 
     // Update db entry again
@@ -126,7 +126,9 @@ export class WithdrawService {
       return;
     }
 
-    await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
+    const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes.hash);
+
+    await this.withdrawRepository.addUserOnchainTransaction(withdraw, onchainTransaction);
     this.log.info(`Node responded with transaction: ${onchainTransaction.hash}`);
     this.log.debug(`Transaction details: ${stringify(onchainTransaction)}`);
     return;
@@ -135,7 +137,7 @@ export class WithdrawService {
   async submitWithdrawToChain(
     multisigAddress: string,
     tx: MinimalTransaction,
-  ): Promise<OnchainTransaction> {
+  ): Promise<providers.TransactionResponse> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 

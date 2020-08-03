@@ -1,10 +1,11 @@
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
 import {
   createClient,
-  expect,
   ETH_AMOUNT_MD,
+  ethProvider,
+  expect,
   TOKEN_AMOUNT,
 } from "../util";
 
@@ -25,15 +26,23 @@ describe("Collateral", () => {
     await client.messaging.disconnect();
   });
 
+  // TODO: rm 'as any' once type returned by requestCollateral is fixed
+
   it("happy case: node should collateralize ETH", async () => {
-    await client.requestCollateral(AddressZero);
+    const tx = await client.requestCollateral(AddressZero) as any;
+    expect(tx).to.be.ok;
+    await ethProvider.waitForTransaction(tx.hash);
+    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
     const freeBalance = await client.getFreeBalance(AddressZero);
     expect(freeBalance[client.signerAddress]).to.be.eq("0");
     expect(freeBalance[nodeSignerAddress]).to.be.eq(ETH_AMOUNT_MD);
   });
 
   it("happy case: node should collateralize tokens", async () => {
-    await client.requestCollateral(tokenAddress);
+    const tx = await client.requestCollateral(tokenAddress) as any;
+    expect(tx).to.be.ok;
+    await ethProvider.waitForTransaction(tx.hash);
+    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
     const freeBalance = await client.getFreeBalance(tokenAddress);
     expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);

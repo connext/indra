@@ -1,12 +1,13 @@
 import { getLocalStore } from "@connext/store";
 import { IConnextClient, IChannelSigner, EventNames, IStoreService } from "@connext/types";
-import { getRandomChannelSigner, stringify, toBN, delay } from "@connext/utils";
+import { getRandomChannelSigner, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
 import {
   createClient,
   ETH_AMOUNT_SM,
   ethProviderUrl,
+  ethProvider,
   expect,
   fundChannel,
   getNatsClient,
@@ -50,7 +51,14 @@ describe("Restore State", () => {
   it("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
-    await clientA.requestCollateral(tokenAddress);
+
+    // TODO: rm 'as any' once type returned by requestCollateral is fixed
+    const tx = (await clientA.requestCollateral(tokenAddress)) as any;
+    await ethProvider.waitForTransaction(tx.hash);
+    await clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+
+    // Wait for the node to uninstall the deposit app & persist too
+    await delay(200);
 
     // check balances pre
     const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
