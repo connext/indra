@@ -29,7 +29,6 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
-  env,
 } from "../util";
 
 const { AddressZero } = constants;
@@ -76,7 +75,7 @@ describe("Graph Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
@@ -98,12 +97,14 @@ describe("Graph Signed Transfers", () => {
 
     expect(installed).deep.contain({
       amount: transfer.amount,
+      appIdentityHash: installed.appIdentityHash,
       assetId: transfer.assetId,
       type: ConditionalTransferTypes.GraphTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: {
-        signerAddress: clientB.signerAddress,
+        consumerSigner: clientA.signerAddress,
+        attestationSigner: clientB.signerAddress,
         chainId,
         verifyingContract,
         requestCID: receipt.requestCID,
@@ -196,14 +197,16 @@ describe("Graph Signed Transfers", () => {
       }),
     ]);
 
-    const [, installed] = promises;
+    const [transferRes, installed] = promises;
     expect(installed).deep.contain({
       amount: transfer.amount,
+      appIdentityHash: transferRes.appIdentityHash,
       assetId: transfer.assetId,
       type: ConditionalTransferTypes.GraphTransfer,
       paymentId,
       transferMeta: {
-        signerAddress: clientB.signerAddress,
+        consumerSigner: clientA.signerAddress,
+        attestationSigner: clientB.signerAddress,
         chainId,
         verifyingContract,
         requestCID: receipt.requestCID,

@@ -31,10 +31,10 @@ import {
   ProtocolParams,
   AppInstanceJson,
   GraphSignedTransferAppName,
-  CreatedGraphSignedTransferMeta,
+  CreatedGraphBatchedTransferMeta,
   GraphSignedTransferAppState,
   GraphSignedTransferAppAction,
-  UnlockedGraphSignedTransferMeta,
+  UnlockedGraphBatchedTransferMeta,
   ConditionalTransferAppNames,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
@@ -371,12 +371,14 @@ export class ConnextListener {
           meta,
           sender: meta?.sender,
           transferMeta: {
-            signerAddress: initialState?.signerAddress,
+            consumerSigner: initialState?.consumerSigner,
+            attestationSigner: initialState?.attestationSigner,
+            swapRate: initialState?.swapRate,
             chainId: initialState?.chainId,
             verifyingContract: initialState?.verifyingContract,
             requestCID: initialState?.requestCID,
             subgraphDeploymentID: initialState?.subgraphDeploymentID,
-          } as CreatedGraphSignedTransferMeta,
+          } as CreatedGraphBatchedTransferMeta,
           type: ConditionalTransferTypes.GraphTransfer,
           paymentId: initialState?.paymentId,
           recipient: meta?.recipient,
@@ -552,7 +554,7 @@ export class ConnextListener {
           transferMeta: {
             signature: transferAction?.signature,
             responseCID: transferAction?.responseCID,
-          } as UnlockedGraphSignedTransferMeta,
+          } as UnlockedGraphBatchedTransferMeta,
         } as EventPayloads.GraphTransferUnlocked);
         break;
       }

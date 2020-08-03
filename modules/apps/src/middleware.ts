@@ -123,6 +123,10 @@ const proposeMiddleware = async (
       await proposeGraphBatchedTransferMiddleware(middlewareContext, getSwapRate);
       break;
     }
+    case contractAddresses.GraphSignedTransferApp: {
+      proposeGraphSignedTransferMiddleware(middlewareContext);
+      break;
+    }
     case contractAddresses.SimpleTwoPartySwapApp: {
       proposeSwapMiddleware(middlewareContext);
       break;

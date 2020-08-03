@@ -8,7 +8,7 @@ import {
   GenericConditionalTransferAppState,
   SimpleSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
-  GraphSignedTransferAppAction,
+  GraphBatchedTransferAppAction,
   AppInstanceJson,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
@@ -66,9 +66,6 @@ export class ResolveTransferController extends AbstractController {
     // NOTE: there are cases where the app may be installed from the
     // queue, so make sure all values pulled from store are fresh
     let existingReceiverApp = findApp(await this.connext.getAppInstances());
-    const existingReceiverAppProposal = findApp(
-      (await this.connext.getProposedAppInstances()).appInstances,
-    );
     if (existingReceiverApp) {
       appIdentityHash = existingReceiverApp.identityHash;
       this.log.debug(
@@ -151,7 +148,7 @@ export class ResolveTransferController extends AbstractController {
       let action:
         | HashLockTransferAppAction
         | SimpleSignedTransferAppAction
-        | GraphSignedTransferAppAction
+        | GraphBatchedTransferAppAction
         | SimpleLinkedTransferAppAction;
       switch (conditionType) {
         case ConditionalTransferTypes.HashLockTransfer: {
@@ -160,11 +157,23 @@ export class ResolveTransferController extends AbstractController {
           break;
         }
         case ConditionalTransferTypes.GraphTransfer: {
-          const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
+          const {
+            responseCID,
+            consumerSignature,
+            attestationSignature,
+            totalPaid,
+          } = params as PublicParams.ResolveGraphTransfer;
           action =
             responseCID &&
-            signature &&
-            ({ responseCID, signature } as GraphSignedTransferAppAction);
+            consumerSignature &&
+            attestationSignature &&
+            totalPaid &&
+            ({
+              responseCID,
+              consumerSignature,
+              attestationSignature,
+              totalPaid,
+            } as GraphBatchedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
@@ -212,8 +221,12 @@ export class ResolveTransferController extends AbstractController {
         return !!preImage;
       }
       case ConditionalTransferTypes.GraphTransfer: {
-        const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
-        return !!responseCID && !!signature;
+        const {
+          responseCID,
+          consumerSignature,
+          attestationSignature,
+        } = params as PublicParams.ResolveGraphTransfer;
+        return !!responseCID && !!consumerSignature && !!attestationSignature;
       }
       case ConditionalTransferTypes.SignedTransfer: {
         const { data, signature } = params as PublicParams.ResolveSignedTransfer;

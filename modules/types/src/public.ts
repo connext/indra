@@ -134,6 +134,43 @@ type ResolveSignedTransferResponse = {
 };
 
 ////////////////////////////////////////
+// graph batched transfer
+
+type GraphSignedTransferParameters = {
+  conditionType: typeof ConditionalTransferTypes.GraphTransfer;
+  amount: BigNumber;
+  assetId: Address;
+  paymentId: Bytes32;
+  chainId: number;
+  verifyingContract: Address;
+  signerAddress: Address;
+  requestCID: Bytes32;
+  subgraphDeploymentID: Bytes32;
+  recipient: PublicIdentifier;
+  meta?: any;
+};
+
+type GraphSignedTransferResponse = {
+  appIdentityHash: Bytes32;
+  paymentId: Bytes32;
+};
+
+type ResolveGraphSignedTransferParameters = {
+  conditionType: typeof ConditionalTransferTypes.GraphTransfer;
+  paymentId: Bytes32;
+  responseCID: Bytes32;
+  signature?: SignatureString;
+};
+
+type ResolveGraphSignedTransferResponse = {
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  amount: BigNumber;
+  sender: PublicIdentifier;
+  meta?: any;
+};
+
+////////////////////////////////////////
 // graph signed transfer
 
 type GraphBatchedTransferParameters = {
@@ -158,7 +195,9 @@ type ResolveGraphBatchedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphTransfer;
   paymentId: Bytes32;
   responseCID: Bytes32;
-  signature?: SignatureString;
+  totalPaid: BigNumber;
+  consumerSignature?: SignatureString;
+  attestationSignature?: SignatureString;
 };
 
 type ResolveGraphBatchedTransferResponse = {
@@ -176,6 +215,7 @@ type ConditionalTransferParameters =
   | LinkedTransferParameters
   | HashLockTransferParameters
   | SignedTransferParameters
+  | GraphSignedTransferParameters
   | GraphBatchedTransferParameters;
 
 type ConditionalTransferResponse = {
@@ -273,7 +313,8 @@ export namespace PublicParams {
   export type ResolveHashLockTransfer = ResolveHashLockTransferParameters;
   export type ResolveLinkedTransfer = ResolveLinkedTransferParameters;
   export type ResolveSignedTransfer = ResolveSignedTransferParameters;
-  export type ResolveGraphTransfer = ResolveGraphBatchedTransferResponse;
+  export type ResolveGraphTransfer = ResolveGraphSignedTransferParameters;
+  export type ResolveGraphBatchedTransfer = ResolveGraphBatchedTransferParameters;
   export type SignedTransfer = SignedTransferParameters;
   export type GraphTransfer = GraphBatchedTransferParameters;
   export type Swap = SwapParameters;
@@ -291,9 +332,12 @@ export type PublicParam =
   | RescindDepositRightsParameters
   | ResolveConditionParameters
   | ResolveHashLockTransferParameters
+  | ResolveGraphSignedTransferParameters
+  | ResolveGraphBatchedTransferParameters
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters
   | SignedTransferParameters
+  | GraphSignedTransferParameters
   | GraphBatchedTransferParameters
   | SwapParameters
   | TransferParameters
@@ -313,7 +357,8 @@ export namespace PublicResults {
   export type HashLockTransfer = HashLockTransferResponse;
   export type LinkedTransfer = LinkedTransferResponse;
   export type SignedTransfer = SignedTransferResponse;
-  export type GraphTransfer = GraphBatchedTransferResponse;
+  export type GraphBatchedTransfer = GraphBatchedTransferResponse;
+  export type GraphTransfer = GraphSignedTransferResponse;
   export type Swap = SwapResponse;
   export type Transfer = TransferResponse;
   export type Withdraw = WithdrawResponse;
@@ -331,6 +376,7 @@ export type PublicResult =
   | ResolveHashLockTransferResponse
   | ResolveLinkedTransferResponse
   | ResolveSignedTransferResponse
+  | ResolveGraphSignedTransferResponse
   | ResolveGraphBatchedTransferResponse
   | SignedTransferResponse
   | GraphBatchedTransferResponse
