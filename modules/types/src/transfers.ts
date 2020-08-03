@@ -108,7 +108,6 @@ export type CreatedGraphSignedTransferMeta = {
 export type CreatedGraphBatchedTransferMeta = {
   chainId: number;
   verifyingContract: Address;
-  requestCID: Bytes32;
   subgraphDeploymentID: Bytes32;
   swapRate: BigNumber;
   attestationSigner: Address;

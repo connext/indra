@@ -160,17 +160,20 @@ export class ResolveTransferController extends AbstractController {
         }
         case ConditionalTransferTypes.GraphBatchedTransfer: {
           const {
+            requestCID,
             responseCID,
             consumerSignature,
             attestationSignature,
             totalPaid,
           } = params as PublicParams.ResolveGraphBatchedTransfer;
           action =
+            requestCID &&
             responseCID &&
             consumerSignature &&
             attestationSignature &&
             totalPaid &&
             ({
+              requestCID,
               responseCID,
               consumerSignature,
               attestationSignature,

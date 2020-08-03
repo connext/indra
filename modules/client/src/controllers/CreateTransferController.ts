@@ -161,7 +161,6 @@ export class CreateTransferController extends AbstractController {
         const {
           chainId,
           verifyingContract,
-          requestCID,
           subgraphDeploymentID,
           paymentId,
         } = params as PublicParams.GraphBatchedTransfer;
@@ -174,7 +173,6 @@ export class CreateTransferController extends AbstractController {
           ...baseInitialState,
           chainId,
           verifyingContract,
-          requestCID,
           subgraphDeploymentID,
           paymentId,
           attestationSigner, // indexer
@@ -187,7 +185,6 @@ export class CreateTransferController extends AbstractController {
           consumerSigner,
           chainId,
           verifyingContract,
-          requestCID,
           subgraphDeploymentID,
           swapRate,
         } as CreatedGraphBatchedTransferMeta;

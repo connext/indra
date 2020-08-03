@@ -180,7 +180,6 @@ type GraphBatchedTransferParameters = {
   paymentId: Bytes32;
   chainId: number;
   verifyingContract: Address;
-  requestCID: Bytes32;
   subgraphDeploymentID: Bytes32;
   recipient: PublicIdentifier;
   meta?: any;
@@ -194,6 +193,7 @@ type GraphBatchedTransferResponse = {
 type ResolveGraphBatchedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphBatchedTransfer;
   paymentId: Bytes32;
+  requestCID: Bytes32;
   responseCID: Bytes32;
   totalPaid: BigNumber;
   consumerSignature?: SignatureString;
