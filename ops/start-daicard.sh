@@ -22,7 +22,7 @@ fi
 public_port=3001
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ "$mode" == "prod" ]]
+if [[ "$INDRA_ENV" == "prod" ]]
 then
   git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
   if [[ -n "$git_tag" ]]
