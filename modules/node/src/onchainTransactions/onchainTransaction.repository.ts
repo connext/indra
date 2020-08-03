@@ -172,6 +172,8 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           status: TransactionStatus.SUCCESS,
           gasUsed: tx.gasUsed || Zero,
           logsBloom: tx.logsBloom,
+          blockNumber: tx.blockNumber,
+          blockHash: tx.blockHash,
         })
         .where("onchain_transaction.hash = :txHash", {
           txHash: tx.transactionHash,

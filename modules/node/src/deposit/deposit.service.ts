@@ -199,12 +199,16 @@ export class DepositService {
     }
 
     // Hit in cases where client was offline for uninstallation of collateral
-    if (transaction.status !== TransactionStatus.PENDING) {
+    const block = await ethProvider.getBlockNumber();
+    if (
+      transaction.status !== TransactionStatus.PENDING &&
+      Math.abs(transaction.blockNumber - block) > 1 // don't uninstall if tx was *just* mined
+    ) {
       // the deposit tx has either failed or succeeded, regardless
       // the deposit app should not exist at this point.
       // uninstall and rescind deposit rights, then return string
-      this.log.info(
-        `Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}`,
+      this.log.error(
+        `Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}, calling uninstall`,
       );
       await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
       this.log.info(
