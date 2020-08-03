@@ -6,205 +6,6 @@
 	"originalName": "",
 	"children": [
 		{
-			"id": 418,
-			"name": "PisaBackupService",
-			"kind": 128,
-			"kindString": "Class",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"children": [
-				{
-					"id": 421,
-					"name": "constructor",
-					"kind": 512,
-					"kindString": "Constructor",
-					"flags": {
-						"isExported": true,
-						"isExternal": true
-					},
-					"signatures": [
-						{
-							"id": 422,
-							"name": "new PisaBackupService",
-							"kind": 16384,
-							"kindString": "Constructor signature",
-							"flags": {
-								"isExported": true
-							},
-							"parameters": [
-								{
-									"id": 423,
-									"name": "pisaUrl",
-									"kind": 32768,
-									"kindString": "Parameter",
-									"flags": {
-										"isExported": true
-									},
-									"type": {
-										"type": "intrinsic",
-										"name": "string"
-									}
-								},
-								{
-									"id": 424,
-									"name": "wallet",
-									"kind": 32768,
-									"kindString": "Parameter",
-									"flags": {
-										"isExported": true
-									},
-									"type": {
-										"type": "reference",
-										"name": "Wallet"
-									}
-								}
-							],
-							"type": {
-								"type": "reference",
-								"id": 418,
-								"name": "PisaBackupService"
-							}
-						}
-					],
-					"sources": [
-						{
-							"fileName": "modules/store/src/pisaClient.ts",
-							"line": 10,
-							"character": 25
-						}
-					]
-				},
-				{
-					"id": 427,
-					"name": "backup",
-					"kind": 2048,
-					"kindString": "Method",
-					"flags": {
-						"isPublic": true,
-						"isExported": true,
-						"isExternal": true
-					},
-					"signatures": [
-						{
-							"id": 428,
-							"name": "backup",
-							"kind": 4096,
-							"kindString": "Call signature",
-							"flags": {
-								"isExported": true
-							},
-							"parameters": [
-								{
-									"id": 429,
-									"name": "pair",
-									"kind": 32768,
-									"kindString": "Parameter",
-									"flags": {
-										"isExported": true
-									},
-									"type": {
-										"type": "reference",
-										"name": "StorePair"
-									}
-								}
-							],
-							"type": {
-								"type": "reference",
-								"typeArguments": [
-									{
-										"type": "intrinsic",
-										"name": "void"
-									}
-								],
-								"name": "Promise"
-							}
-						}
-					],
-					"sources": [
-						{
-							"fileName": "modules/store/src/pisaClient.ts",
-							"line": 25,
-							"character": 21
-						}
-					]
-				},
-				{
-					"id": 425,
-					"name": "restore",
-					"kind": 2048,
-					"kindString": "Method",
-					"flags": {
-						"isPublic": true,
-						"isExported": true,
-						"isExternal": true
-					},
-					"signatures": [
-						{
-							"id": 426,
-							"name": "restore",
-							"kind": 4096,
-							"kindString": "Call signature",
-							"flags": {
-								"isExported": true
-							},
-							"type": {
-								"type": "reference",
-								"typeArguments": [
-									{
-										"type": "array",
-										"elementType": {
-											"type": "intrinsic",
-											"name": "any"
-										}
-									}
-								],
-								"name": "Promise"
-							}
-						}
-					],
-					"sources": [
-						{
-							"fileName": "modules/store/src/pisaClient.ts",
-							"line": 17,
-							"character": 22
-						}
-					]
-				}
-			],
-			"groups": [
-				{
-					"title": "Constructors",
-					"kind": 512,
-					"children": [
-						421
-					]
-				},
-				{
-					"title": "Methods",
-					"kind": 2048,
-					"children": [
-						427,
-						425
-					]
-				}
-			],
-			"sources": [
-				{
-					"fileName": "modules/store/src/pisaClient.ts",
-					"line": 8,
-					"character": 30
-				}
-			],
-			"implementedTypes": [
-				{
-					"type": "reference",
-					"name": "IBackupService"
-				}
-			]
-		},
-		{
 			"id": 80,
 			"name": "StoreService",
 			"kind": 128,
@@ -289,13 +90,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 47,
+							"line": 46,
 							"character": 58
 						}
 					]
 				},
 				{
-					"id": 228,
+					"id": 231,
 					"name": "addOnchainAction",
 					"kind": 2048,
 					"kindString": "Method",
@@ -305,7 +106,7 @@
 					},
 					"signatures": [
 						{
-							"id": 229,
+							"id": 232,
 							"name": "addOnchainAction",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -314,7 +115,7 @@
 							},
 							"parameters": [
 								{
-									"id": 230,
+									"id": 233,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -327,7 +128,7 @@
 									}
 								},
 								{
-									"id": 231,
+									"id": 234,
 									"name": "provider",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -355,7 +156,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 636,
+							"line": 630,
 							"character": 24
 						}
 					]
@@ -393,8 +194,8 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 137,
-							"character": 7
+							"line": 136,
+							"character": 13
 						}
 					]
 				},
@@ -431,13 +232,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 59,
+							"line": 58,
 							"character": 7
 						}
 					]
 				},
 				{
-					"id": 152,
+					"id": 155,
 					"name": "createAppInstance",
 					"kind": 2048,
 					"kindString": "Method",
@@ -447,7 +248,7 @@
 					},
 					"signatures": [
 						{
-							"id": 153,
+							"id": 156,
 							"name": "createAppInstance",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -456,7 +257,7 @@
 							},
 							"parameters": [
 								{
-									"id": 154,
+									"id": 157,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -469,7 +270,7 @@
 									}
 								},
 								{
-									"id": 155,
+									"id": 158,
 									"name": "appInstance",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -482,7 +283,7 @@
 									}
 								},
 								{
-									"id": 156,
+									"id": 159,
 									"name": "freeBalanceAppInstance",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -495,7 +296,7 @@
 									}
 								},
 								{
-									"id": 157,
+									"id": 160,
 									"name": "signedFreeBalanceUpdate",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -523,13 +324,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 241,
+							"line": 251,
 							"character": 25
 						}
 					]
 				},
 				{
-					"id": 172,
+					"id": 175,
 					"name": "createAppProposal",
 					"kind": 2048,
 					"kindString": "Method",
@@ -539,7 +340,7 @@
 					},
 					"signatures": [
 						{
-							"id": 173,
+							"id": 176,
 							"name": "createAppProposal",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -548,7 +349,7 @@
 							},
 							"parameters": [
 								{
-									"id": 174,
+									"id": 177,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -561,7 +362,7 @@
 									}
 								},
 								{
-									"id": 175,
+									"id": 178,
 									"name": "appInstance",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -574,7 +375,7 @@
 									}
 								},
 								{
-									"id": 176,
+									"id": 179,
 									"name": "monotonicNumProposedApps",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -587,7 +388,7 @@
 									}
 								},
 								{
-									"id": 177,
+									"id": 180,
 									"name": "signedSetStateCommitment",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -600,7 +401,7 @@
 									}
 								},
 								{
-									"id": 178,
+									"id": 181,
 									"name": "signedConditionalTxCommitment",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -628,13 +429,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 409,
+							"line": 428,
 							"character": 25
 						}
 					]
 				},
 				{
-					"id": 225,
+					"id": 228,
 					"name": "createChallengeUpdatedEvent",
 					"kind": 2048,
 					"kindString": "Method",
@@ -644,7 +445,7 @@
 					},
 					"signatures": [
 						{
-							"id": 226,
+							"id": 229,
 							"name": "createChallengeUpdatedEvent",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -653,7 +454,7 @@
 							},
 							"parameters": [
 								{
-									"id": 227,
+									"id": 230,
 									"name": "event",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -681,13 +482,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 622,
+							"line": 616,
 							"character": 35
 						}
 					]
 				},
 				{
-					"id": 141,
+					"id": 142,
 					"name": "createStateChannel",
 					"kind": 2048,
 					"kindString": "Method",
@@ -697,7 +498,7 @@
 					},
 					"signatures": [
 						{
-							"id": 142,
+							"id": 143,
 							"name": "createStateChannel",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -706,7 +507,7 @@
 							},
 							"parameters": [
 								{
-									"id": 143,
+									"id": 144,
 									"name": "stateChannel",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -719,7 +520,7 @@
 									}
 								},
 								{
-									"id": 144,
+									"id": 145,
 									"name": "signedSetupCommitment",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -732,7 +533,7 @@
 									}
 								},
 								{
-									"id": 145,
+									"id": 146,
 									"name": "signedFreeBalanceUpdate",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -760,13 +561,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 191,
+							"line": 197,
 							"character": 26
 						}
 					]
 				},
 				{
-					"id": 219,
+					"id": 222,
 					"name": "createStateProgressedEvent",
 					"kind": 2048,
 					"kindString": "Method",
@@ -776,7 +577,7 @@
 					},
 					"signatures": [
 						{
-							"id": 220,
+							"id": 223,
 							"name": "createStateProgressedEvent",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -785,7 +586,7 @@
 							},
 							"parameters": [
 								{
-									"id": 221,
+									"id": 224,
 									"name": "event",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -813,13 +614,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 595,
+							"line": 597,
 							"character": 34
 						}
 					]
 				},
 				{
-					"id": 209,
+					"id": 212,
 					"name": "getActiveChallenges",
 					"kind": 2048,
 					"kindString": "Method",
@@ -829,7 +630,7 @@
 					},
 					"signatures": [
 						{
-							"id": 210,
+							"id": 213,
 							"name": "getActiveChallenges",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -854,7 +655,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 556,
+							"line": 562,
 							"character": 27
 						}
 					]
@@ -895,13 +696,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 157,
+							"line": 158,
 							"character": 22
 						}
 					]
 				},
 				{
-					"id": 203,
+					"id": 206,
 					"name": "getAppChallenge",
 					"kind": 2048,
 					"kindString": "Method",
@@ -911,7 +712,7 @@
 					},
 					"signatures": [
 						{
-							"id": 204,
+							"id": 207,
 							"name": "getAppChallenge",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -920,7 +721,7 @@
 							},
 							"parameters": [
 								{
-									"id": 205,
+									"id": 208,
 									"name": "identityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -957,13 +758,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 529,
+							"line": 548,
 							"character": 23
 						}
 					]
 				},
 				{
-					"id": 149,
+					"id": 152,
 					"name": "getAppInstance",
 					"kind": 2048,
 					"kindString": "Method",
@@ -973,7 +774,7 @@
 					},
 					"signatures": [
 						{
-							"id": 150,
+							"id": 153,
 							"name": "getAppInstance",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -982,7 +783,7 @@
 							},
 							"parameters": [
 								{
-									"id": 151,
+									"id": 154,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1019,13 +820,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 224,
+							"line": 234,
 							"character": 22
 						}
 					]
 				},
 				{
-					"id": 169,
+					"id": 172,
 					"name": "getAppProposal",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1035,7 +836,7 @@
 					},
 					"signatures": [
 						{
-							"id": 170,
+							"id": 173,
 							"name": "getAppProposal",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1044,7 +845,7 @@
 							},
 							"parameters": [
 								{
-									"id": 171,
+									"id": 174,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1081,13 +882,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 397,
+							"line": 416,
 							"character": 22
 						}
 					]
 				},
 				{
-					"id": 222,
+					"id": 225,
 					"name": "getChallengeUpdatedEvents",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1097,7 +898,7 @@
 					},
 					"signatures": [
 						{
-							"id": 223,
+							"id": 226,
 							"name": "getChallengeUpdatedEvents",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1106,7 +907,7 @@
 							},
 							"parameters": [
 								{
-									"id": 224,
+									"id": 227,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1137,13 +938,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 614,
+							"line": 608,
 							"character": 33
 						}
 					]
 				},
 				{
-					"id": 192,
+					"id": 195,
 					"name": "getConditionalTransactionCommitment",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1153,7 +954,7 @@
 					},
 					"signatures": [
 						{
-							"id": 193,
+							"id": 196,
 							"name": "getConditionalTransactionCommitment",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1162,7 +963,7 @@
 							},
 							"parameters": [
 								{
-									"id": 194,
+									"id": 197,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1199,7 +1000,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 487,
+							"line": 506,
 							"character": 43
 						}
 					]
@@ -1249,13 +1050,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 132,
+							"line": 131,
 							"character": 18
 						}
 					]
 				},
 				{
-					"id": 183,
+					"id": 186,
 					"name": "getFreeBalance",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1265,7 +1066,7 @@
 					},
 					"signatures": [
 						{
-							"id": 184,
+							"id": 187,
 							"name": "getFreeBalance",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1274,7 +1075,7 @@
 							},
 							"parameters": [
 								{
-									"id": 185,
+									"id": 188,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1302,7 +1103,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 463,
+							"line": 482,
 							"character": 22
 						}
 					]
@@ -1375,7 +1176,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 109,
+							"line": 108,
 							"character": 15
 						}
 					]
@@ -1426,7 +1227,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 153,
+							"line": 154,
 							"character": 8
 						}
 					]
@@ -1467,13 +1268,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 75,
+							"line": 74,
 							"character": 15
 						}
 					]
 				},
 				{
-					"id": 211,
+					"id": 214,
 					"name": "getLatestProcessedBlock",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1483,7 +1284,7 @@
 					},
 					"signatures": [
 						{
-							"id": 212,
+							"id": 215,
 							"name": "getLatestProcessedBlock",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1505,7 +1306,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 574,
+							"line": 580,
 							"character": 31
 						}
 					]
@@ -1543,13 +1344,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 63,
+							"line": 62,
 							"character": 24
 						}
 					]
 				},
 				{
-					"id": 189,
+					"id": 192,
 					"name": "getSetStateCommitments",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1559,7 +1360,7 @@
 					},
 					"signatures": [
 						{
-							"id": 190,
+							"id": 193,
 							"name": "getSetStateCommitments",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1568,7 +1369,7 @@
 							},
 							"parameters": [
 								{
-									"id": 191,
+									"id": 194,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1599,13 +1400,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 480,
+							"line": 499,
 							"character": 30
 						}
 					]
 				},
 				{
-					"id": 186,
+					"id": 189,
 					"name": "getSetupCommitment",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1615,7 +1416,7 @@
 					},
 					"signatures": [
 						{
-							"id": 187,
+							"id": 190,
 							"name": "getSetupCommitment",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1624,7 +1425,7 @@
 							},
 							"parameters": [
 								{
-									"id": 188,
+									"id": 191,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1661,7 +1462,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 471,
+							"line": 490,
 							"character": 26
 						}
 					]
@@ -1723,13 +1524,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 165,
+							"line": 166,
 							"character": 23
 						}
 					]
 				},
 				{
-					"id": 138,
+					"id": 139,
 					"name": "getStateChannelByAppIdentityHash",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1739,7 +1540,7 @@
 					},
 					"signatures": [
 						{
-							"id": 139,
+							"id": 140,
 							"name": "getStateChannelByAppIdentityHash",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1748,7 +1549,7 @@
 							},
 							"parameters": [
 								{
-									"id": 140,
+									"id": 141,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1785,14 +1586,14 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 178,
+							"line": 184,
 							"character": 40
 						}
 					]
 				},
 				{
 					"id": 135,
-					"name": "getStateChannelByOwners",
+					"name": "getStateChannelByOwnersAndChainId",
 					"kind": 2048,
 					"kindString": "Method",
 					"flags": {
@@ -1802,7 +1603,7 @@
 					"signatures": [
 						{
 							"id": 136,
-							"name": "getStateChannelByOwners",
+							"name": "getStateChannelByOwnersAndChainId",
 							"kind": 4096,
 							"kindString": "Call signature",
 							"flags": {
@@ -1823,6 +1624,19 @@
 											"type": "intrinsic",
 											"name": "string"
 										}
+									}
+								},
+								{
+									"id": 138,
+									"name": "chainId",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isExported": true
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "number"
 									}
 								}
 							],
@@ -1850,13 +1664,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 171,
-							"character": 31
+							"line": 172,
+							"character": 41
 						}
 					]
 				},
 				{
-					"id": 216,
+					"id": 219,
 					"name": "getStateProgressedEvents",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1866,7 +1680,7 @@
 					},
 					"signatures": [
 						{
-							"id": 217,
+							"id": 220,
 							"name": "getStateProgressedEvents",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1875,7 +1689,7 @@
 							},
 							"parameters": [
 								{
-									"id": 218,
+									"id": 221,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -1906,7 +1720,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 589,
+							"line": 591,
 							"character": 32
 						}
 					]
@@ -1948,13 +1762,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 87,
+							"line": 86,
 							"character": 16
 						}
 					]
 				},
 				{
-					"id": 195,
+					"id": 198,
 					"name": "getUserWithdrawals",
 					"kind": 2048,
 					"kindString": "Method",
@@ -1964,7 +1778,7 @@
 					},
 					"signatures": [
 						{
-							"id": 196,
+							"id": 199,
 							"name": "getUserWithdrawals",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -1989,61 +1803,8 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 498,
+							"line": 517,
 							"character": 26
-						}
-					]
-				},
-				{
-					"id": 146,
-					"name": "incrementNumProposedApps",
-					"kind": 2048,
-					"kindString": "Method",
-					"flags": {
-						"isExported": true,
-						"isExternal": true
-					},
-					"signatures": [
-						{
-							"id": 147,
-							"name": "incrementNumProposedApps",
-							"kind": 4096,
-							"kindString": "Call signature",
-							"flags": {
-								"isExported": true
-							},
-							"parameters": [
-								{
-									"id": 148,
-									"name": "multisigAddress",
-									"kind": 32768,
-									"kindString": "Parameter",
-									"flags": {
-										"isExported": true
-									},
-									"type": {
-										"type": "intrinsic",
-										"name": "string"
-									}
-								}
-							],
-							"type": {
-								"type": "reference",
-								"typeArguments": [
-									{
-										"type": "intrinsic",
-										"name": "void"
-									}
-								],
-								"name": "Promise"
-							}
-						}
-					],
-					"sources": [
-						{
-							"fileName": "modules/store/src/store.ts",
-							"line": 210,
-							"character": 32
 						}
 					]
 				},
@@ -2080,13 +1841,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 55,
+							"line": 54,
 							"character": 6
 						}
 					]
 				},
 				{
-					"id": 163,
+					"id": 166,
 					"name": "removeAppInstance",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2096,7 +1857,7 @@
 					},
 					"signatures": [
 						{
-							"id": 164,
+							"id": 167,
 							"name": "removeAppInstance",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2105,7 +1866,7 @@
 							},
 							"parameters": [
 								{
-									"id": 165,
+									"id": 168,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2118,20 +1879,20 @@
 									}
 								},
 								{
-									"id": 166,
-									"name": "appIdentityHash",
+									"id": 169,
+									"name": "appInstance",
 									"kind": 32768,
 									"kindString": "Parameter",
 									"flags": {
 										"isExported": true
 									},
 									"type": {
-										"type": "intrinsic",
-										"name": "string"
+										"type": "reference",
+										"name": "AppInstanceJson"
 									}
 								},
 								{
-									"id": 167,
+									"id": 170,
 									"name": "freeBalanceAppInstance",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2144,7 +1905,7 @@
 									}
 								},
 								{
-									"id": 168,
+									"id": 171,
 									"name": "signedFreeBalanceUpdate",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2172,13 +1933,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 339,
+							"line": 349,
 							"character": 25
 						}
 					]
 				},
 				{
-					"id": 179,
+					"id": 182,
 					"name": "removeAppProposal",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2188,7 +1949,7 @@
 					},
 					"signatures": [
 						{
-							"id": 180,
+							"id": 183,
 							"name": "removeAppProposal",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2197,7 +1958,7 @@
 							},
 							"parameters": [
 								{
-									"id": 181,
+									"id": 184,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2210,7 +1971,7 @@
 									}
 								},
 								{
-									"id": 182,
+									"id": 185,
 									"name": "appIdentityHash",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2238,7 +1999,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 443,
+							"line": 462,
 							"character": 25
 						}
 					]
@@ -2291,13 +2052,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 125,
+							"line": 124,
 							"character": 18
 						}
 					]
 				},
 				{
-					"id": 200,
+					"id": 203,
 					"name": "removeUserWithdrawal",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2307,7 +2068,7 @@
 					},
 					"signatures": [
 						{
-							"id": 201,
+							"id": 204,
 							"name": "removeUserWithdrawal",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2316,7 +2077,7 @@
 							},
 							"parameters": [
 								{
-									"id": 202,
+									"id": 205,
 									"name": "toRemove",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2344,7 +2105,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 521,
+							"line": 540,
 							"character": 28
 						}
 					]
@@ -2382,13 +2143,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 141,
+							"line": 142,
 							"character": 15
 						}
 					]
 				},
 				{
-					"id": 206,
+					"id": 209,
 					"name": "saveAppChallenge",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2398,7 +2159,7 @@
 					},
 					"signatures": [
 						{
-							"id": 207,
+							"id": 210,
 							"name": "saveAppChallenge",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2407,7 +2168,7 @@
 							},
 							"parameters": [
 								{
-									"id": 208,
+									"id": 211,
 									"name": "data",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2444,13 +2205,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 534,
+							"line": 557,
 							"character": 24
 						}
 					]
 				},
 				{
-					"id": 197,
+					"id": 200,
 					"name": "saveUserWithdrawal",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2460,7 +2221,7 @@
 					},
 					"signatures": [
 						{
-							"id": 198,
+							"id": 201,
 							"name": "saveUserWithdrawal",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2469,7 +2230,7 @@
 							},
 							"parameters": [
 								{
-									"id": 199,
+									"id": 202,
 									"name": "withdrawalObject",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2497,7 +2258,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 507,
+							"line": 526,
 							"character": 26
 						}
 					]
@@ -2574,13 +2335,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 118,
+							"line": 117,
 							"character": 15
 						}
 					]
 				},
 				{
-					"id": 158,
+					"id": 161,
 					"name": "updateAppInstance",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2590,7 +2351,7 @@
 					},
 					"signatures": [
 						{
-							"id": 159,
+							"id": 162,
 							"name": "updateAppInstance",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2599,7 +2360,7 @@
 							},
 							"parameters": [
 								{
-									"id": 160,
+									"id": 163,
 									"name": "multisigAddress",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2612,7 +2373,7 @@
 									}
 								},
 								{
-									"id": 161,
+									"id": 164,
 									"name": "appInstance",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2625,7 +2386,7 @@
 									}
 								},
 								{
-									"id": 162,
+									"id": 165,
 									"name": "signedSetStateCommitment",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2653,13 +2414,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 297,
+							"line": 307,
 							"character": 25
 						}
 					]
 				},
 				{
-					"id": 213,
+					"id": 216,
 					"name": "updateLatestProcessedBlock",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2669,7 +2430,7 @@
 					},
 					"signatures": [
 						{
-							"id": 214,
+							"id": 217,
 							"name": "updateLatestProcessedBlock",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2678,7 +2439,7 @@
 							},
 							"parameters": [
 								{
-									"id": 215,
+									"id": 218,
 									"name": "blockNumber",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2706,8 +2467,87 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 581,
+							"line": 586,
 							"character": 28
+						}
+					]
+				},
+				{
+					"id": 147,
+					"name": "updateNumProposedApps",
+					"kind": 2048,
+					"kindString": "Method",
+					"flags": {
+						"isExported": true,
+						"isExternal": true
+					},
+					"signatures": [
+						{
+							"id": 148,
+							"name": "updateNumProposedApps",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {
+								"isExported": true
+							},
+							"parameters": [
+								{
+									"id": 149,
+									"name": "multisigAddress",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isExported": true
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 150,
+									"name": "numProposedApps",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isExported": true
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "number"
+									}
+								},
+								{
+									"id": 151,
+									"name": "stateChannel",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isExported": true
+									},
+									"type": {
+										"type": "reference",
+										"name": "StateChannelJSON"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"typeArguments": [
+									{
+										"type": "intrinsic",
+										"name": "void"
+									}
+								],
+								"name": "Promise"
+							}
+						}
+					],
+					"sources": [
+						{
+							"fileName": "modules/store/src/store.ts",
+							"line": 216,
+							"character": 29
 						}
 					]
 				},
@@ -2760,7 +2600,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/store.ts",
-							"line": 68,
+							"line": 67,
 							"character": 21
 						}
 					]
@@ -2778,48 +2618,48 @@
 					"title": "Methods",
 					"kind": 2048,
 					"children": [
-						228,
+						231,
 						123,
 						95,
+						155,
+						175,
+						228,
+						142,
+						222,
+						212,
+						130,
+						206,
 						152,
 						172,
 						225,
-						141,
-						219,
-						209,
-						130,
-						203,
-						149,
-						169,
-						222,
-						192,
+						195,
 						121,
-						183,
+						186,
 						109,
 						127,
 						102,
-						211,
+						214,
 						97,
+						192,
 						189,
-						186,
 						132,
-						138,
+						139,
 						135,
-						216,
+						219,
 						104,
-						195,
-						146,
+						198,
 						93,
-						163,
-						179,
+						166,
+						182,
 						118,
-						200,
+						203,
 						125,
-						206,
-						197,
+						209,
+						200,
 						113,
-						158,
-						213,
+						161,
+						216,
+						147,
 						99
 					]
 				}
@@ -2827,7 +2667,7 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/store.ts",
-					"line": 46,
+					"line": 45,
 					"character": 25
 				}
 			],
@@ -2839,7 +2679,7 @@
 			]
 		},
 		{
-			"id": 282,
+			"id": 288,
 			"name": "WrappedAsyncStorage",
 			"kind": 128,
 			"kindString": "Class",
@@ -2849,7 +2689,7 @@
 			},
 			"children": [
 				{
-					"id": 286,
+					"id": 292,
 					"name": "constructor",
 					"kind": 512,
 					"kindString": "Constructor",
@@ -2859,7 +2699,7 @@
 					},
 					"signatures": [
 						{
-							"id": 291,
+							"id": 297,
 							"name": "new WrappedAsyncStorage",
 							"kind": 16384,
 							"kindString": "Constructor signature",
@@ -2868,7 +2708,7 @@
 							},
 							"parameters": [
 								{
-									"id": 292,
+									"id": 298,
 									"name": "asyncStorage",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2882,7 +2722,7 @@
 									}
 								},
 								{
-									"id": 293,
+									"id": 299,
 									"name": "prefix",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2896,7 +2736,7 @@
 									"defaultValue": "storeDefaults.PREFIX"
 								},
 								{
-									"id": 294,
+									"id": 300,
 									"name": "separator",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2910,7 +2750,7 @@
 									"defaultValue": "storeDefaults.SEPARATOR"
 								},
 								{
-									"id": 295,
+									"id": 301,
 									"name": "asyncStorageKey",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -2926,7 +2766,7 @@
 							],
 							"type": {
 								"type": "reference",
-								"id": 282,
+								"id": 288,
 								"name": "WrappedAsyncStorage"
 							}
 						}
@@ -2940,7 +2780,7 @@
 					]
 				},
 				{
-					"id": 298,
+					"id": 304,
 					"name": "close",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2950,7 +2790,7 @@
 					},
 					"signatures": [
 						{
-							"id": 299,
+							"id": 305,
 							"name": "close",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -2988,7 +2828,7 @@
 					}
 				},
 				{
-					"id": 322,
+					"id": 328,
 					"name": "fetch",
 					"kind": 2048,
 					"kindString": "Method",
@@ -2998,7 +2838,7 @@
 					},
 					"signatures": [
 						{
-							"id": 323,
+							"id": 329,
 							"name": "fetch",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3010,7 +2850,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"id": 279,
+										"id": 285,
 										"name": "AsyncStorageData"
 									}
 								],
@@ -3027,7 +2867,7 @@
 					]
 				},
 				{
-					"id": 326,
+					"id": 332,
 					"name": "getEntries",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3037,7 +2877,7 @@
 					},
 					"signatures": [
 						{
-							"id": 327,
+							"id": 333,
 							"name": "getEntries",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3087,7 +2927,7 @@
 					}
 				},
 				{
-					"id": 308,
+					"id": 314,
 					"name": "getItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3097,7 +2937,7 @@
 					},
 					"signatures": [
 						{
-							"id": 309,
+							"id": 315,
 							"name": "getItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3106,7 +2946,7 @@
 							},
 							"typeParameter": [
 								{
-									"id": 310,
+									"id": 316,
 									"name": "T",
 									"kind": 131072,
 									"kindString": "Type parameter",
@@ -3117,7 +2957,7 @@
 							],
 							"parameters": [
 								{
-									"id": 311,
+									"id": 317,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3170,7 +3010,7 @@
 					}
 				},
 				{
-					"id": 328,
+					"id": 334,
 					"name": "getKey",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3180,7 +3020,7 @@
 					},
 					"signatures": [
 						{
-							"id": 329,
+							"id": 335,
 							"name": "getKey",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3189,7 +3029,7 @@
 							},
 							"parameters": [
 								{
-									"id": 330,
+									"id": 336,
 									"name": "args",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3231,7 +3071,7 @@
 					}
 				},
 				{
-					"id": 324,
+					"id": 330,
 					"name": "getKeys",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3241,7 +3081,7 @@
 					},
 					"signatures": [
 						{
-							"id": 325,
+							"id": 331,
 							"name": "getKeys",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3282,7 +3122,7 @@
 					}
 				},
 				{
-					"id": 296,
+					"id": 302,
 					"name": "init",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3292,7 +3132,7 @@
 					},
 					"signatures": [
 						{
-							"id": 297,
+							"id": 303,
 							"name": "init",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3330,7 +3170,7 @@
 					}
 				},
 				{
-					"id": 300,
+					"id": 306,
 					"name": "loadData",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3340,7 +3180,7 @@
 					},
 					"signatures": [
 						{
-							"id": 301,
+							"id": 307,
 							"name": "loadData",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3352,7 +3192,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"id": 279,
+										"id": 285,
 										"name": "AsyncStorageData"
 									}
 								],
@@ -3369,7 +3209,7 @@
 					]
 				},
 				{
-					"id": 302,
+					"id": 308,
 					"name": "onInit",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3379,7 +3219,7 @@
 					},
 					"signatures": [
 						{
-							"id": 303,
+							"id": 309,
 							"name": "onInit",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3388,7 +3228,7 @@
 							},
 							"parameters": [
 								{
-									"id": 304,
+									"id": 310,
 									"name": "callback",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3397,7 +3237,7 @@
 									},
 									"type": {
 										"type": "reference",
-										"id": 331,
+										"id": 337,
 										"name": "InitCallback"
 									}
 								}
@@ -3417,7 +3257,7 @@
 					]
 				},
 				{
-					"id": 320,
+					"id": 326,
 					"name": "persist",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3427,7 +3267,7 @@
 					},
 					"signatures": [
 						{
-							"id": 321,
+							"id": 327,
 							"name": "persist",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3455,7 +3295,7 @@
 					]
 				},
 				{
-					"id": 317,
+					"id": 323,
 					"name": "removeItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3465,7 +3305,7 @@
 					},
 					"signatures": [
 						{
-							"id": 318,
+							"id": 324,
 							"name": "removeItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3474,7 +3314,7 @@
 							},
 							"parameters": [
 								{
-									"id": 319,
+									"id": 325,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3518,7 +3358,7 @@
 					}
 				},
 				{
-					"id": 312,
+					"id": 318,
 					"name": "setItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3528,7 +3368,7 @@
 					},
 					"signatures": [
 						{
-							"id": 313,
+							"id": 319,
 							"name": "setItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3537,7 +3377,7 @@
 							},
 							"typeParameter": [
 								{
-									"id": 314,
+									"id": 320,
 									"name": "T",
 									"kind": 131072,
 									"kindString": "Type parameter",
@@ -3548,7 +3388,7 @@
 							],
 							"parameters": [
 								{
-									"id": 315,
+									"id": 321,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3561,7 +3401,7 @@
 									}
 								},
 								{
-									"id": 316,
+									"id": 322,
 									"name": "value",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3605,7 +3445,7 @@
 					}
 				},
 				{
-					"id": 305,
+					"id": 311,
 					"name": "triggerInit",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3615,7 +3455,7 @@
 					},
 					"signatures": [
 						{
-							"id": 306,
+							"id": 312,
 							"name": "triggerInit",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3624,7 +3464,7 @@
 							},
 							"parameters": [
 								{
-									"id": 307,
+									"id": 313,
 									"name": "data",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3633,7 +3473,7 @@
 									},
 									"type": {
 										"type": "reference",
-										"id": 279,
+										"id": 285,
 										"name": "AsyncStorageData"
 									}
 								}
@@ -3658,26 +3498,26 @@
 					"title": "Constructors",
 					"kind": 512,
 					"children": [
-						286
+						292
 					]
 				},
 				{
 					"title": "Methods",
 					"kind": 2048,
 					"children": [
-						298,
-						322,
-						326,
-						308,
+						304,
 						328,
-						324,
-						296,
-						300,
+						332,
+						314,
+						334,
+						330,
 						302,
-						320,
-						317,
-						312,
-						305
+						306,
+						308,
+						326,
+						323,
+						318,
+						311
 					]
 				}
 			],
@@ -3697,7 +3537,7 @@
 			]
 		},
 		{
-			"id": 335,
+			"id": 341,
 			"name": "WrappedLocalStorage",
 			"kind": 128,
 			"kindString": "Class",
@@ -3707,7 +3547,7 @@
 			},
 			"children": [
 				{
-					"id": 337,
+					"id": 343,
 					"name": "constructor",
 					"kind": 512,
 					"kindString": "Constructor",
@@ -3717,7 +3557,7 @@
 					},
 					"signatures": [
 						{
-							"id": 340,
+							"id": 346,
 							"name": "new WrappedLocalStorage",
 							"kind": 16384,
 							"kindString": "Constructor signature",
@@ -3726,7 +3566,7 @@
 							},
 							"parameters": [
 								{
-									"id": 341,
+									"id": 347,
 									"name": "prefix",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3740,7 +3580,7 @@
 									"defaultValue": "storeDefaults.PREFIX"
 								},
 								{
-									"id": 342,
+									"id": 348,
 									"name": "separator",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3756,7 +3596,7 @@
 							],
 							"type": {
 								"type": "reference",
-								"id": 335,
+								"id": 341,
 								"name": "WrappedLocalStorage"
 							}
 						}
@@ -3770,7 +3610,7 @@
 					]
 				},
 				{
-					"id": 345,
+					"id": 351,
 					"name": "close",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3780,7 +3620,7 @@
 					},
 					"signatures": [
 						{
-							"id": 346,
+							"id": 352,
 							"name": "close",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3818,7 +3658,7 @@
 					}
 				},
 				{
-					"id": 361,
+					"id": 367,
 					"name": "getEntries",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3828,7 +3668,7 @@
 					},
 					"signatures": [
 						{
-							"id": 362,
+							"id": 368,
 							"name": "getEntries",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3878,7 +3718,7 @@
 					}
 				},
 				{
-					"id": 347,
+					"id": 353,
 					"name": "getItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3888,7 +3728,7 @@
 					},
 					"signatures": [
 						{
-							"id": 348,
+							"id": 354,
 							"name": "getItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3897,7 +3737,7 @@
 							},
 							"typeParameter": [
 								{
-									"id": 349,
+									"id": 355,
 									"name": "T",
 									"kind": 131072,
 									"kindString": "Type parameter",
@@ -3908,7 +3748,7 @@
 							],
 							"parameters": [
 								{
-									"id": 350,
+									"id": 356,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -3961,7 +3801,7 @@
 					}
 				},
 				{
-					"id": 363,
+					"id": 369,
 					"name": "getKey",
 					"kind": 2048,
 					"kindString": "Method",
@@ -3971,7 +3811,7 @@
 					},
 					"signatures": [
 						{
-							"id": 364,
+							"id": 370,
 							"name": "getKey",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -3980,7 +3820,7 @@
 							},
 							"parameters": [
 								{
-									"id": 365,
+									"id": 371,
 									"name": "args",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4022,7 +3862,7 @@
 					}
 				},
 				{
-					"id": 359,
+					"id": 365,
 					"name": "getKeys",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4032,7 +3872,7 @@
 					},
 					"signatures": [
 						{
-							"id": 360,
+							"id": 366,
 							"name": "getKeys",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4073,7 +3913,7 @@
 					}
 				},
 				{
-					"id": 343,
+					"id": 349,
 					"name": "init",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4083,7 +3923,7 @@
 					},
 					"signatures": [
 						{
-							"id": 344,
+							"id": 350,
 							"name": "init",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4121,7 +3961,7 @@
 					}
 				},
 				{
-					"id": 356,
+					"id": 362,
 					"name": "removeItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4131,7 +3971,7 @@
 					},
 					"signatures": [
 						{
-							"id": 357,
+							"id": 363,
 							"name": "removeItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4140,7 +3980,7 @@
 							},
 							"parameters": [
 								{
-									"id": 358,
+									"id": 364,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4184,7 +4024,7 @@
 					}
 				},
 				{
-					"id": 351,
+					"id": 357,
 					"name": "setItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4194,7 +4034,7 @@
 					},
 					"signatures": [
 						{
-							"id": 352,
+							"id": 358,
 							"name": "setItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4203,7 +4043,7 @@
 							},
 							"typeParameter": [
 								{
-									"id": 353,
+									"id": 359,
 									"name": "T",
 									"kind": 131072,
 									"kindString": "Type parameter",
@@ -4214,7 +4054,7 @@
 							],
 							"parameters": [
 								{
-									"id": 354,
+									"id": 360,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4227,7 +4067,7 @@
 									}
 								},
 								{
-									"id": 355,
+									"id": 361,
 									"name": "value",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4276,21 +4116,21 @@
 					"title": "Constructors",
 					"kind": 512,
 					"children": [
-						337
+						343
 					]
 				},
 				{
 					"title": "Methods",
 					"kind": 2048,
 					"children": [
-						345,
-						361,
-						347,
-						363,
-						359,
-						343,
-						356,
-						351
+						351,
+						367,
+						353,
+						369,
+						365,
+						349,
+						362,
+						357
 					]
 				}
 			],
@@ -4310,7 +4150,7 @@
 			]
 		},
 		{
-			"id": 366,
+			"id": 372,
 			"name": "WrappedSequelizeStorage",
 			"kind": 128,
 			"kindString": "Class",
@@ -4320,7 +4160,7 @@
 			},
 			"children": [
 				{
-					"id": 370,
+					"id": 376,
 					"name": "constructor",
 					"kind": 512,
 					"kindString": "Constructor",
@@ -4330,7 +4170,7 @@
 					},
 					"signatures": [
 						{
-							"id": 374,
+							"id": 380,
 							"name": "new WrappedSequelizeStorage",
 							"kind": 16384,
 							"kindString": "Constructor signature",
@@ -4339,7 +4179,7 @@
 							},
 							"parameters": [
 								{
-									"id": 375,
+									"id": 381,
 									"name": "_sequelize",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4361,7 +4201,7 @@
 									}
 								},
 								{
-									"id": 376,
+									"id": 382,
 									"name": "prefix",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4375,7 +4215,7 @@
 									"defaultValue": "storeDefaults.PREFIX"
 								},
 								{
-									"id": 377,
+									"id": 383,
 									"name": "separator",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4389,7 +4229,7 @@
 									"defaultValue": "storeDefaults.SEPARATOR"
 								},
 								{
-									"id": 378,
+									"id": 384,
 									"name": "tableName",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4405,7 +4245,7 @@
 							],
 							"type": {
 								"type": "reference",
-								"id": 366,
+								"id": 372,
 								"name": "WrappedSequelizeStorage"
 							}
 						}
@@ -4413,13 +4253,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 33,
+							"line": 40,
 							"character": 47
 						}
 					]
 				},
 				{
-					"id": 367,
+					"id": 373,
 					"name": "sequelize",
 					"kind": 1024,
 					"kindString": "Property",
@@ -4431,7 +4271,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 27,
+							"line": 34,
 							"character": 18
 						}
 					],
@@ -4441,7 +4281,7 @@
 					}
 				},
 				{
-					"id": 396,
+					"id": 402,
 					"name": "clear",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4451,7 +4291,7 @@
 					},
 					"signatures": [
 						{
-							"id": 397,
+							"id": 403,
 							"name": "clear",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4473,13 +4313,13 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 128,
+							"line": 138,
 							"character": 13
 						}
 					]
 				},
 				{
-					"id": 400,
+					"id": 406,
 					"name": "close",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4489,7 +4329,7 @@
 					},
 					"signatures": [
 						{
-							"id": 401,
+							"id": 407,
 							"name": "close",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4516,7 +4356,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 153,
+							"line": 163,
 							"character": 7
 						}
 					],
@@ -4527,7 +4367,7 @@
 					}
 				},
 				{
-					"id": 392,
+					"id": 398,
 					"name": "getEntries",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4537,7 +4377,7 @@
 					},
 					"signatures": [
 						{
-							"id": 393,
+							"id": 399,
 							"name": "getEntries",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4576,7 +4416,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 110,
+							"line": 120,
 							"character": 18
 						}
 					],
@@ -4587,7 +4427,7 @@
 					}
 				},
 				{
-					"id": 379,
+					"id": 385,
 					"name": "getItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4597,7 +4437,7 @@
 					},
 					"signatures": [
 						{
-							"id": 380,
+							"id": 386,
 							"name": "getItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4606,7 +4446,7 @@
 							},
 							"typeParameter": [
 								{
-									"id": 381,
+									"id": 387,
 									"name": "T",
 									"kind": 131072,
 									"kindString": "Type parameter",
@@ -4617,7 +4457,7 @@
 							],
 							"parameters": [
 								{
-									"id": 382,
+									"id": 388,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4659,7 +4499,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 63,
+							"line": 73,
 							"character": 15
 						}
 					],
@@ -4670,7 +4510,7 @@
 					}
 				},
 				{
-					"id": 405,
+					"id": 411,
 					"name": "getKey",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4680,7 +4520,7 @@
 					},
 					"signatures": [
 						{
-							"id": 406,
+							"id": 412,
 							"name": "getKey",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4689,7 +4529,7 @@
 							},
 							"parameters": [
 								{
-									"id": 407,
+									"id": 413,
 									"name": "args",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4720,7 +4560,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 161,
+							"line": 171,
 							"character": 8
 						}
 					],
@@ -4731,7 +4571,7 @@
 					}
 				},
 				{
-					"id": 390,
+					"id": 396,
 					"name": "getKeys",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4741,7 +4581,7 @@
 					},
 					"signatures": [
 						{
-							"id": 391,
+							"id": 397,
 							"name": "getKeys",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4771,7 +4611,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 105,
+							"line": 115,
 							"character": 15
 						}
 					],
@@ -4782,7 +4622,7 @@
 					}
 				},
 				{
-					"id": 398,
+					"id": 404,
 					"name": "init",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4792,7 +4632,7 @@
 					},
 					"signatures": [
 						{
-							"id": 399,
+							"id": 405,
 							"name": "init",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4819,7 +4659,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 149,
+							"line": 159,
 							"character": 12
 						}
 					],
@@ -4830,7 +4670,7 @@
 					}
 				},
 				{
-					"id": 387,
+					"id": 393,
 					"name": "removeItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4840,7 +4680,7 @@
 					},
 					"signatures": [
 						{
-							"id": 388,
+							"id": 394,
 							"name": "removeItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4849,7 +4689,7 @@
 							},
 							"parameters": [
 								{
-									"id": 389,
+									"id": 395,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4882,7 +4722,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 86,
+							"line": 96,
 							"character": 18
 						}
 					],
@@ -4893,7 +4733,7 @@
 					}
 				},
 				{
-					"id": 383,
+					"id": 389,
 					"name": "setItem",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4903,7 +4743,7 @@
 					},
 					"signatures": [
 						{
-							"id": 384,
+							"id": 390,
 							"name": "setItem",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4912,7 +4752,7 @@
 							},
 							"parameters": [
 								{
-									"id": 385,
+									"id": 391,
 									"name": "key",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4925,7 +4765,7 @@
 									}
 								},
 								{
-									"id": 386,
+									"id": 392,
 									"name": "value",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -4953,7 +4793,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 68,
+							"line": 78,
 							"character": 15
 						}
 					],
@@ -4964,7 +4804,7 @@
 					}
 				},
 				{
-					"id": 402,
+					"id": 408,
 					"name": "syncModels",
 					"kind": 2048,
 					"kindString": "Method",
@@ -4974,7 +4814,7 @@
 					},
 					"signatures": [
 						{
-							"id": 403,
+							"id": 409,
 							"name": "syncModels",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -4983,7 +4823,7 @@
 							},
 							"parameters": [
 								{
-									"id": 404,
+									"id": 410,
 									"name": "force",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -5012,7 +4852,7 @@
 					"sources": [
 						{
 							"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-							"line": 157,
+							"line": 167,
 							"character": 18
 						}
 					]
@@ -5023,37 +4863,37 @@
 					"title": "Constructors",
 					"kind": 512,
 					"children": [
-						370
+						376
 					]
 				},
 				{
 					"title": "Properties",
 					"kind": 1024,
 					"children": [
-						367
+						373
 					]
 				},
 				{
 					"title": "Methods",
 					"kind": 2048,
 					"children": [
-						396,
-						400,
-						392,
-						379,
-						405,
-						390,
+						402,
+						406,
 						398,
-						387,
-						383,
-						402
+						385,
+						411,
+						396,
+						404,
+						393,
+						389,
+						408
 					]
 				}
 			],
 			"sources": [
 				{
 					"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-					"line": 26,
+					"line": 33,
 					"character": 36
 				}
 			],
@@ -5066,7 +4906,7 @@
 			]
 		},
 		{
-			"id": 279,
+			"id": 285,
 			"name": "AsyncStorageData",
 			"kind": 256,
 			"kindString": "Interface",
@@ -5076,7 +4916,7 @@
 			},
 			"indexSignature": [
 				{
-					"id": 280,
+					"id": 286,
 					"name": "__index",
 					"kind": 8192,
 					"kindString": "Index signature",
@@ -5085,7 +4925,7 @@
 					},
 					"parameters": [
 						{
-							"id": 281,
+							"id": 287,
 							"name": "key",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -5781,23 +5621,23 @@
 			"implementedBy": [
 				{
 					"type": "reference",
-					"id": 282,
+					"id": 288,
 					"name": "WrappedAsyncStorage"
 				},
 				{
 					"type": "reference",
-					"id": 335,
+					"id": 341,
 					"name": "WrappedLocalStorage"
 				},
 				{
 					"type": "reference",
-					"id": 366,
+					"id": 372,
 					"name": "WrappedSequelizeStorage"
 				}
 			]
 		},
 		{
-			"id": 331,
+			"id": 337,
 			"name": "InitCallback",
 			"kind": 4194304,
 			"kindString": "Type alias",
@@ -5815,7 +5655,7 @@
 			"type": {
 				"type": "reflection",
 				"declaration": {
-					"id": 332,
+					"id": 338,
 					"name": "__type",
 					"kind": 65536,
 					"kindString": "Type literal",
@@ -5824,7 +5664,7 @@
 					},
 					"signatures": [
 						{
-							"id": 333,
+							"id": 339,
 							"name": "__call",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -5833,7 +5673,7 @@
 							},
 							"parameters": [
 								{
-									"id": 334,
+									"id": 340,
 									"name": "data",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -5842,7 +5682,7 @@
 									},
 									"type": {
 										"type": "reference",
-										"id": 279,
+										"id": 285,
 										"name": "AsyncStorageData"
 									}
 								}
@@ -6063,7 +5903,7 @@
 			}
 		},
 		{
-			"id": 408,
+			"id": 414,
 			"name": "SupportedDialects",
 			"kind": 4194304,
 			"kindString": "Type alias",
@@ -6249,49 +6089,7 @@
 			"defaultValue": "enumify({\n  AsyncStorage: \"AsyncStorage\",\n  File: \"File\",\n  LocalStorage: \"LocalStorage\",\n  Postgres: \"Postgres\",\n  Memory: \"Memory\",\n})"
 		},
 		{
-			"id": 274,
-			"name": "Zero",
-			"kind": 32,
-			"kindString": "Variable",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"sources": [
-				{
-					"fileName": "modules/store/src/store.ts",
-					"line": 29,
-					"character": 12
-				}
-			],
-			"type": {
-				"type": "reference",
-				"name": "BigNumber"
-			}
-		},
-		{
-			"id": 439,
-			"name": "arrayify",
-			"kind": 32,
-			"kindString": "Variable",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"sources": [
-				{
-					"fileName": "modules/store/src/pisaClient.ts",
-					"line": 6,
-					"character": 16
-				}
-			],
-			"type": {
-				"type": "reference",
-				"name": "arrayify"
-			}
-		},
-		{
-			"id": 275,
+			"id": 281,
 			"name": "defaultAbiCoder",
 			"kind": 32,
 			"kindString": "Variable",
@@ -6302,55 +6100,13 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/store.ts",
-					"line": 30,
+					"line": 29,
 					"character": 23
 				}
 			],
 			"type": {
 				"type": "reference",
 				"name": "AbiCoder"
-			}
-		},
-		{
-			"id": 440,
-			"name": "hexlify",
-			"kind": 32,
-			"kindString": "Variable",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"sources": [
-				{
-					"fileName": "modules/store/src/pisaClient.ts",
-					"line": 6,
-					"character": 25
-				}
-			],
-			"type": {
-				"type": "reference",
-				"name": "hexlify"
-			}
-		},
-		{
-			"id": 441,
-			"name": "keccak256",
-			"kind": 32,
-			"kindString": "Variable",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"sources": [
-				{
-					"fileName": "modules/store/src/pisaClient.ts",
-					"line": 6,
-					"character": 36
-				}
-			],
-			"type": {
-				"type": "reference",
-				"name": "keccak256"
 			}
 		},
 		{
@@ -6740,49 +6496,7 @@
 			"defaultValue": "{\n  BLOCK_PROCESSED: \"block_processed\",\n  CHALLENGE: \"challenge\",\n  CHALLENGE_UPDATED_EVENT: \"challenge_updated_event\",\n  CHANNEL: \"channel\",\n  COMMITMENT: \"_commitment\",\n  CONDITIONAL_COMMITMENT: \"conditional_commitment\",\n  DEFAULT_ASYNC_STORAGE: \"CONNEXT_STORE\",\n  FREE_BALANCE: \"freebalance\",\n  PROPOSED_APP: \"proposed\",\n  SET_STATE_COMMITMENT: \"setstate_commitment\",\n  SETUP_COMMITMENT: \"setup_commitment\",\n  STATE_PROGRESSED_EVENT: \"state_progressed_event\",\n  STORE: \"STORE\",\n  STORE_SCHEMA_VERSION: \"version\",\n  WITHDRAWAL_COMMITMENT: \"withdrawal_commitment\",\n} as const"
 		},
 		{
-			"id": 442,
-			"name": "toUtf8Bytes",
-			"kind": 32,
-			"kindString": "Variable",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"sources": [
-				{
-					"fileName": "modules/store/src/pisaClient.ts",
-					"line": 6,
-					"character": 49
-				}
-			],
-			"type": {
-				"type": "reference",
-				"name": "toUtf8Bytes"
-			}
-		},
-		{
-			"id": 443,
-			"name": "toUtf8String",
-			"kind": 32,
-			"kindString": "Variable",
-			"flags": {
-				"isExported": true,
-				"isExternal": true
-			},
-			"sources": [
-				{
-					"fileName": "modules/store/src/pisaClient.ts",
-					"line": 6,
-					"character": 63
-				}
-			],
-			"type": {
-				"type": "reference",
-				"name": "toUtf8String"
-			}
-		},
-		{
-			"id": 444,
+			"id": 418,
 			"name": "getAsyncStore",
 			"kind": 64,
 			"kindString": "Function",
@@ -6792,7 +6506,7 @@
 			},
 			"signatures": [
 				{
-					"id": 445,
+					"id": 419,
 					"name": "getAsyncStore",
 					"kind": 4096,
 					"kindString": "Call signature",
@@ -6801,7 +6515,7 @@
 					},
 					"parameters": [
 						{
-							"id": 446,
+							"id": 420,
 							"name": "storage",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -6815,7 +6529,7 @@
 							}
 						},
 						{
-							"id": 447,
+							"id": 421,
 							"name": "opts",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -6839,213 +6553,13 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/index.ts",
-					"line": 21,
+					"line": 16,
 					"character": 26
 				}
 			]
 		},
 		{
-			"id": 409,
-			"name": "getConnextClientDataInitParams",
-			"kind": 64,
-			"kindString": "Function",
-			"flags": {
-				"isExported": true,
-				"isExternal": true,
-				"isConst": true
-			},
-			"signatures": [
-				{
-					"id": 410,
-					"name": "getConnextClientDataInitParams",
-					"kind": 4096,
-					"kindString": "Call signature",
-					"flags": {
-						"isExported": true
-					},
-					"parameters": [
-						{
-							"id": 411,
-							"name": "dialect",
-							"kind": 32768,
-							"kindString": "Parameter",
-							"flags": {
-								"isExported": true
-							},
-							"type": {
-								"type": "reference",
-								"id": 408,
-								"name": "SupportedDialects"
-							}
-						}
-					],
-					"type": {
-						"type": "reflection",
-						"declaration": {
-							"id": 412,
-							"name": "__type",
-							"kind": 65536,
-							"kindString": "Type literal",
-							"flags": {
-								"isExported": true
-							},
-							"children": [
-								{
-									"id": 413,
-									"name": "key",
-									"kind": 2097152,
-									"kindString": "Object literal",
-									"flags": {
-										"isExported": true,
-										"isExternal": true
-									},
-									"children": [
-										{
-											"id": 415,
-											"name": "primaryKey",
-											"kind": 32,
-											"kindString": "Variable",
-											"flags": {
-												"isExported": true,
-												"isExternal": true
-											},
-											"sources": [
-												{
-													"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-													"line": 18,
-													"character": 16
-												}
-											],
-											"type": {
-												"type": "intrinsic",
-												"name": "boolean"
-											},
-											"defaultValue": "true"
-										},
-										{
-											"id": 414,
-											"name": "type",
-											"kind": 32,
-											"kindString": "Variable",
-											"flags": {
-												"isExported": true,
-												"isExternal": true
-											},
-											"sources": [
-												{
-													"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-													"line": 17,
-													"character": 10
-												}
-											],
-											"type": {
-												"type": "reference",
-												"name": "StringDataType"
-											},
-											"defaultValue": "new DataTypes.STRING(1024)"
-										}
-									],
-									"groups": [
-										{
-											"title": "Variables",
-											"kind": 32,
-											"children": [
-												415,
-												414
-											]
-										}
-									],
-									"sources": [
-										{
-											"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-											"line": 16,
-											"character": 7
-										}
-									],
-									"type": {
-										"type": "intrinsic",
-										"name": "object"
-									}
-								},
-								{
-									"id": 416,
-									"name": "value",
-									"kind": 2097152,
-									"kindString": "Object literal",
-									"flags": {
-										"isExported": true,
-										"isExternal": true
-									},
-									"children": [
-										{
-											"id": 417,
-											"name": "type",
-											"kind": 32,
-											"kindString": "Variable",
-											"flags": {
-												"isExported": true,
-												"isExternal": true
-											},
-											"sources": [
-												{
-													"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-													"line": 21,
-													"character": 10
-												}
-											],
-											"type": {
-												"type": "reference",
-												"name": "AbstractDataTypeConstructor"
-											},
-											"defaultValue": "valueDataType"
-										}
-									],
-									"groups": [
-										{
-											"title": "Variables",
-											"kind": 32,
-											"children": [
-												417
-											]
-										}
-									],
-									"sources": [
-										{
-											"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-											"line": 20,
-											"character": 9
-										}
-									],
-									"type": {
-										"type": "intrinsic",
-										"name": "object"
-									}
-								}
-							],
-							"groups": [
-								{
-									"title": "Object literals",
-									"kind": 2097152,
-									"children": [
-										413,
-										416
-									]
-								}
-							]
-						}
-					}
-				}
-			],
-			"sources": [
-				{
-					"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
-					"line": 10,
-					"character": 36
-				}
-			]
-		},
-		{
-			"id": 448,
+			"id": 422,
 			"name": "getFileStore",
 			"kind": 64,
 			"kindString": "Function",
@@ -7055,7 +6569,7 @@
 			},
 			"signatures": [
 				{
-					"id": 449,
+					"id": 423,
 					"name": "getFileStore",
 					"kind": 4096,
 					"kindString": "Call signature",
@@ -7064,7 +6578,7 @@
 					},
 					"parameters": [
 						{
-							"id": 450,
+							"id": 424,
 							"name": "fileDir",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7077,7 +6591,7 @@
 							}
 						},
 						{
-							"id": 451,
+							"id": 425,
 							"name": "opts",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7101,13 +6615,13 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/index.ts",
-					"line": 31,
+					"line": 19,
 					"character": 25
 				}
 			]
 		},
 		{
-			"id": 452,
+			"id": 426,
 			"name": "getLocalStore",
 			"kind": 64,
 			"kindString": "Function",
@@ -7117,7 +6631,7 @@
 			},
 			"signatures": [
 				{
-					"id": 453,
+					"id": 427,
 					"name": "getLocalStore",
 					"kind": 4096,
 					"kindString": "Call signature",
@@ -7126,7 +6640,7 @@
 					},
 					"parameters": [
 						{
-							"id": 454,
+							"id": 428,
 							"name": "opts",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7150,13 +6664,13 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/index.ts",
-					"line": 44,
+					"line": 29,
 					"character": 26
 				}
 			]
 		},
 		{
-			"id": 455,
+			"id": 429,
 			"name": "getMemoryStore",
 			"kind": 64,
 			"kindString": "Function",
@@ -7166,7 +6680,7 @@
 			},
 			"signatures": [
 				{
-					"id": 456,
+					"id": 430,
 					"name": "getMemoryStore",
 					"kind": 4096,
 					"kindString": "Call signature",
@@ -7175,7 +6689,7 @@
 					},
 					"parameters": [
 						{
-							"id": 457,
+							"id": 431,
 							"name": "opts",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7199,13 +6713,13 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/index.ts",
-					"line": 53,
+					"line": 32,
 					"character": 27
 				}
 			]
 		},
 		{
-			"id": 458,
+			"id": 432,
 			"name": "getPostgresStore",
 			"kind": 64,
 			"kindString": "Function",
@@ -7215,7 +6729,7 @@
 			},
 			"signatures": [
 				{
-					"id": 459,
+					"id": 433,
 					"name": "getPostgresStore",
 					"kind": 4096,
 					"kindString": "Call signature",
@@ -7224,7 +6738,7 @@
 					},
 					"parameters": [
 						{
-							"id": 460,
+							"id": 434,
 							"name": "connection",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7246,7 +6760,7 @@
 							}
 						},
 						{
-							"id": 461,
+							"id": 435,
 							"name": "opts",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7270,13 +6784,70 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/index.ts",
-					"line": 63,
+					"line": 42,
 					"character": 29
 				}
 			]
 		},
 		{
-			"id": 276,
+			"id": 415,
+			"name": "getSequelizeModelDefinitionData",
+			"kind": 64,
+			"kindString": "Function",
+			"flags": {
+				"isExported": true,
+				"isExternal": true,
+				"isConst": true
+			},
+			"comment": {
+				"shortText": "Get data required to create Sequelize model. This data will be passed into the sequelize.define()\nfuntion along with the table name.",
+				"returns": "model: ModelAttributes\n"
+			},
+			"signatures": [
+				{
+					"id": 416,
+					"name": "getSequelizeModelDefinitionData",
+					"kind": 4096,
+					"kindString": "Call signature",
+					"flags": {
+						"isExported": true
+					},
+					"comment": {
+						"shortText": "Get data required to create Sequelize model. This data will be passed into the sequelize.define()\nfuntion along with the table name.",
+						"returns": "model: ModelAttributes\n"
+					},
+					"parameters": [
+						{
+							"id": 417,
+							"name": "dialect",
+							"kind": 32768,
+							"kindString": "Parameter",
+							"flags": {
+								"isExported": true
+							},
+							"type": {
+								"type": "reference",
+								"id": 414,
+								"name": "SupportedDialects"
+							}
+						}
+					],
+					"type": {
+						"type": "reference",
+						"name": "ModelAttributes"
+					}
+				}
+			],
+			"sources": [
+				{
+					"fileName": "modules/store/src/wrappers/sequelizeStorage.ts",
+					"line": 17,
+					"character": 44
+				}
+			]
+		},
+		{
+			"id": 282,
 			"name": "properlyConvertChannelNullVals",
 			"kind": 64,
 			"kindString": "Function",
@@ -7287,7 +6858,7 @@
 			},
 			"signatures": [
 				{
-					"id": 277,
+					"id": 283,
 					"name": "properlyConvertChannelNullVals",
 					"kind": 4096,
 					"kindString": "Call signature",
@@ -7296,7 +6867,7 @@
 					},
 					"parameters": [
 						{
-							"id": 278,
+							"id": 284,
 							"name": "json",
 							"kind": 32768,
 							"kindString": "Parameter",
@@ -7318,7 +6889,7 @@
 			"sources": [
 				{
 					"fileName": "modules/store/src/store.ts",
-					"line": 32,
+					"line": 31,
 					"character": 36
 				}
 			]
@@ -7623,18 +7194,17 @@
 			"title": "Classes",
 			"kind": 128,
 			"children": [
-				418,
 				80,
-				282,
-				335,
-				366
+				288,
+				341,
+				372
 			]
 		},
 		{
 			"title": "Interfaces",
 			"kind": 256,
 			"children": [
-				279,
+				285,
 				30,
 				41
 			]
@@ -7643,10 +7213,10 @@
 			"title": "Type aliases",
 			"kind": 4194304,
 			"children": [
-				331,
+				337,
 				65,
 				79,
-				408
+				414
 			]
 		},
 		{
@@ -7654,27 +7224,21 @@
 			"kind": 32,
 			"children": [
 				72,
-				274,
-				439,
-				275,
-				440,
-				441,
-				10,
-				442,
-				443
+				281,
+				10
 			]
 		},
 		{
 			"title": "Functions",
 			"kind": 64,
 			"children": [
-				444,
-				409,
-				448,
-				452,
-				455,
-				458,
-				276
+				418,
+				422,
+				426,
+				429,
+				432,
+				415,
+				282
 			]
 		},
 		{

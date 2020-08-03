@@ -3,11 +3,11 @@ import { ContractAddresses } from "@connext/types";
 import { getRandomAddress, toBN } from "@connext/utils";
 import { Contract, Wallet, constants, utils } from "ethers";
 
+import { expect } from "../assertions";
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
-
-import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
+import { getChainId, getContractAddresses } from "../utils";
 
 const { WeiPerEther, AddressZero } = constants;
 const { getAddress } = utils;
@@ -20,17 +20,9 @@ let wallet: Wallet;
 let contracts: ContractAddresses;
 let appRegistry: Contract;
 
-expect.extend({ toBeEq });
-
-beforeAll(async () => {
+before(async () => {
   wallet = global["wallet"];
-  contracts = global["contracts"];
-  if (!contracts) {
-    throw new Error(
-      `Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`,
-    );
-  }
-  console.log(``);
+  contracts = getContractAddresses();
   appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
 });
 
@@ -38,19 +30,20 @@ beforeAll(async () => {
  * @summary Setup a StateChannel then set state on ETH Free Balance
  */
 describe("set state on free balance", () => {
-  it("should have the correct versionNumber", async (done) => {
+  it("should have the correct versionNumber", async () => {
     const [initiatorNode, responderNode] = getRandomChannelSigners(2);
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
       contracts.IdentityApp,
       contracts,
       getAddress(getRandomAddress()),
+      getChainId(),
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
     );
 
-    expect(stateChannel.userIdentifiers[0]).toEqual(initiatorNode.publicIdentifier);
-    expect(stateChannel.userIdentifiers[1]).toEqual(responderNode.publicIdentifier);
+    expect(stateChannel.userIdentifiers[0]).to.eq(initiatorNode.publicIdentifier);
+    expect(stateChannel.userIdentifiers[1]).to.eq(responderNode.publicIdentifier);
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(
@@ -84,8 +77,6 @@ describe("set state on free balance", () => {
 
     const contractAppState = await appRegistry.appChallenges(freeBalanceETH.identityHash);
 
-    expect(contractAppState.versionNumber).toBeEq(setStateCommitment.versionNumber);
-
-    done();
+    expect(contractAppState.versionNumber).to.eq(setStateCommitment.versionNumber);
   });
 });

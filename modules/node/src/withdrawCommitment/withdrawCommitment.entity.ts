@@ -2,18 +2,14 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { BigNumber } from "ethers";
 
 import { Channel } from "../channel/channel.entity";
+import { transformBN } from "../utils";
 
 @Entity()
 export class WithdrawCommitment {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   value!: BigNumber;
 
   @Column("text")

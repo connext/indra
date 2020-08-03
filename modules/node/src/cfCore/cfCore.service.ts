@@ -1,5 +1,9 @@
 import { CFCore } from "@connext/cf-core";
-import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
+import {
+  DEFAULT_APP_TIMEOUT,
+  WithdrawCommitment,
+  AppRegistry as RegistryOfApps,
+} from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
@@ -15,7 +19,10 @@ import {
   EventName,
   CF_METHOD_TIMEOUT,
   ProtocolEventMessage,
+  DefaultApp,
+  Address,
   SupportedApplicationNames,
+  AppRegistry,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -24,23 +31,22 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { BigNumber, constants, utils } from "ethers";
+import { MessagingService } from "@connext/messaging";
+import { BigNumber, constants } from "ethers";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { AppType } from "../appInstance/appInstance.entity";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { MessagingService } from "@connext/messaging";
+import { MAX_RETRIES, KNOWN_ERRORS } from "../onchainTransactions/onchainTransaction.service";
 
 const { Zero } = constants;
 
-Injectable();
+@Injectable()
 export class CFCoreService {
+  private appRegistryMap: Map<string, DefaultApp>;
   public emitter: TypedEmitter;
   constructor(
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
@@ -48,8 +54,6 @@ export class CFCoreService {
     private readonly configService: ConfigService,
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly cfCoreRepository: CFCoreRecordRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.emitter = new TypedEmitter();
     this.cfCore = cfCore;
@@ -113,12 +117,16 @@ export class CFCoreService {
     return getStateChannelRes.result.result;
   }
 
-  async createChannel(counterpartyIdentifier: string): Promise<MethodResults.CreateChannel> {
+  async createChannel(
+    counterpartyIdentifier: string,
+    chainId: number,
+  ): Promise<MethodResults.CreateChannel> {
     const params = {
       id: Date.now(),
       methodName: MethodNames.chan_create,
       parameters: {
         owners: [this.cfCore.publicIdentifier, counterpartyIdentifier],
+        chainId,
       } as MethodParams.CreateChannel,
     };
     this.logCfCoreMethodStart(MethodNames.chan_create, params.parameters);
@@ -136,9 +144,30 @@ export class CFCoreService {
       } as MethodParams.DeployStateDepositHolder,
     };
     this.logCfCoreMethodStart(MethodNames.chan_deployStateDepositHolder, params.parameters);
-    const deployRes = await this.cfCore.rpcRouter.dispatch(params);
-    this.logCfCoreMethodResult(MethodNames.chan_deployStateDepositHolder, deployRes.result.result);
-    return deployRes.result.result as MethodResults.DeployStateDepositHolder;
+    const errors: { [k: number]: string } = [];
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const deployRes = await this.cfCore.rpcRouter.dispatch(params);
+        this.logCfCoreMethodResult(
+          MethodNames.chan_deployStateDepositHolder,
+          deployRes.result.result,
+        );
+        return deployRes.result.result as MethodResults.DeployStateDepositHolder;
+      } catch (e) {
+        errors[attempt] = e.message;
+        const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
+        if (!knownErr) {
+          this.log.error(
+            `Failed to deploy multisig with unknown error: ${e.message}. Should use onchain transaction service for this`,
+          );
+          throw new Error(e.stack || e.message);
+        }
+        this.log.warn(
+          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying multisig deployment. Use onchain tx service.`,
+        );
+      }
+    }
+    throw new Error(`Failed to deploy multisig (errors indexed by attempt): ${stringify(errors)}`);
   }
 
   async createWithdrawCommitment(
@@ -148,9 +177,7 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses(
-      (await this.configService.getEthNetwork()).chainId.toString(),
-    );
+    const contractAddresses = await this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
@@ -186,14 +213,10 @@ export class CFCoreService {
     initiatorDepositAssetId: AssetId,
     responderDeposit: BigNumber,
     responderDepositAssetId: AssetId,
-    app: string,
+    appInfo: DefaultApp,
     meta: object = {},
     stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
-    const network = await this.configService.getEthNetwork();
-
-    const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
-
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
     const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
@@ -224,7 +247,7 @@ export class CFCoreService {
     };
     this.log.info(`Attempting to install ${appInfo.name} in channel ${channel.multisigAddress}`);
 
-    let proposeRes;
+    let proposeRes: MethodResults.ProposeInstall;
     try {
       proposeRes = await this.proposeInstallApp(params);
     } catch (err) {
@@ -304,13 +327,6 @@ export class CFCoreService {
       parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_rejectInstall, rejectRes.result.result);
-    // update app status
-    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
-    if (!rejectedApp) {
-      throw new Error(`No app found after being rejected for app ${appIdentityHash}`);
-    }
-    rejectedApp.type = AppType.REJECTED;
-    await this.appInstanceRepository.save(rejectedApp);
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
@@ -342,11 +358,13 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
     action?: AppAction,
+    protocolMeta?: any,
   ): Promise<MethodResults.Uninstall> {
     const parameters = {
       appIdentityHash,
       multisigAddress,
       action,
+      protocolMeta,
     } as MethodParams.Uninstall;
     this.logCfCoreMethodStart(MethodNames.chan_uninstall, parameters);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
@@ -356,6 +374,12 @@ export class CFCoreService {
     });
 
     this.logCfCoreMethodResult(MethodNames.chan_uninstall, uninstallResponse.result.result);
+    // TODO: this is only here for channelProvider, fix this eventually
+    const uninstallSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.uninstall`;
+    await this.messagingService.publish(uninstallSubject, {
+      ...uninstallResponse.result.result,
+      protocolMeta,
+    });
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
 
@@ -421,17 +445,25 @@ export class CFCoreService {
     return appInstance as AppInstanceJson;
   }
 
+  async getAppInstancesByAppDefinition(
+    multisigAddress: Address,
+    appDefinition: Address,
+  ): Promise<AppInstanceJson[]> {
+    const apps = await this.getAppInstances(multisigAddress);
+    return apps.filter((app) => app.appDefinition === appDefinition);
+  }
+
   async getAppInstancesByAppName(
-    multisigAddress: string,
+    multisigAddress: Address,
     appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
-    const network = await this.configService.getEthNetwork();
-    const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-      appName,
-      network.chainId,
-    );
+    const { data: channel } = await this.getStateChannel(multisigAddress);
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter((app) => app.appDefinition === appRegistry.appDefinitionAddress);
+    return apps.filter(
+      (app) =>
+        app.appDefinition ===
+        this.getAppInfoByNameAndChain(appName, channel.chainId).appDefinitionAddress,
+    );
   }
 
   /**
@@ -452,6 +484,54 @@ export class CFCoreService {
       // parrot event with typed emitter
       this.emitter.post(event, data.data);
       return callback(data);
+    });
+  }
+
+  public getAppInfoByAppDefinitionAddress(appDefinition: string): DefaultApp {
+    return this.appRegistryMap.get(appDefinition);
+  }
+
+  public getAppInfoByDefinition(addr: Address): DefaultApp {
+    return this.appRegistryMap.get(addr);
+  }
+
+  public getAppInfoByNameAndChain(name: SupportedApplicationNames, chainId: number): DefaultApp {
+    return this.appRegistryMap.get(`${name}:${chainId}`);
+  }
+
+  public getAppRegistry(chainId: number): AppRegistry {
+    return Object.values(SupportedApplicationNames).map((name) =>
+      this.getAppInfoByNameAndChain(name, chainId),
+    );
+  }
+
+  async onModuleInit() {
+    this.appRegistryMap = new Map();
+    this.configService.getSupportedChains().forEach((chainId) => {
+      const contractAddresses = this.configService.getContractAddresses(chainId);
+      RegistryOfApps.forEach((app) => {
+        const appDefinitionAddress = contractAddresses[app.name];
+        this.log.info(`Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`);
+        // set both name and app definition as keys for better lookup
+        this.appRegistryMap.set(appDefinitionAddress, {
+          actionEncoding: app.actionEncoding,
+          appDefinitionAddress: appDefinitionAddress,
+          name: app.name,
+          chainId: chainId,
+          outcomeType: app.outcomeType,
+          stateEncoding: app.stateEncoding,
+          allowNodeInstall: app.allowNodeInstall,
+        } as DefaultApp);
+        this.appRegistryMap.set(`${app.name}:${chainId}`, {
+          actionEncoding: app.actionEncoding,
+          appDefinitionAddress: appDefinitionAddress,
+          name: app.name,
+          chainId: chainId,
+          outcomeType: app.outcomeType,
+          stateEncoding: app.stateEncoding,
+          allowNodeInstall: app.allowNodeInstall,
+        } as DefaultApp);
+      });
     });
   }
 }

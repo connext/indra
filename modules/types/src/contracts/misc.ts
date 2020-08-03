@@ -4,14 +4,17 @@ import { enumify, tidy } from "../utils";
 ////////////////////////////////////////
 // Generic contract ops & network config
 
+export type AddressBookEntry = {
+  address: Address;
+  constructorArgs?: Array<{ name: string; value: string }>;
+  txHash?: string;
+  creationCodeHash?: string;
+  runtimeCodeHash?: string;
+};
+
 export type AddressBook = {
   [chainId: string]: {
-    [contractName: string]: {
-      address: Address;
-      txHash?: string;
-      creationCodeHash?: string;
-      runtimeCodeHash?: string;
-    };
+    [contractName: string]: AddressBookEntry;
   };
 };
 
@@ -38,6 +41,7 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   HashLockTransferApp?: Address;
   IdentityApp: Address;
   MultiAssetMultiPartyCoinTransferInterpreter: Address;
+  GraphSignedTransferApp?: Address;
   SimpleLinkedTransferApp?: Address;
   SimpleSignedTransferApp?: Address;
   SimpleTwoPartySwapApp?: Address;
@@ -45,7 +49,12 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   TimeLockedPassThrough: Address;
   Token?: Address;
   TwoPartyFixedOutcomeInterpreter: Address;
+  WithdrawInterpreter: Address;
 };
+
+export interface NetworkContexts {
+  [chainId: number]: NetworkContext;
+}
 
 export interface NetworkContext {
   contractAddresses: ContractAddresses;
@@ -64,10 +73,16 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
+  "WithdrawInterpreter",
 ];
 
 ////////////////////////////////////////
 // Mixins, etc
+
+export const singleAssetSinglePartyCoinTransferEncoding = tidy(`tuple(
+  address to,
+  uint256 amount
+)`);
 
 export const singleAssetTwoPartyCoinTransferEncoding = tidy(`tuple(
   address to,

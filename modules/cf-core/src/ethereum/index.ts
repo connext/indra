@@ -4,48 +4,48 @@ import {
   SetStateCommitment,
   SetupCommitment,
 } from "@connext/contracts";
-import { OutcomeType } from "@connext/types";
+import { OutcomeType, NetworkContext } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { constants } from "ethers";
 
-import { Context } from "../types";
 import { StateChannel, AppInstance } from "../models";
+import { Context } from "../types";
 
 const { AddressZero } = constants;
 
 const getConditionalTransactionCommitment = (
-  context: Context,
+  network: NetworkContext,
   stateChannel: StateChannel,
   appInstance: AppInstance,
 ): ConditionalTransactionCommitment =>
   new ConditionalTransactionCommitment(
-    context.network.contractAddresses,
+    network.contractAddresses,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,
     appInstance.identityHash,
     stateChannel.freeBalance.identityHash,
     appInstance.outcomeType === OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-      ? context.network.contractAddresses.MultiAssetMultiPartyCoinTransferInterpreter
+      ? network.contractAddresses.MultiAssetMultiPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER
-      ? context.network.contractAddresses.SingleAssetTwoPartyCoinTransferInterpreter
+      ? network.contractAddresses.SingleAssetTwoPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
-      ? context.network.contractAddresses.TwoPartyFixedOutcomeInterpreter
+      ? network.contractAddresses.TwoPartyFixedOutcomeInterpreter
       : AddressZero,
     appInstance.encodedInterpreterParams,
   );
 
-const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
+const getSetStateCommitment = (network: NetworkContext, appInstance: AppInstance) =>
   new SetStateCommitment(
-    context.network.contractAddresses.ChallengeRegistry,
+    network.contractAddresses.ChallengeRegistry,
     appInstance.identity,
     appInstance.hashOfLatestState,
     toBN(appInstance.versionNumber),
     toBN(appInstance.stateTimeout),
   );
 
-const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>
+const getSetupCommitment = (network: NetworkContext, stateChannel: StateChannel): SetupCommitment =>
   new SetupCommitment(
-    context.network.contractAddresses,
+    network.contractAddresses,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,
     stateChannel.freeBalance.identity,

@@ -28,20 +28,38 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: BigNumber,
     public readonly stateTimeout: BigNumber,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
+    public transactionData: string = "",
     private initiatorSignature?: string,
     private responderSignature?: string,
-  ) {}
+  ) {
+    this.transactionData = this.transactionData || this.getTransactionData();
+  }
 
   get signatures(): string[] {
     return [this.initiatorSignature!, this.responderSignature!];
   }
 
   public async addSignatures(
-    initiatorSignature: string | undefined,
-    responderSignature: string | undefined,
+    signature1: string | undefined,
+    signature2: string | undefined = undefined,
   ): Promise<void> {
-    this.initiatorSignature = initiatorSignature;
-    this.responderSignature = responderSignature;
+    for (const sig of [signature1, signature2]) {
+      if (!sig) {
+        continue;
+      }
+      const recovered = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
+      if (recovered === this.appIdentity.participants[0]) {
+        this.initiatorSignature = sig;
+      } else if (recovered === this.appIdentity.participants[1]) {
+        this.responderSignature = sig;
+      } else {
+        throw new Error(
+          `Invalid signer detected. Got ${recovered}, expected one of: ${this.appIdentity.participants}`,
+        );
+      }
+    }
+
+    this.transactionData = this.getTransactionData();
   }
 
   set signatures(sigs: string[]) {
@@ -65,32 +83,38 @@ export class SetStateCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
+  private getTransactionData(): string {
+    return iface.encodeFunctionData("setState", [
+      this.appIdentity,
+      this.getSignedAppChallengeUpdate(),
+    ]);
+  }
+
   public async getSignedTransaction(): Promise<MinimalTransaction> {
     await this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.encodeFunctionData("setState", [
-        this.appIdentity,
-        await this.getSignedAppChallengeUpdate(),
-      ]),
+      data: this.transactionData,
     };
   }
 
   public toJson(): SetStateCommitmentJSON {
-    return deBigNumberifyJson({
+    return deBigNumberifyJson<SetStateCommitmentJSON>({
       appIdentityHash: this.appIdentityHash,
       appIdentity: this.appIdentity,
       appStateHash: this.appStateHash,
       challengeRegistryAddress: this.challengeRegistryAddress,
       signatures: this.signatures,
       stateTimeout: this.stateTimeout,
+      transactionData: this.transactionData,
       versionNumber: this.versionNumber,
     });
   }
 
   public static fromJson(json: SetStateCommitmentJSON) {
     const bnJson = bigNumberifyJson(json);
+    const sigs = bnJson.signatures || [bnJson["initiatorSignature"], bnJson["responderSignature"]];
     return new SetStateCommitment(
       bnJson.challengeRegistryAddress,
       bnJson.appIdentity,
@@ -98,13 +122,13 @@ export class SetStateCommitment implements EthereumCommitment {
       bnJson.versionNumber,
       bnJson.stateTimeout,
       bnJson.appIdentityHash,
-      bnJson.signatures[0],
-      bnJson.signatures[1],
+      bnJson.transactionData,
+      sigs[0],
+      sigs[1],
     );
   }
 
-  public async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
-    await this.assertSignatures();
+  public getSignedAppChallengeUpdate(): SignedAppChallengeUpdate {
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
@@ -115,7 +139,7 @@ export class SetStateCommitment implements EthereumCommitment {
     };
   }
 
-  private async assertSignatures() {
+  public async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }

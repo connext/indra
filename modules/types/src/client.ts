@@ -19,6 +19,7 @@ import { AppAction } from ".";
 export interface ClientOptions {
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
+  chainId?: number;
   signer?: string | IChannelSigner;
   store?: IStoreService;
   logger?: ILogger;
@@ -27,6 +28,8 @@ export interface ClientOptions {
   messaging?: IMessagingService;
   nodeUrl?: string; // node's HTTP endpoint
   messagingUrl?: string; // optional override for messaging endpoint
+  skipSync?: boolean;
+  skipInitStore?: boolean;
 }
 
 export interface IConnextClient {
@@ -37,6 +40,7 @@ export interface IConnextClient {
   config: NodeResponses.GetConfig;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
+  chainId: number;
   signerAddress: Address;
   multisigAddress: Address;
   nodeIdentifier: PublicIdentifier;
@@ -104,7 +108,8 @@ export interface IConnextClient {
     lockHash: Bytes32,
     assetId?: Address,
   ): Promise<NodeResponses.GetHashLockTransfer>;
-  getSignedTransfer(lockHash: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
+  getSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
+  getGraphTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   getAppRegistry(
     appDetails?:
       | {

@@ -17,7 +17,11 @@ export class RpcRouter {
 
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
     if (!methodImplementations[rpc.methodName]) {
-      throw new Error(`Cannot execute ${rpc.methodName}: no implementation. Available methods: ${Object.keys(methodImplementations)}`);
+      throw new Error(
+        `Cannot execute ${rpc.methodName}: no implementation. Available methods: ${Object.keys(
+          methodImplementations,
+        )}`,
+      );
     }
 
     const start = Date.now();

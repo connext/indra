@@ -1,4 +1,4 @@
-import { DataTypes, Op, Sequelize } from "sequelize";
+import { DataTypes, Op, Sequelize, Transaction, ModelAttributes } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
@@ -7,7 +7,14 @@ import { KeyValueStorage } from "../types";
 
 type SupportedDialects = "postgres" | "sqlite";
 
-const getConnextClientDataInitParams = (dialect: SupportedDialects) => {
+/**
+ * Get data required to create Sequelize model. This data will be passed into the sequelize.define()
+ * funtion along with the table name.
+ *
+ * @param dialect: SupportedDialects Supported database dialect
+ * @returns model: ModelAttributes
+ */
+export const getSequelizeModelDefinitionData = (dialect: SupportedDialects): ModelAttributes => {
   let valueDataType = DataTypes.JSON;
   if (dialect === "postgres") {
     valueDataType = DataTypes.JSONB;
@@ -49,14 +56,17 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
           this.shouldUseTransaction = false;
         }
       }
-      this.sequelize = new Sequelize(_sequelize as string, { logging: false });
+      this.sequelize = new Sequelize(_sequelize as string, {
+        logging: false,
+        isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
+      });
     } else {
       this.sequelize = _sequelize as Sequelize;
     }
 
     this.ConnextClientData = this.sequelize.define(
       this.tableName,
-      getConnextClientDataInitParams(this.sequelize.getDialect() as SupportedDialects),
+      getSequelizeModelDefinitionData(this.sequelize.getDialect() as SupportedDialects),
     );
   }
 

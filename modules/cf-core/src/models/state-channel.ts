@@ -36,6 +36,7 @@ const ERRORS = {
 export class StateChannel {
   constructor(
     public readonly multisigAddress: string,
+    public readonly chainId: number,
     public readonly addresses: CriticalStateChannelAddresses,
     public readonly initiatorIdentifier: string,
     public readonly responderIdentifier: string,
@@ -197,6 +198,7 @@ export class StateChannel {
 
   private build = (args: {
     multisigAddress?: string;
+    chainId?: number;
     addresses?: CriticalStateChannelAddresses;
     initiatorIdentifier?: string;
     responderIdentifier?: string;
@@ -208,6 +210,7 @@ export class StateChannel {
   }) => {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
+      args.chainId || this.chainId,
       args.addresses || this.addresses,
       args.initiatorIdentifier || this.initiatorIdentifier,
       args.responderIdentifier || this.responderIdentifier,
@@ -254,12 +257,14 @@ export class StateChannel {
     freeBalanceAppAddress: string,
     addresses: CriticalStateChannelAddresses,
     multisigAddress: string,
+    chainId: number,
     initiatorId: PublicIdentifier,
     responderId: PublicIdentifier,
     freeBalanceTimeout?: number,
   ) {
     return new StateChannel(
       multisigAddress,
+      chainId,
       addresses,
       initiatorId,
       responderId,
@@ -278,12 +283,14 @@ export class StateChannel {
 
   public static createEmptyChannel(
     multisigAddress: string,
+    chainId: number,
     addresses: CriticalStateChannelAddresses,
     initiatorId: string,
     responderId: string,
   ) {
     return new StateChannel(
       multisigAddress,
+      chainId,
       addresses,
       initiatorId,
       responderId,
@@ -314,7 +321,9 @@ export class StateChannel {
       this.proposedAppInstances.entries(),
     );
 
-    proposedAppInstances.delete(appIdentityHash);
+    if (proposedAppInstances.has(appIdentityHash)) {
+      proposedAppInstances.delete(appIdentityHash);
+    }
 
     return this.build({
       proposedAppInstances,
@@ -356,15 +365,6 @@ export class StateChannel {
   }
 
   public installApp(appInstance: AppInstance, tokenIndexedDecrements: TokenIndexedCoinTransferMap) {
-    // Verify appInstance has expected signingkeys
-    const proposal = this.proposedAppInstances.has(appInstance.identityHash)
-      ? this.proposedAppInstances.get(appInstance.identityHash)
-      : undefined;
-
-    if (!proposal) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appInstance.identityHash));
-    }
-
     /// Add modified FB and new AppInstance to appInstances
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
@@ -402,8 +402,9 @@ export class StateChannel {
   }
 
   toJson(): StateChannelJSON {
-    return deBigNumberifyJson({
+    return deBigNumberifyJson<StateChannelJSON>({
       multisigAddress: this.multisigAddress,
+      chainId: this.chainId,
       addresses: this.addresses,
       userIdentifiers: this.userIdentifiers,
       proposedAppInstances: [...this.proposedAppInstances.entries()],
@@ -440,6 +441,7 @@ export class StateChannel {
     try {
       return new StateChannel(
         json.multisigAddress,
+        json.chainId,
         json.addresses,
         json.userIdentifiers[0], // initiator
         json.userIdentifiers[1], // responder

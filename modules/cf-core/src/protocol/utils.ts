@@ -1,16 +1,33 @@
+import { artifacts } from "@connext/contracts";
 import {
+  Address,
+  AssetId,
+  ContractAddresses,
+  HexString,
   ILoggerService,
   IStoreService,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
+  NetworkContext,
   OutcomeType,
+  PureActionApps,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
-  AssetId,
+  ProtocolMessageData,
+  ProtocolName,
+  PublicIdentifier,
+  CHANNEL_PROTOCOL_VERSION,
+  ProtocolParam,
+  ProtocolMessage,
 } from "@connext/types";
-import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
-import { BigNumber, providers, utils, constants } from "ethers";
+import {
+  logTime,
+  recoverAddressFromChannelMessage,
+  getAddressFromAssetId,
+  stringify,
+} from "@connext/utils";
+import { BigNumber, utils, constants } from "ethers";
 
 import {
   AppInstance,
@@ -24,6 +41,129 @@ import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, TWO_PARTY_OUTCOME_DIFFERENT_ASSETS 
 const { MaxUint256 } = constants;
 const { defaultAbiCoder, getAddress } = utils;
 
+export const parseProtocolMessage = (message?: ProtocolMessage): ProtocolMessage => {
+  const { data, type, from } = message || {};
+  const {
+    to,
+    protocol,
+    processID,
+    seq,
+    params,
+    error,
+    prevMessageReceived,
+    customData,
+    protocolVersion,
+  } = data || {};
+
+  // verify the correct protocol version
+  // FIXME: remove when types package is published
+  const toCompare = CHANNEL_PROTOCOL_VERSION || "1.0.0";
+  if (!protocolVersion || protocolVersion !== toCompare) {
+    throw new Error(
+      `Incorrect protocol version number detected. Got ${protocolVersion}, expected: ${toCompare}. Please update packages. Message payload: ${stringify(
+        data,
+      )}`,
+    );
+  }
+
+  // check that all mandatory fields are properly defined
+  const exists = (x: any) => x !== undefined && x !== null;
+  if (!exists(data) || !exists(type) || !exists(from)) {
+    throw new Error(
+      `Malformed message, missing one of the following fields: data, from, type. Message: ${stringify(
+        message,
+        false,
+        1,
+      )}`,
+    );
+  }
+
+  if (
+    !exists(to) ||
+    !exists(protocol) ||
+    !exists(processID) ||
+    !exists(seq) ||
+    !exists(params) ||
+    !exists(customData)
+  ) {
+    throw new Error(
+      `Malformed protocol message data, missing one of the following fields within the data object: to, protocol, processID, seq, params, customData. Message: ${stringify(
+        message?.data,
+        false,
+        1,
+      )}`,
+    );
+  }
+
+  return {
+    type: type!,
+    from: from!,
+    data: {
+      processID: processID!, // uuid
+      protocol: protocol!,
+      protocolVersion,
+      params: params!,
+      to: to!,
+      error,
+      seq: seq!,
+      // protocol responders should not send messages + error if the protocol
+      // timeout has elapsed during their execution. this edgecase
+      // is handled within the IO_SEND opcode for the final protocol message,
+      // and by default when using IO_SEND_AND_WAIT
+      prevMessageReceived,
+      // customData: Additional data which depends on the protocol (or even the specific message
+      // number in a protocol) lives here. Includes signatures
+      customData: customData!,
+    },
+  };
+};
+
+export const generateProtocolMessageData = (
+  to: PublicIdentifier,
+  protocol: ProtocolName,
+  processID: string,
+  seq: number,
+  params: ProtocolParam,
+  messageData: Partial<{
+    error: string;
+    prevMessageReceived: number;
+    customData: { [key: string]: any };
+  }> = {},
+): ProtocolMessageData => {
+  const { error, prevMessageReceived, customData } = messageData;
+  return {
+    processID, // uuid
+    protocol,
+    // FIXME: remove optional default after publishing
+    protocolVersion: CHANNEL_PROTOCOL_VERSION || "1.0.0",
+    params,
+    to,
+    error,
+    seq,
+    // protocol responders should not send messages + error if the protocol
+    // timeout has elapsed during their execution. this edgecase
+    // is handled within the IO_SEND opcode for the final protocol message,
+    // and by default when using IO_SEND_AND_WAIT
+    prevMessageReceived,
+    // customData: Additional data which depends on the protocol (or even the specific message
+    // number in a protocol) lives here. Includes signatures
+    customData: customData || {},
+  };
+};
+
+export const getPureBytecode = (
+  appDefinition: Address,
+  contractAddresses: ContractAddresses,
+): HexString | undefined => {
+  // If this app's action is pure, provide bytecode to use for faster in-memory evm calls
+  const appEntry = Object.entries(contractAddresses).find((entry) => entry[1] === appDefinition);
+  const bytecode =
+    appEntry && appEntry[0] && PureActionApps && PureActionApps.includes(appEntry[0])
+      ? artifacts[appEntry[0]].deployedBytecode
+      : undefined;
+  return bytecode;
+};
+
 export async function assertIsValidSignature(
   expectedSigner: string,
   commitmentHash?: string,
@@ -31,10 +171,18 @@ export async function assertIsValidSignature(
   loggingContext?: string,
 ): Promise<void> {
   if (typeof commitmentHash === "undefined") {
-    throw new Error("assertIsValidSignature received an undefined commitment");
+    throw new Error(
+      `assertIsValidSignature received an undefined commitment. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
+    );
   }
   if (typeof signature === "undefined") {
-    throw new Error("assertIsValidSignature received an undefined signature");
+    throw new Error(
+      `assertIsValidSignature received an undefined signature. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
+    );
   }
   // recoverAddressFromChannelMessage: 83 ms, hashToSign: 7 ms
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
@@ -66,7 +214,7 @@ export async function stateChannelClassFromStoreByMultisig(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: providers.JsonRpcProvider,
+  network: NetworkContext,
   encodedOutcomeOverride: string = "",
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
@@ -75,7 +223,10 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const checkpoint = Date.now();
   if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
     try {
-      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
+      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(
+        network.provider,
+        getPureBytecode(appInstance.appDefinition, network.contractAddresses),
+      );
     } catch (e) {
       throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
     }

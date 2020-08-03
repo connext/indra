@@ -1,7 +1,12 @@
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
+import { MAX_CHANNEL_APPS } from "./constants";
 
 export const NO_MULTISIG_IN_PARAMS = (params: any): string => {
+  return `No multisig address provided in params: ${stringify(params)}`;
+};
+
+export const NO_APP_IDENTITY_HASH_IN_PARAMS = (params: any): string => {
   return `No multisig address provided in params: ${stringify(params)}`;
 };
 
@@ -56,6 +61,9 @@ export const INVALID_MASTERCOPY_ADDRESS = (address: string): string =>
 
 export const NO_NETWORK_PROVIDER_CREATE2 =
   "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
+
+export const NO_NETWORK_PROVIDER_FOR_CHAIN_ID = (chainId: number): string =>
+  `Method needs access to an eth provider within the network context for chainId ${chainId}`;
 
 export const INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT = (
   address: string,
@@ -132,6 +140,8 @@ export const NULL_INITIAL_STATE_FOR_PROPOSAL =
 
 export const STATE_OBJECT_NOT_ENCODABLE =
   "The state object is not encodable by the AppInstance's state encoding";
+
+export const TOO_MANY_APPS_IN_CHANNEL = `Will not propose or install more than ${MAX_CHANNEL_APPS} apps`;
 
 export const TWO_PARTY_OUTCOME_DIFFERENT_ASSETS = (assetA: string, assetB: string): string =>
   `For a TWO_PARTY_FIXED_OUTCOME there cannot be two kinds of tokens deposited: ${assetA} and ${assetB}`;

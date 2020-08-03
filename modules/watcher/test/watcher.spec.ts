@@ -1,10 +1,7 @@
 import {
   JsonRpcProvider,
   WatcherEvents,
-  StateProgressedEventData,
   SetStateCommitmentJSON,
-  ChallengeUpdatedEventData,
-  ChallengeProgressedEventData,
   ChallengeProgressionFailedEventData,
   IStoreService,
 } from "@connext/types";
@@ -26,11 +23,20 @@ import {
 } from "./utils";
 
 import { Watcher } from "../src";
-import { ChannelSigner, getRandomAddress, ColorfulLogger, toBN } from "@connext/utils";
-import { initiateDispute, OutcomeSetResults } from "./utils/initiateDispute";
+import { ChannelSigner, getRandomAddress, toBN, ColorfulLogger } from "@connext/utils";
+import { initiateDispute } from "./utils/initiateDispute";
 import { cancelDispute } from "./utils/cancelDispute";
+import { waitForSetOutcome } from "./utils/setOutcome";
+import { waitForDisputeCompletion } from "./utils/completeDispute";
 
 const { One } = constants;
+
+const logger = new ColorfulLogger(
+  "WatcherTest",
+  parseInt(process.env.LOG_LEVEL || "0", 10),
+  true,
+  "T",
+);
 
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
@@ -42,16 +48,18 @@ describe("Watcher.init", () => {
 
   it("should be able to instantiate with a private key", async () => {
     const watcher = await Watcher.init({
-      signer: Wallet.createRandom().privateKey,
-      provider: provider.connection.url,
-      store: await getAndInitStore(),
       context: { ChallengeRegistry: getRandomAddress() } as any,
+      logger,
+      provider: provider.connection.url,
+      signer: Wallet.createRandom().privateKey,
+      store: await getAndInitStore(),
     });
     expect(watcher).to.be.instanceOf(Watcher);
   });
 
   it("should be able to instantiate with a ChannelSigner", async () => {
     const watcher = await Watcher.init({
+      logger,
       signer: new ChannelSigner(Wallet.createRandom().privateKey, provider.connection.url),
       provider: provider,
       store: await getAndInitStore(),
@@ -92,32 +100,32 @@ describe("Watcher.initiate", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      store,
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
 
   afterEach(async () => {
     await watcher.disable();
-    await store.clear();
   });
 
   it("should be able to initiate + complete a dispute with a double signed latest state", async () => {
-    const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = await initiateDispute(
-      app,
-      freeBalance,
+    await initiateDispute(app, freeBalance, watcher, store, networkContext);
+    await waitForSetOutcome(
+      [app.identityHash, freeBalance.identityHash],
       watcher,
       store,
       networkContext,
     );
-
-    const [outcomeRes] = await Promise.all([outcomeSet, mineBlock(provider)]);
-    await verifyOutcomeSet(outcomeRes as OutcomeSetResults);
-    const [completedRes] = await Promise.all([completed, mineBlock(provider)]);
-    await verifyCompleted(completedRes as any);
+    await waitForDisputeCompletion(
+      [app.identityHash, freeBalance.identityHash],
+      watcher,
+      store,
+      networkContext,
+    );
 
     // verify final balances
     await verifyOnchainBalancesPostChallenge(multisigAddress, signers, channelBalances, wallet);
@@ -140,29 +148,24 @@ describe("Watcher.initiate", () => {
     // reinstantiate watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: wallet.privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      store,
     });
-    const [initiateRes, contractEvent] = await Promise.all([
-      initiateDispute(activeApps[0], freeBalance, watcher, store, networkContext, true),
-      new Promise((resolve) =>
-        watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
-          resolve(data),
-        ),
-      ),
-    ]);
-    // verify the contract event
-    await verifyStateProgressedEvent(activeApps[0], contractEvent as any, networkContext);
-
-    const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = initiateRes as any;
-
-    const [outcomeRes] = await Promise.all([outcomeSet, mineBlock(provider)]);
-    await verifyOutcomeSet(outcomeRes);
-
-    const [completedRes] = await Promise.all([completed, mineBlock(provider)]);
-    await verifyCompleted(completedRes);
+    await initiateDispute(activeApps[0], freeBalance, watcher, store, networkContext, true);
+    await waitForSetOutcome(
+      [activeApps[0].identityHash, freeBalance.identityHash],
+      watcher,
+      store,
+      networkContext,
+    );
+    await waitForDisputeCompletion(
+      [activeApps[0].identityHash, freeBalance.identityHash],
+      watcher,
+      store,
+      networkContext,
+    );
 
     // verify final balances
     await verifyOnchainBalancesPostChallenge(multisigAddress, signers, channelBalances, wallet);
@@ -194,30 +197,21 @@ describe("Watcher.cancel", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 3, true, ""),
+      store,
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
 
   afterEach(async () => {
     await watcher.disable();
-    await store.clear();
   });
 
   it("should work if in onchain state progression phase", async () => {
     // set and progress state
-    const [_, stateProgressedEvent] = await Promise.all([
-      initiateDispute(app, freeBalance, watcher, store, networkContext, true),
-      new Promise((resolve) =>
-        watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
-          resolve(data),
-        ),
-      ),
-    ]);
-    await verifyStateProgressedEvent(app, stateProgressedEvent as any, networkContext);
+    await initiateDispute(app, freeBalance, watcher, store, networkContext, true);
 
     // cancel the challenge
     await cancelDispute(app, watcher, store);
@@ -229,37 +223,43 @@ describe("Watcher.cancel", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: wallet.privateKey,
+      store,
     });
     await initiateDispute(app, freeBalance, watcher, store, networkContext);
 
     // cancel the challenge with failure flag
-    await cancelDispute(app, watcher, store, `revert`);
+    await cancelDispute(
+      app,
+      watcher,
+      store,
+      `cancelDispute called on challenge that cannot be cancelled`,
+    );
   });
 
   it("should fail if outcome is set", async () => {
     // set and progress state
-    const [initiateRes, stateProgressedEvent] = await Promise.all([
-      initiateDispute(app, freeBalance, watcher, store, networkContext, true),
-      new Promise((resolve) =>
-        watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
-          resolve(data),
-        ),
-      ),
-    ]);
-    await verifyStateProgressedEvent(app, stateProgressedEvent as any, networkContext);
+    await initiateDispute(app, freeBalance, watcher, store, networkContext, true);
 
-    // wait for outcome
     await mineBlock(provider);
 
-    const { outcomeSet, verifyOutcomeSet } = initiateRes as any;
-    const [outcomeRes] = await Promise.all([outcomeSet, mineBlock(provider)]);
-    await verifyOutcomeSet(outcomeRes);
+    // wait for outcome
+    await waitForSetOutcome(
+      [app.identityHash, freeBalance.identityHash],
+      watcher,
+      store,
+      networkContext,
+    );
 
     // cancel the challenge with failure flag
-    await cancelDispute(app, watcher, store, `revert`);
+    await cancelDispute(
+      app,
+      watcher,
+      store,
+      `cancelDispute called on challenge that cannot be cancelled`,
+    );
   });
 });
 
@@ -294,17 +294,16 @@ describe("Watcher responses", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
+    expect(await store.getLatestProcessedBlock()).to.be.gte((await provider.getBlockNumber()) - 1);
   });
 
   afterEach(async () => {
     await watcher.disable();
-    await store.clear();
   });
 
   it("should respond with `setState` if it has a higher nonced state", async () => {
@@ -313,21 +312,14 @@ describe("Watcher responses", () => {
     await setState(app, setState0);
     const [appWatcherEvent, appContractEvent] = await Promise.all([
       new Promise((resolve, reject) => {
-        watcher.on(
-          WatcherEvents.ChallengeProgressedEvent,
-          async (data: ChallengeProgressedEventData) => resolve(data),
-        );
-        watcher.on(
+        watcher.once(WatcherEvents.ChallengeProgressedEvent, async (data) => resolve(data));
+        watcher.once(
           WatcherEvents.ChallengeProgressionFailedEvent,
           async (data: ChallengeProgressionFailedEventData) => reject(data),
         );
       }),
-      new Promise((resolve) => {
-        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
-            resolve(data);
-          }
-        });
+      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
+        return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
       mineBlock(provider),
     ]);
@@ -338,6 +330,7 @@ describe("Watcher responses", () => {
       appWatcherEvent as any,
     );
   });
+
   it("should respond with `setAndProgressState` if it has a higher nonced action", async () => {
     // add action to store
     app = await addActionToAppInStore(store, app);
@@ -349,26 +342,17 @@ describe("Watcher responses", () => {
 
     const [appWatcherEvent, appSetStateEvent, appProgressStateEvent] = await Promise.all([
       new Promise((resolve, reject) => {
-        watcher.on(
-          WatcherEvents.ChallengeProgressedEvent,
-          async (data: ChallengeProgressedEventData) => resolve(data),
-        );
-        watcher.on(
+        watcher.once(WatcherEvents.ChallengeProgressedEvent, async (data) => resolve(data));
+        watcher.once(
           WatcherEvents.ChallengeProgressionFailedEvent,
           async (data: ChallengeProgressionFailedEventData) => reject(data),
         );
       }),
-      new Promise((resolve) => {
-        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
-            resolve(data);
-          }
-        });
+      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
+        return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
-      new Promise((resolve) => {
-        watcher.on(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
-          resolve(data),
-        );
+      watcher.waitFor(WatcherEvents.StateProgressedEvent, 10_000, (data) => {
+        return data.identityHash === setState0.appIdentityHash;
       }),
       mineBlock(provider),
     ]);
@@ -391,26 +375,17 @@ describe("Watcher responses", () => {
     await setState(app, setState1);
     const [appWatcherEvent, appSetStateEvent, appActionEvent] = await Promise.all([
       new Promise((resolve, reject) => {
-        watcher.on(
-          WatcherEvents.ChallengeProgressedEvent,
-          async (data: ChallengeProgressedEventData) => resolve(data),
-        );
-        watcher.on(
+        watcher.once(WatcherEvents.ChallengeProgressedEvent, async (data) => resolve(data));
+        watcher.once(
           WatcherEvents.ChallengeProgressionFailedEvent,
           async (data: ChallengeProgressionFailedEventData) => reject(data),
         );
       }),
-      new Promise((resolve) => {
-        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
-            resolve(data);
-          }
-        });
+      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
+        return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
-      new Promise((resolve) => {
-        watcher.on(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
-          resolve(data),
-        );
+      watcher.waitFor(WatcherEvents.StateProgressedEvent, 10_000, (data) => {
+        return data.identityHash === setState1.appIdentityHash;
       }),
       mineBlock(provider),
     ]);

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 hostname="$1"
 prvkey="${SSH_KEY:-$HOME/.ssh/id_rsa}"
@@ -160,6 +160,8 @@ apt-get autoremove -y
 if [[ ! -d indra ]]
 then git clone https://github.com/ConnextProject/indra.git
 fi
+
+chown -R $user:$user .
 
 echo
 echo "Done configuring server, rebooting now.."

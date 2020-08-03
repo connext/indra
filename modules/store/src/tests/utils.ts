@@ -229,6 +229,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceJson = {
 export const TEST_STORE_CHANNEL: StateChannelJSON = {
   schemaVersion: 1,
   multisigAddress: TEST_STORE_ETH_ADDRESS,
+  chainId: 1337,
   addresses: {
     MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
     ProxyFactory: TEST_STORE_ETH_ADDRESS,
@@ -262,6 +263,7 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
   stateTimeout: toBNJson(17),
   versionNumber: toBNJson(23),
+  transactionData: "0xdeadbeef",
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
@@ -273,6 +275,7 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
+  transactionData: "0xdeadbeef",
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 

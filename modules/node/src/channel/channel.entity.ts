@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, Collateralizations, JSONSerializer } from "@connext/types";
+import { CriticalStateChannelAddresses, Collateralizations } from "@connext/types";
 import {
   Column,
   CreateDateColumn,
@@ -12,13 +12,12 @@ import {
 } from "typeorm";
 import { constants } from "ethers";
 
-import { AppInstance, AppInstanceJSON, AppInstanceSerializer } from "../appInstance/appInstance.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
-import { bigNumberifyJson, deBigNumberifyJson } from "@connext/utils";
 
 const { AddressZero } = constants;
 
@@ -57,6 +56,9 @@ export class Channel {
   @Column("integer", { nullable: true })
   monotonicNumProposedApps!: number;
 
+  @Column("integer")
+  chainId!: number;
+
   @OneToMany(
     (type: any) => WithdrawCommitment,
     (withdrawalCommitment: WithdrawCommitment) => withdrawalCommitment.channel,
@@ -81,58 +83,3 @@ export class Channel {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-
-export interface ChannelJSON {
-  multisigAddress: string
-  schemaVersion: number
-  addresses: CriticalStateChannelAddresses
-  userIdentifier: string
-  nodeIdentifier: string
-  available: boolean
-  activeCollateralizations: Collateralizations
-  appInstances: AppInstanceJSON[]
-  monotonicNumProposedApps: number
-  // withdrawalCommitments: WithdrawCommitmentJSON[]
-  // setupCommitment: SetupCommitmentJSON[]
-  // rebalanceProfiles: RebalanceProfileJSON[]
-  // transactions: OnchainTransactionJSON[]
-  createdAt: number
-  updatedAt: number
-}
-
-export const ChannelSerializer: JSONSerializer<Channel, ChannelJSON> = class {
-  static fromJSON (input: ChannelJSON): Channel {
-    const chan = new Channel();
-    Object.assign(chan, deBigNumberifyJson({
-      multisigAddress: input.multisigAddress,
-      schemaVersion: input.schemaVersion,
-      addresses: input.addresses,
-      userIdentifier: input.userIdentifier,
-      nodeIdentifier: input.nodeIdentifier,
-      available: input.available,
-      activeCollateralizations: input.activeCollateralizations,
-      monotonicNumProposedApps: input.monotonicNumProposedApps,
-    }));
-    chan.appInstances = input.appInstances.map(AppInstanceSerializer.fromJSON);
-    chan.createdAt = new Date(input.createdAt);
-    chan.updatedAt = new Date(input.updatedAt);
-    return chan;
-  }
-
-  static toJSON (input: Channel): ChannelJSON {
-    const res = bigNumberifyJson({
-      multisigAddress: input.multisigAddress,
-      schemaVersion: input.schemaVersion,
-      addresses: input.addresses,
-      userIdentifier: input.userIdentifier,
-      nodeIdentifier: input.nodeIdentifier,
-      available: input.available,
-      activeCollateralizations: input.activeCollateralizations,
-      monotonicNumProposedApps: input.monotonicNumProposedApps,
-      createdAt: input.createdAt ? input.createdAt.getTime() : Date.now(),
-      updatedAt: input.updatedAt ? input.updatedAt.getTime() : Date.now(),
-    });
-    res.appInstances = input.appInstances.map(AppInstanceSerializer.toJSON);
-    return res;
-  }
-};

@@ -2,10 +2,13 @@
 set -e
 
 # This is the order they'll be published in
-packages="types,utils,cf-core,apps,messaging,store,channel-provider,client"
+default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client,watcher"
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+# To publish contracts, run bash ops/npm-publish.sh contracts
+packages="${1:-$default_packages}"
+
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 ########################################
 ## Helper functions
@@ -16,10 +19,6 @@ function get_latest_version {
 
 ########################################
 ## Run some sanity checks to make sure we're really ready to npm publish
-
-if [[ -n "`git status -s`" ]]
-then echo "Aborting: Make sure you've committed all your changes before publishing" && exit 1
-fi
 
 if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
 then echo "Aborting: Make sure you're in the $project project root" && exit 1
@@ -51,8 +50,8 @@ target_version="$REPLY" # get version from user input
 
 if [[ -z "$target_version" ]]
 then echo "Aborting: A new, unique version is required" && exit 1
-elif [[ "$package_versions" =~ "$target_version" ]]
-then echo "Aborting: A new, unique version is required" && exit 1
+# elif [[ "$package_versions" =~ "$target_version" ]]
+# then echo "Aborting: A new, unique version is required" && exit 1
 elif [[ "`get_latest_version $package_versions $target_version`" != "$target_version" ]]
 then
   for package in `echo $packages | tr ',' ' '`
@@ -97,7 +96,18 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
-  npm publish --access=public
+
+  # If the version has a release-candidate suffix like "-rc.2" then tag it as "next"
+  if [[ "$version" == *-rc* ]]
+  then npm publish --tag next --access=public
+  else npm publish --access=public
+  fi
+
+  echo "Updating $fullname references in root"
+  mv package.json .package.json
+  cat .package.json | sed 's|"'"$fullname"'": ".*"|"'"$fullname"'": "'$version'"|' > package.json
+  rm .package.json
+
   echo
   cd ..
   for module in `ls */package.json`
@@ -117,8 +127,11 @@ echo
 echo "Commiting & tagging our changes"
 echo
 
+# Create git tag
+tag="npm-publish-${1:-"all"}-$target_version"
+
 git add .
 git commit --allow-empty -m "npm publish @connext/{$packages}@$target_version"
-git tag npm-publish-$target_version
+git tag $tag
 git push origin HEAD --no-verify
-git push origin npm-publish-$target_version --no-verify
+git push origin $tag --no-verify

@@ -54,7 +54,7 @@ describe("Deposits", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token!;
+    tokenAddress = client.config.contractAddresses[client.chainId].Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 
@@ -101,7 +101,7 @@ describe("Deposits", () => {
     await expect(
       client.deposit({
         amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),
-        assetId: client.config.contractAddresses.Token!,
+        assetId: client.config.contractAddresses[client.chainId].Token!,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
   });
@@ -117,7 +117,7 @@ describe("Deposits", () => {
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
     const { appIdentityHash } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
     expect(appIdentityHash).to.be.undefined;
   });
@@ -144,7 +144,10 @@ describe("Deposits", () => {
     // emitted
     await new Promise(async (resolve, reject) => {
       receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
-        if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
+        if (
+          msg.params.appDefinition ===
+          receiver.config.contractAddresses[receiver.chainId].DepositApp
+        ) {
           resolve();
         }
       });
@@ -158,7 +161,7 @@ describe("Deposits", () => {
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
       return apps.filter(
-        (app) => app.appDefinition === client.config.contractAddresses.DepositApp,
+        (app) => app.appDefinition === client.config.contractAddresses[client.chainId].DepositApp,
       )[0];
     };
     while (!(await getDepositApps())) {

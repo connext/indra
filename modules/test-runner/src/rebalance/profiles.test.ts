@@ -10,7 +10,7 @@ import { getNatsClient } from "../util/nats";
 
 const { AddressZero } = constants;
 
-describe("Reclaim", () => {
+describe("Profiles", () => {
   let client: IConnextClient;
   let nats: Client;
 

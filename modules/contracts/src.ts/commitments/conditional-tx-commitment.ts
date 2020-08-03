@@ -25,6 +25,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
+    public readonly transactionData: string = "",
     initiatorSignature?: string,
     responderSignature?: string,
   ) {
@@ -32,6 +33,8 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     if (interpreterAddr === AddressZero) {
       throw Error("The outcome type in this application logic contract is not supported yet.");
     }
+
+    this.transactionData = this.transactionData || this.getTransactionData();
   }
 
   toJson(): ConditionalTransactionCommitmentJSON {
@@ -44,10 +47,15 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       multisigOwners: this.multisigOwners,
       contractAddresses: this.contractAddresses,
       signatures: this.signatures,
+      transactionData: this.transactionData!,
     };
   }
 
   public static fromJson(json: ConditionalTransactionCommitmentJSON) {
+    const sigs = json.signatures || [
+      (json as any)["initiatorSignature"],
+      (json as any)["responderSignature"],
+    ];
     return new ConditionalTransactionCommitment(
       json.contractAddresses,
       json.multisigAddress,
@@ -56,8 +64,9 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       json.freeBalanceAppIdentityHash,
       json.interpreterAddr,
       json.interpreterParams,
-      json.signatures[0],
-      json.signatures[1],
+      json.transactionData,
+      sigs[0],
+      sigs[1],
     );
   }
 
@@ -72,14 +81,18 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     return {
       to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.encodeFunctionData("executeEffectOfInterpretedAppOutcome", [
-        this.contractAddresses.ChallengeRegistry,
-        this.freeBalanceAppIdentityHash,
-        this.appIdentityHash,
-        this.interpreterAddr,
-        this.interpreterParams,
-      ]),
+      data: this.transactionData,
       operation: MultisigOperation.DelegateCall,
     };
+  }
+
+  private getTransactionData(): string {
+    return iface.encodeFunctionData("executeEffectOfInterpretedAppOutcome", [
+      this.contractAddresses.ChallengeRegistry,
+      this.freeBalanceAppIdentityHash,
+      this.appIdentityHash,
+      this.interpreterAddr,
+      this.interpreterParams,
+    ]);
   }
 }

@@ -14,6 +14,7 @@ export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJS
     challengeRegistryAddress: entity.challengeRegistryAddress,
     signatures: entity.signatures as any,
     stateTimeout: toBNJson(entity.stateTimeout),
+    transactionData: entity.transactionData,
     versionNumber: toBNJson(entity.versionNumber),
   };
 };
@@ -68,8 +69,7 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitment>
   async findAllActiveCommitmentsByMultisig(multisigAddress: string): Promise<SetStateCommitment[]> {
     return this.createQueryBuilder("set_state")
       .leftJoinAndSelect("set_state.app", "app")
-      .where("app.type <> :rejected", { rejected: AppType.REJECTED })
-      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .where("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
       .leftJoinAndSelect("app.channel", "channel")
       .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
       .getMany();

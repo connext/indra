@@ -3,12 +3,14 @@ import { MethodNames } from "@connext/types";
 import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
+import { expect } from "../assertions";
+import { getChainId } from "../utils";
 
 describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
 
-  beforeAll(async () => {
+  before(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context[`A`].node;
     nodeB = context[`B`].node;
@@ -24,9 +26,9 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
     } = await nodeA.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_getStateDepositHolderAddress,
-      parameters: { owners },
+      parameters: { owners, chainId: getChainId() },
     });
 
-    expect(address.length).toBe(42);
+    expect(address.length).to.eq(42);
   });
 });

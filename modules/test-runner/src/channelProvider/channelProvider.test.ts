@@ -29,7 +29,7 @@ describe("ChannelProvider", () => {
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
     nodeSignerAddress = client.nodeSignerAddress;
-    tokenAddress = client.config.contractAddresses.Token!;
+    tokenAddress = client.config.contractAddresses[client.chainId].Token!;
   });
 
   afterEach(async () => {
@@ -37,7 +37,7 @@ describe("ChannelProvider", () => {
   });
 
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
-    const _tokenAddress = remoteClient.config.contractAddresses.Token!;
+    const _tokenAddress = Object.values(remoteClient.config.contractAddresses)[0]!.Token!;
     const _nodeIdentifier = remoteClient.config.nodeIdentifier;
     const _nodeSignerAddress = getSignerAddressFromPublicIdentifier(nodeIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);
@@ -64,11 +64,10 @@ describe("ChannelProvider", () => {
     const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
-    const transferFinished = new Promise(async (resolve) => {
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
-        resolve();
-      });
-    });
+    const transferFinished = clientB.waitFor(
+      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+      10_000,
+    );
 
     await remoteClient.transfer({
       amount: transfer.amount.toString(),

@@ -1,7 +1,6 @@
 import {
   InstallMiddlewareContext,
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -20,7 +19,8 @@ import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../model
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, generateProtocolMessageData, parseProtocolMessage } from "./utils";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../errors";
 
 const protocol = ProtocolNames.install;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -45,13 +45,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
     const {
       preProtocolStateChannel,
-      message: { params, processID },
+      message: {
+        data: { params, processID },
+      },
+      networks,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`[${processID}] Initiation started`);
-    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.Install).proposal.identityHash || processID;
+    log.info(`[${loggerId}] Initiation started`);
+    log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params)}`);
 
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
@@ -98,10 +102,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
+    const freeBalanceUpdateData = getSetStateCommitment(
+      networks[stateChannelAfter.chainId],
+      stateChannelAfter.freeBalance,
+    );
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
     // 12ms
@@ -109,23 +116,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // 124ms
+    const { message: m2 } = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
+        customData: { signature: mySignatureOnFreeBalanceStateUpdate },
+        prevMessageReceived: start,
+      }),
+    ];
     const {
       data: {
         customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        processID,
-        params,
-        protocol,
-        to: responderIdentifier,
-        customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate,
-        },
-        seq: 1,
-      } as ProtocolMessageData,
-    ] as any;
+    } = parseProtocolMessage(m2);
 
     // 7ms
     // free balance addr signs conditional transactions
@@ -133,8 +135,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 0ms
     const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
-
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
 
     // 7ms
     // always use free balance key to sign free balance update
@@ -146,17 +146,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         freeBalanceUpdateData.toJson(),
       )}`,
     );
-    logTime(log, substart, `[${processID}] Verified responder's sig on free balance update`);
+    logTime(log, substart, `[${loggerId}] Verified responder's sig on free balance update`);
     substart = Date.now();
 
-    // add signatures to commitment
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator
-        ? (mySignatureOnFreeBalanceStateUpdate as any)
-        : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator
-        ? counterpartySignatureOnFreeBalanceStateUpdate
-        : (mySignatureOnFreeBalanceStateUpdate as any),
+      counterpartySignatureOnFreeBalanceStateUpdate,
+      mySignatureOnFreeBalanceStateUpdate,
     );
 
     yield [
@@ -168,7 +163,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 335ms
-    logTime(log, start, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${loggerId}] Initiation finished`);
   } as any,
 
   /**
@@ -183,17 +178,23 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
   1 /* Responding */: async function* (context: Context) {
     const {
       message: {
-        params,
-        processID,
-        customData: { signature },
+        data: {
+          params,
+          processID,
+          customData: { signature },
+        },
       },
       preProtocolStateChannel,
+      networks,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`[${processID}] Response started`);
-    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
+    const { proposal: proposalJson, initiatorIdentifier } =
+      (params as ProtocolParams.Install) || {};
+    const loggerId = proposalJson?.identityHash || processID;
+    log.info(`[${loggerId}] Response started`);
+    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnFreeBalanceStateUpdate = signature;
@@ -201,8 +202,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
     }
-
-    const { proposal: proposalJson, initiatorIdentifier } = params as ProtocolParams.Install;
 
     const proposal = AppInstance.fromJson(proposalJson);
 
@@ -243,13 +242,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     // 7ms
     // multisig owner always signs conditional tx
     const protocolInitiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
+    const freeBalanceUpdateData = getSetStateCommitment(
+      networks[stateChannelAfter.chainId],
+      stateChannelAfter.freeBalance,
+    );
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
     await assertIsValidSignature(
       protocolInitiatorAddr,
@@ -259,20 +261,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         freeBalanceUpdateData.toJson(),
       )}`,
     );
-    logTime(log, substart, `[${processID}] Verified initiator's free balance update sig`);
+    logTime(log, substart, `[${loggerId}] Verified initiator's free balance update sig`);
     substart = Date.now();
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signature
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== protocolInitiatorAddr;
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator
-        ? (mySignatureOnFreeBalanceStateUpdate as any)
-        : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator
-        ? counterpartySignatureOnFreeBalanceStateUpdate
-        : (mySignatureOnFreeBalanceStateUpdate as any),
+      counterpartySignatureOnFreeBalanceStateUpdate,
+      mySignatureOnFreeBalanceStateUpdate,
     );
 
     // 13ms
@@ -283,26 +280,29 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       newAppInstance,
       freeBalanceUpdateData,
     ];
-    logTime(log, substart, `[${processID}] Persisted app ${newAppInstance.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Persisted app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     // 154ms
     yield [
       IO_SEND,
-      {
-        processID,
+      generateProtocolMessageData(
+        initiatorIdentifier,
         protocol,
-        to: initiatorIdentifier,
-        customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          customData: { signature: mySignatureOnFreeBalanceStateUpdate },
+          prevMessageReceived: start,
         },
-        seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessageData,
+      ),
       stateChannelAfter,
+      newAppInstance,
     ] as any;
 
     // 272ms
-    logTime(log, start, `[${processID}] Response finished`);
+    logTime(log, start, `[${loggerId}] Response finished`);
   } as any,
 };
 
@@ -313,12 +313,26 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeInstallStateChannelTransition(
+export function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   proposal: AppInstance,
 ): StateChannel {
-  // this state transition is calculated for the free balance app, so use
-  // the channel not app, ordering when calculating
+  // Verify that the proposal exists in the channel
+  const stored = stateChannel.proposedAppInstances.get(proposal.identityHash);
+
+  if (!stored) {
+    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(proposal.identityHash));
+  }
+  return stateChannel.installApp(
+    proposal,
+    getTokenBalanceDecrementForInstall(stateChannel, proposal),
+  );
+}
+
+export function getTokenBalanceDecrementForInstall(
+  stateChannel: StateChannel,
+  proposal: AppInstance,
+): TokenIndexedCoinTransferMap {
   const appInitiatorToken = getAddressFromAssetId(proposal.initiatorDepositAssetId);
   const appResponderToken = getAddressFromAssetId(proposal.responderDepositAssetId);
 
@@ -352,5 +366,5 @@ function computeInstallStateChannelTransition(
     };
   }
 
-  return stateChannel.installApp(proposal, tokenIndexedBalanceDecrement);
+  return tokenIndexedBalanceDecrement;
 }

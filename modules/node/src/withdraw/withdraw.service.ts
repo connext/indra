@@ -7,12 +7,11 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  TransactionReceipt,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants, utils, providers } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -32,10 +31,10 @@ const { hexlify, randomBytes } = utils;
 @Injectable()
 export class WithdrawService {
   constructor(
-    private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly withdrawRepository: WithdrawRepository,
     private readonly channelRepository: ChannelRepository,
@@ -75,15 +74,14 @@ export class WithdrawService {
       appInstance.multisigAddress,
     );
 
-    const signer = this.configService.getSigner();
+    const signer = this.configService.getSigner(
+      await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress),
+    );
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
     const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
 
-    await this.cfCoreService.takeAction(appInstance.identityHash, appInstance.multisigAddress, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
     state = (await this.cfCoreService.getAppInstance(appInstance.identityHash))
       .latestState as WithdrawAppState;
 
@@ -99,16 +97,24 @@ export class WithdrawService {
       counterpartySignatureOnWithdrawCommitment,
     );
 
-    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress);
-
     await generatedCommitment.addSignatures(
       counterpartySignatureOnWithdrawCommitment, // our sig
       state.signatures[0], // user sig
     );
+
     const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
-    const transaction = await this.submitWithdrawToChain(
+    const txRes = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
+    );
+
+    await this.cfCoreService.uninstallApp(
+      appInstance.identityHash,
+      appInstance.multisigAddress,
+      {
+        signature: counterpartySignatureOnWithdrawCommitment,
+      } as WithdrawAppAction,
+      { withdrawTx: txRes.hash },
     );
 
     // Update db entry again
@@ -117,27 +123,21 @@ export class WithdrawService {
       this.log.error(
         `Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`,
       );
+      return;
     }
 
-    const onchainTransaction = await this.onchainTransactionRepository.findByHash(
-      transaction.transactionHash,
-    );
-    if (!onchainTransaction) {
-      this.log.error(
-        `Unable to find onchain tx that we just submitted in db. Hash: ${transaction.transactionHash}`,
-      );
-    }
+    const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes.hash);
 
-    await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
-    this.log.info(`Node responded with transaction: ${transaction.transactionHash}`);
-    this.log.debug(`Transaction details: ${stringify(transaction)}`);
+    await this.withdrawRepository.addUserOnchainTransaction(withdraw, onchainTransaction);
+    this.log.info(`Node responded with transaction: ${onchainTransaction.hash}`);
+    this.log.debug(`Transaction details: ${stringify(onchainTransaction)}`);
     return;
   }
 
   async submitWithdrawToChain(
     multisigAddress: string,
     tx: MinimalTransaction,
-  ): Promise<TransactionReceipt> {
+  ): Promise<providers.TransactionResponse> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
@@ -146,7 +146,7 @@ export class WithdrawService {
     );
     this.log.info(`Deploy multisig tx: ${deployTx}`);
 
-    const wallet = this.configService.getSigner();
+    const wallet = this.configService.getSigner(channel.chainId);
     if (deployTx !== HashZero) {
       this.log.info(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
@@ -156,8 +156,8 @@ export class WithdrawService {
     }
 
     this.log.info(`Sending withdrawal to chain`);
-    const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
-    this.log.info(`Withdrawal tx sent! Hash: ${txRes.transactionHash}`);
+    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
+    this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
     return txRes;
   }
 
@@ -185,14 +185,15 @@ export class WithdrawService {
     return this.withdrawRepository.save(withdraw);
   }
 
-  async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
-    }
+  async getLatestWithdrawal(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<OnchainTransaction | undefined> {
+    await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(userIdentifier, chainId);
 
-    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifierAndChain(
       userIdentifier,
+      chainId,
     );
   }
 
@@ -214,7 +215,7 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const signer = this.configService.getSigner();
+    const signer = this.configService.getSigner(channel.chainId);
     const hash = commitment.hashToSign();
     const withdrawerSignatureOnCommitment = await signer.signMessage(hash);
 
@@ -243,7 +244,7 @@ export class WithdrawService {
       assetId,
       Zero,
       assetId,
-      WithdrawAppName,
+      this.cfCoreService.getAppInfoByNameAndChain(WithdrawAppName, channel.chainId),
       { reason: "Node withdrawal" },
       WITHDRAW_STATE_TIMEOUT,
     );

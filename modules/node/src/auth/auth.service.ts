@@ -115,7 +115,7 @@ export class AuthService {
     };
   }
 
-  parseIdentifier(callback: any): any {
+  parseIdentifier(callback: (publicIdentifier: string, data?: any) => any): any {
     return async (subject: string, data: any): Promise<string> => {
       // Get & validate address from subject
       const identifier = subject.split(".")[0]; // first item of subscription is id
@@ -124,6 +124,38 @@ export class AuthService {
       }
       this.log.debug(`Parsed identifier ${identifier}`);
       return callback(identifier, data);
+    };
+  }
+
+  // For clients sending requests of the form:
+  //  `${clientIdentifier}.${nodeIdentifier}.${chainId}.channel.get`
+  parseIdentifierAndChain(
+    callback: (publicIdentifier: string, chainId: number, data?: any) => any,
+  ): any {
+    return async (subject: string, data: any): Promise<string> => {
+      // Get & validate address from subject
+      const [userIdentifier, nodeIdentifier, chainIdStr] = subject.split(".");
+      const chainId = parseInt(chainIdStr, 10);
+      if (!userIdentifier || !isValidPublicIdentifier(userIdentifier)) {
+        throw new Error(`Subject's first item isn't a valid identifier: ${userIdentifier}`);
+      }
+      if (
+        !nodeIdentifier ||
+        !isValidPublicIdentifier(nodeIdentifier) ||
+        this.configService.getPublicIdentifier() !== nodeIdentifier
+      ) {
+        throw new Error(`Subject's second item isn't valid node identifier: ${nodeIdentifier}`);
+      }
+      if (
+        !Number.isInteger(chainId) ||
+        !this.configService.getSupportedChains().includes(chainId)
+      ) {
+        throw new Error(
+          `Subject's third item isn't a valid or supported chainId: ${chainId}, supported chains: ${this.configService.getSupportedChains()}`,
+        );
+      }
+      this.log.debug(`Parsed identifier ${userIdentifier}`);
+      return callback(userIdentifier, chainId, data);
     };
   }
 

@@ -100,7 +100,7 @@ export class Currency {
     return BigNumber.from(this._round(this.amount));
   }
 
-  public format(_options: any) {
+  public format(_options?: any) {
     const amt = this.amount;
     const options = {
       ...this.defaultOptions[this.type],
@@ -145,6 +145,7 @@ export class Currency {
       DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
       ETH: this.toRay("1"),
       FIN: this.toRay(parseUnits("1", 3).toString()),
+      GWEI: this.toRay(parseUnits("1", 9).toString()),
       WEI: this.toRay(parseUnits("1", 18).toString()),
     };
     if (
@@ -160,11 +161,12 @@ export class Currency {
     return exchangeRates[currency];
   };
 
-  public toDAI = (daiRate: any) => this._convert("DAI", daiRate);
-  public toDEI = (daiRate: any) => this._convert("DEI", daiRate);
-  public toETH = (daiRate: any) => this._convert("ETH", daiRate);
-  public toFIN = (daiRate: any) => this._convert("FIN", daiRate);
-  public toWEI = (daiRate: any) => this._convert("WEI", daiRate);
+  public toDAI = (daiRate?: any) => this._convert("DAI", daiRate);
+  public toDEI = (daiRate?: any) => this._convert("DEI", daiRate);
+  public toETH = (daiRate?: any) => this._convert("ETH", daiRate);
+  public toFIN = (daiRate?: any) => this._convert("FIN", daiRate);
+  public toWEI = (daiRate?: any) => this._convert("WEI", daiRate);
+  public toGWEI = (daiRate?: any) => this._convert("GWEI", daiRate);
 
   ////////////////////////////////////////
   // Private Methods

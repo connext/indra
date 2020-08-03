@@ -1,14 +1,63 @@
+import { connect } from "@connext/client";
 import { getMemoryStore } from "@connext/store";
 import { ClientOptions } from "@connext/types";
-import { getRandomChannelSigner } from "@connext/utils";
+import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
-import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
+import {
+  createClient,
+  env,
+  ethProviderUrl,
+  expect,
+  sendOnchainValue,
+  fundChannel,
+  ETH_AMOUNT_SM,
+} from "../util";
 
-const { AddressZero, One } = constants;
+const { AddressZero, One, HashZero } = constants;
 const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
+  it("Client should be able to connect to indra w/out a messaging url", async () => {
+    const signer = getRandomChannelSigner();
+    const client = await connect({
+      ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      nodeUrl: env.nodeUrl,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
+  it("Client should be able to connect to indra url w /api suffix", async () => {
+    const signer = getRandomChannelSigner();
+    const protocol = env.nodeUrl.replace(/:\/\/.*/, "://");
+    const nodeHost = env.nodeUrl.replace(/.*:\/\//, "").replace(/\/.*/, "");
+    const client = await connect({
+      ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      nodeUrl: `${protocol}${nodeHost}/api`,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+      logLevel: 4,
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
+  it("Client should be able to connect to indra w a messaging url", async () => {
+    const signer = getRandomChannelSigner();
+    const client = await connect({
+      ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      messagingUrl: env.natsUrl,
+      nodeUrl: env.nodeUrl,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
     const signer = getRandomChannelSigner();
     let client = await createClient({ signer });
@@ -16,7 +65,7 @@ describe("Client Connect", () => {
       assetId: AddressZero,
     });
     const { appIdentityHash: tokenDeposit } = await client.requestDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
 
     // verify
@@ -26,7 +75,7 @@ describe("Client Connect", () => {
     expect(retrievedEth).to.eq(ethDeposit);
 
     const { appIdentityHash: retrievedToken } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
     expect(retrievedToken).to.eq(tokenDeposit);
 
@@ -42,7 +91,7 @@ describe("Client Connect", () => {
     expect(retrievedEth2).to.eq(ethDeposit);
 
     const { appIdentityHash: retrievedToken2 } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
     expect(retrievedToken2).to.eq(tokenDeposit);
   });
@@ -52,24 +101,30 @@ describe("Client Connect", () => {
     const store = getMemoryStore();
     let client = await createClient({ signer: pk, store } as Partial<ClientOptions>);
     await client.requestDepositRights({ assetId: AddressZero });
-    await client.requestDepositRights({ assetId: client.config.contractAddresses.Token! });
+    await client.requestDepositRights({
+      assetId: client.config.contractAddresses[client.chainId].Token!,
+    });
     let apps = await client.getAppInstances();
     const initDepositApps = apps.filter(
       (app) =>
-        app.appDefinition === client.config.contractAddresses.DepositApp &&
+        app.appDefinition === client.config.contractAddresses[client.chainId].DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(initDepositApps.length).to.be.eq(2);
     await client.messaging.disconnect();
 
     await sendOnchainValue(client.multisigAddress, One);
-    await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.Token!);
+    await sendOnchainValue(
+      client.multisigAddress,
+      One,
+      client.config.contractAddresses[client.chainId].Token!,
+    );
 
     client = await createClient({ signer: pk, store });
     apps = await client.getAppInstances();
     const depositApps = apps.filter(
       (app) =>
-        app.appDefinition === client.config.contractAddresses.DepositApp &&
+        app.appDefinition === client.config.contractAddresses[client.chainId].DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(depositApps.length).to.be.eq(0);
@@ -85,6 +140,7 @@ describe("Client Connect", () => {
         data: hexlify(randomBytes(32)),
       },
       retry: 0,
+      withdrawalTx: HashZero,
     });
     expect(await createClient({ signer: pk, store })).rejectedWith("Something");
   });

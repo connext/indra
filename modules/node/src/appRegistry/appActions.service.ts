@@ -7,7 +7,6 @@ import {
   AppInstanceJson,
   ConditionalTransferAppNames,
   SupportedApplicationNames,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
@@ -18,17 +17,19 @@ import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { TransferService } from "../transfer/transfer.service";
+import { ConfigService } from "../config/config.service";
 
 @Injectable()
 export class AppActionsService {
   constructor(
     private readonly log: LoggerService,
+    private readonly configService: ConfigService,
     private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
     private readonly transferService: TransferService,
     private readonly withdrawRepository: WithdrawRepository,
   ) {
-    this.log.setContext("AppRegistryService");
+    this.log.setContext("AppActionsService");
   }
 
   async handleAppAction(
@@ -36,6 +37,7 @@ export class AppActionsService {
     app: AppInstanceJson,
     newState: AppState,
     action: AppAction,
+    from: string,
   ): Promise<void> {
     this.log.info(
       `handleAppAction for app name ${appName} ${app.identityHash}, action ${JSON.stringify(
@@ -52,11 +54,13 @@ export class AppActionsService {
       }
       await this.handleTransferAppAction(senderApp, action);
     } else if (appName === WithdrawAppName) {
-      await this.handleWithdrawAppAction(
-        app,
-        action as WithdrawAppAction,
-        newState as WithdrawAppState,
-      );
+      if (from !== this.configService.getPublicIdentifier()) {
+        await this.handleWithdrawAppAction(
+          app,
+          action as WithdrawAppAction,
+          newState as WithdrawAppState,
+        );
+      }
     }
     this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
   }
@@ -96,10 +100,7 @@ export class AppActionsService {
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 
-  private async handleTransferAppAction(
-    senderApp: AppInstance<any>,
-    action: AppAction,
-  ): Promise<void> {
+  private async handleTransferAppAction(senderApp: AppInstance, action: AppAction): Promise<void> {
     // App could be uninstalled, which means the channel is no longer
     // associated with this app instance
     if (senderApp.type !== AppType.INSTANCE) {

@@ -1,3 +1,5 @@
+import { CF_METHOD_TIMEOUT } from "@connext/types";
+
 /**
  * @summary This is a `seq` value that messages can take on which
  * _should not_ be submitted into the protocol execution. A message
@@ -18,5 +20,7 @@ export const HARD_CODED_ASSUMPTIONS = {
 };
 
 // 1 messaging timeout there, 1 messaging timeout back
-// assume messaging timeout of 5s
-export const IO_SEND_AND_WAIT_TIMEOUT = 5_000;
+// assume messaging timeout of 10s
+export const IO_SEND_AND_WAIT_TIMEOUT = CF_METHOD_TIMEOUT / 2;
+
+export const MAX_CHANNEL_APPS = parseInt(process.env.EXPERIMENTAL_MAX_CHANNEL_APPS || "0") || 25;

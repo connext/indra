@@ -5,6 +5,7 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { LockProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
+import { ConfigService } from "../config/config.service";
 
 import { LockService } from "./lock.service";
 
@@ -14,6 +15,7 @@ class LockMessaging extends AbstractMessagingProvider {
     private readonly lockService: LockService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly configService: ConfigService,
   ) {
     super(log, messaging);
   }
@@ -28,26 +30,27 @@ class LockMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.lock.acquire.>",
+      `*.${this.configService.getPublicIdentifier()}.*.lock.acquire.>`,
       this.authService.parseLock(this.acquireLock.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.lock.release.>",
+      `*.${this.configService.getPublicIdentifier()}.*.lock.release.>`,
       this.authService.parseLock(this.releaseLock.bind(this)),
     );
   }
 }
 
 export const lockProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LockService, LoggerService, MessagingProviderId],
+  inject: [AuthService, LockService, LoggerService, MessagingProviderId, ConfigService],
   provide: LockProviderId,
   useFactory: async (
     authService: AuthService,
     lockService: LockService,
     log: LoggerService,
     messaging: MessagingService,
+    configService: ConfigService,
   ): Promise<void> => {
-    const lock = new LockMessaging(authService, lockService, log, messaging);
+    const lock = new LockMessaging(authService, lockService, log, messaging, configService);
     await lock.setupSubscriptions();
   },
 };

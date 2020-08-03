@@ -1,18 +1,27 @@
+import { ERC20 } from "@connext/contracts";
 import { BigNumber, BigNumberish, Contract, Wallet, providers, constants, utils } from "ethers";
 
 import { env } from "./env";
-import { ERC20, addressBook } from "@connext/contracts";
 
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-export const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
+export const ethProviderUrl = env.chainProviders[env.defaultChain];
+export const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+
+export const ethProviderUrlForChain = (chainId: number) => env.chainProviders[chainId];
+export const ethProviderForChain = (chainId: number) =>
+  new providers.JsonRpcProvider(ethProviderUrlForChain(chainId));
 export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 export const ethWallet = Wallet.createRandom().connect(ethProvider);
 
-export const fundEthWallet = async () => {
+export const fundEthWallet = async (chainId: number = env.defaultChain) => {
   const FUND_AMT = parseEther("10000");
-  const tokenContract = new Contract(addressBook[1337].Token.address, ERC20.abi, sugarDaddy);
+  const tokenContract = new Contract(
+    env.contractAddresses[chainId].Token.address,
+    ERC20.abi,
+    sugarDaddy,
+  );
   const ethFunding = await sugarDaddy.sendTransaction({
     to: ethWallet.address,
     value: FUND_AMT,

@@ -54,9 +54,9 @@ const pulseScript = `
 `;
 
 type Awaiter = {
-  resolve: () => void,
-  reject: (err: any) => void,
-}
+  resolve: () => void;
+  reject: (err: any) => void;
+};
 
 export class MemoLock {
   private readonly log: LoggerService;
@@ -76,7 +76,7 @@ export class MemoLock {
   // subConn used for subscriber connections
   private subConn: Redis.Redis;
 
-  constructor (
+  constructor(
     log: LoggerService,
     redis: Redis.Redis,
     queueLen: number = 50,
@@ -90,21 +90,25 @@ export class MemoLock {
     this.pulseInterval = pulseInterval;
   }
 
-  async setupSubs (): Promise<void> {
+  async setupSubs(): Promise<void> {
     this.subConn = this.redis.duplicate();
 
-    await new Promise((resolve, reject) => this.subConn.subscribe("memolock:acquire", (err) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve();
-    }));
-    await new Promise((resolve, reject) => this.subConn.subscribe("memolock:expire", (err) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve();
-    }));
+    await new Promise((resolve, reject) =>
+      this.subConn.subscribe("memolock:acquire", (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      }),
+    );
+    await new Promise((resolve, reject) =>
+      this.subConn.subscribe("memolock:expire", (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      }),
+    );
 
     this.subConn.on("message", (channel, message) => {
       const awaiter = this.awaiters[message];
@@ -122,15 +126,15 @@ export class MemoLock {
       }
     });
 
-    await this.redis.defineCommand("acquireMemolock", {
+    this.redis.defineCommand("acquireMemolock", {
       numberOfKeys: 2,
       lua: lockScript,
     });
-    await this.redis.defineCommand("releaseMemolock", {
+    this.redis.defineCommand("releaseMemolock", {
       numberOfKeys: 1,
       lua: unlockScript,
     });
-    await this.redis.defineCommand("pulseMemolock", {
+    this.redis.defineCommand("pulseMemolock", {
       numberOfKeys: 0,
       lua: pulseScript,
     });
@@ -143,7 +147,7 @@ export class MemoLock {
   }
 
   async pulse() {
-    return this.redis.pulseMemolock();
+    return (this.redis as any).pulseMemolock();
   }
 
   async stopSubs() {
@@ -152,11 +156,11 @@ export class MemoLock {
     }
 
     if (this.subConn) {
-      await this.subConn.disconnect();
+      this.subConn.disconnect();
     }
   }
 
-  async acquireLock (lockName: string): Promise<string> {
+  async acquireLock(lockName: string): Promise<string> {
     const value = this.randomValue();
     const awaiterKey = `${lockName}${value}`;
     return new Promise((resolve, reject) => {
@@ -164,25 +168,32 @@ export class MemoLock {
         resolve: () => resolve(value),
         reject,
       };
-      this.redis.acquireMemolock(lockName, `${lockName}${value}`, value, this.queueLen, this.ttl, (err, res) => {
-        if (res === "OK") {
-          return;
-        }
-        delete this.awaiters[awaiterKey];
-        if (err) {
-          return reject(err);
-        }
-        if (res === "QUEUE_FULL") {
-          return reject(new Error(`Queue is full.`));
-        }
-        return reject(new Error(`Unknown response ${res} during lock acquisition.`));
-      });
+      (this.redis as any).acquireMemolock(
+        lockName,
+        `${lockName}${value}`,
+        value,
+        this.queueLen,
+        this.ttl,
+        (err, res) => {
+          if (res === "OK") {
+            return;
+          }
+          delete this.awaiters[awaiterKey];
+          if (err) {
+            return reject(err);
+          }
+          if (res === "QUEUE_FULL") {
+            return reject(new Error(`Queue is full.`));
+          }
+          return reject(new Error(`Unknown response ${res} during lock acquisition.`));
+        },
+      );
     });
   }
 
-  async releaseLock (lockName: string, lockValue: string): Promise<void> {
+  async releaseLock(lockName: string, lockValue: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.redis.releaseMemolock(lockName, lockValue, (err, res) => {
+      (this.redis as any).releaseMemolock(lockName, lockValue, (err, res) => {
         if (err) {
           return reject(err);
         }
@@ -194,7 +205,7 @@ export class MemoLock {
     });
   }
 
-  private randomValue () {
+  private randomValue() {
     return crypto.randomBytes(16).toString("hex");
   }
 }

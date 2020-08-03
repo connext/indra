@@ -57,4 +57,9 @@ export const cliOpts = {
     description: "The address of the token",
     type: "string",
   },
+  privateKey: {
+    alias: "private-key",
+    description: "An ethereum private key",
+    type: "string",
+  },
 } as { [key: string]: Options };

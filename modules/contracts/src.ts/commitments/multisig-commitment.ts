@@ -82,9 +82,18 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  private async assertSignatures() {
+  public async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
+    }
+    // assert recovery
+    for (const sig of this.signatures) {
+      const recovered = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
+      if (!this.multisigOwners.includes(recovered)) {
+        throw new Error(
+          `Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`,
+        );
+      }
     }
   }
 }

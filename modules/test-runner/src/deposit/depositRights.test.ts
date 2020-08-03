@@ -52,7 +52,7 @@ describe("Deposit Rights", () => {
 
   it("happy case: client should request deposit rights and deposit token", async () => {
     client = await createClient();
-    const assetId = client.config.contractAddresses.Token!;
+    const assetId = client.config.contractAddresses[client.chainId].Token!;
     const depositAmount = One;
     await client.requestDepositRights({ assetId });
     const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(assetId);

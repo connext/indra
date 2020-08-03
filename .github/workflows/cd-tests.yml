@@ -7,140 +7,111 @@ on:
       - staging
 
 jobs:
+
   build:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make pull-latest
-    - run: make staging
-    - run: make build-report
-    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - run: make push-commit
-
-  test-cf:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make cf-core
-    - run: make test-cf
-
-  test-store:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make store
-    - run: make test-store
-
-#   test-watcher:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v1
-#     - name: Cache node modules
-#       uses: actions/cache@v1
-#       with:
-#         path: .npm
-#         key: npm-${{ hashFiles('package-lock.json') }}
-#         restore-keys: npm-
-#     - run: make watcher
-#     - run: make test-watcher
-
-  test-contracts:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make contracts
-    - run: make test-contracts
+      - uses: actions/checkout@v1
+      - run: make pull-latest
+      - run: make all
+      - run: make build-report
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push
 
   test-utils:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make utils
-    - run: make test-utils
+      - uses: actions/checkout@v1
+      - run: make utils
+      - run: make test-utils
+
+  test-store:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make store
+      - run: make test-store
+
+  test-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make contracts
+      - run: make test-contracts
+
+  test-cf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make cf-core
+      - run: make test-cf
+
+  test-watcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make watcher
+      - run: make test-watcher
 
   test-node:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - run: make node
-    - run: make test-node
-
-#  test-bot-farm:
-#    runs-on: ubuntu-latest
-#    needs: [build]
-#    steps:
-#    - uses: actions/checkout@v1
-#    - run: make pull-commit
-#    - run: make start-test-staging
-#    - run: sleep 15 && make dls
-#    - run: make test-bot-farm
-#    - name: Print logs
-#      if: failure()
-#      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+      - uses: actions/checkout@v1
+      - run: make node
+      - run: make test-node
 
   test-integration:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-    - uses: actions/checkout@v1
-    - run: make pull-commit
-    - run: make start-test-staging
-    - run: sleep 15 && make dls
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v2
-    - run: TEST_MODE=staging make test-integration
-    - name: Print logs
-      if: failure()
-      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+      - uses: actions/checkout@v1
+      - run: make pull
+      - run: make start-prod
+      - run: make dls
+      - run: make test-integration-prod
+      - name: Print logs
+        if: failure()
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-    - uses: actions/checkout@v1
-    - run: make pull-commit
-    - run: make start-test-staging
-    - run: sleep 20 && make dls
-    - run: make test-backwards-compatibility
-    - name: Print logs
-      if: failure()
-      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+      - uses: actions/checkout@v1
+      - run: make pull
+      - run: make start-prod
+      - run: make dls
+      - run: make test-backwards-compatibility
+      - name: Print logs
+        if: failure()
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+
+  test-tps:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v1
+      - run: make pull
+      - run: make start-prod
+      - run: make dls
+      - run: make test-tps-prod
+      - name: Print logs
+        if: failure()
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-daicard:
     runs-on: ubuntu-16.04
     needs: [build]
     steps:
-    - uses: actions/checkout@v1
-    - run: make pull-commit
-    - run: make start-test-staging
-    - run: make test-daicard
-    - name: Print logs
-      if: failure()
-      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+      - uses: actions/checkout@v1
+      - run: make pull
+      - run: make start-prod
+      - run: make start-daicard
+      - run: make dls
+      - run: make test-daicard
+      - name: Print logs
+        if: failure()
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy

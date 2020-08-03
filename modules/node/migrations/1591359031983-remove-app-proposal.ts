@@ -11,14 +11,6 @@ export class removeAppProposal1591359031983 implements MigrationInterface {
     await queryRunner.query(`DROP VIEW "anonymized_onchain_transaction"`, undefined);
     await queryRunner.query(`ALTER TABLE "app_instance" DROP COLUMN "initialState"`, undefined);
     await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "userIdentifier" SET NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "nodeIdentifier" SET NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
       `UPDATE "app_instance" 
       SET "outcomeInterpreterParameters" = '{}' WHERE
       "outcomeInterpreterParameters" IS NULL`,

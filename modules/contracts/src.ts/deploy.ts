@@ -1,7 +1,8 @@
-import { Contract, ContractFactory, Wallet, providers, utils } from "ethers";
+import { Contract, ContractFactory, Wallet, providers, utils, BigNumber } from "ethers";
 
 import { AddressBook } from "./address-book";
 import { artifacts } from "./artifacts";
+// import { stringify } from "@connext/utils";
 
 const { keccak256 } = utils;
 
@@ -46,12 +47,20 @@ export const deployContract = async (
   wallet: Wallet,
   addressBook: AddressBook,
 ): Promise<Contract> => {
-  const factory = ContractFactory.fromSolidity(artifacts[name]);
-  const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
-  const txHash = contract.deployTransaction.hash;
-  console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
-  await wallet.provider.waitForTransaction(txHash!);
-  const address = contract.address;
+  // NOTE: No special case for testnet token bc non-testnet-tokens are not mintable & throw errors
+  const factory = ContractFactory.fromSolidity(artifacts[name]).connect(wallet);
+  const constructorArgs = args.map((a) => a.value);
+  const deployTx = factory.getDeployTransaction(...constructorArgs);
+  const tx = await wallet.sendTransaction({
+    ...deployTx,
+    gasLimit: BigNumber.from("5000000"),
+  });
+  console.log(`Sent transaction to deploy ${name}, txHash: ${tx.hash}`);
+  const receipt = await tx.wait();
+  // const { gasUsed, cumulativeGasUsed } = receipt;
+  // console.log(`Gas from deploy:`, stringify({ gasUsed, cumulativeGasUsed }));
+  const address = Contract.getContractAddress(tx);
+  const contract = new Contract(address, artifacts[name].abi, wallet);
   console.log(`${name} has been deployed to address: ${address}\n`);
   const runtimeCodeHash = hash(await wallet.provider.getCode(address));
   const creationCodeHash = hash(artifacts[name].bytecode);
@@ -60,7 +69,7 @@ export const deployContract = async (
     constructorArgs: args.length === 0 ? undefined : args,
     creationCodeHash,
     runtimeCodeHash,
-    txHash,
+    txHash: tx.hash,
   });
 
   return contract;

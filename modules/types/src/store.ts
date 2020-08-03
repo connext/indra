@@ -25,6 +25,7 @@ export interface IBackupService {
 export type WithdrawalMonitorObject = {
   retry: number;
   tx: MinimalTransaction;
+  withdrawalTx: string;
 };
 
 export const STORE_SCHEMA_VERSION = 1;
@@ -48,25 +49,10 @@ export interface IStoreService extends IWatcherStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
-  incrementNumProposedApps(multisigAddress: string): Promise<void>;
-
-  ///// App instances
-  createAppInstance(
-    multisigAddress: Address,
-    appInstance: AppInstanceJson,
-    freeBalanceAppInstance: AppInstanceJson,
-    signedFreeBalanceUpdate: SetStateCommitmentJSON,
-  ): Promise<void>;
-  updateAppInstance(
-    multisigAddress: Address,
-    appInstance: AppInstanceJson,
-    signedSetStateCommitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  removeAppInstance(
-    multisigAddress: Address,
-    appIdentityHash: Bytes32,
-    freeBalanceAppInstance: AppInstanceJson,
-    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  updateNumProposedApps(
+    multisigAddress: string,
+    numProposedApps: number,
+    stateChannel?: StateChannelJSON,
   ): Promise<void>;
 
   ///// App proposals
@@ -76,9 +62,36 @@ export interface IStoreService extends IWatcherStoreService {
     numProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
+    stateChannel?: StateChannelJSON,
   ): Promise<void>;
-  removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
+  removeAppProposal(
+    multisigAddress: Address,
+    appIdentityHash: Bytes32,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
   // proposals dont need to be updated
+
+  ///// App instances
+  createAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
+  updateAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
+  removeAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
 
   ///// Resetting methods
   clear(): Promise<void>;

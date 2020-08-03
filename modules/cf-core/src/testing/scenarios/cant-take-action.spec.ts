@@ -1,17 +1,14 @@
 import { CFCore } from "../../cfCore";
-import { INVALID_ACTION } from "../../errors";
 
-import { TestContractAddresses } from "../contracts";
-import { constructTakeActionRpc, createChannel, installApp } from "../utils";
+import { constructTakeActionRpc, createChannel, getContractAddresses, installApp } from "../utils";
 import { setup, SetupContext } from "../setup";
-
-const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+import { expect } from "../../testing/assertions";
 
 describe("Node method follows spec - fails with improper action taken", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
 
-  beforeAll(async () => {
+  before(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
@@ -19,6 +16,7 @@ describe("Node method follows spec - fails with improper action taken", () => {
 
   describe("Node A and B install an AppInstance, Node A takes invalid action", () => {
     it("can't take invalid action", async () => {
+      const { TicTacToeApp } = getContractAddresses();
       const validAction = {
         actionType: 1,
         playX: 0,
@@ -34,7 +32,9 @@ describe("Node method follows spec - fails with improper action taken", () => {
 
       const takeActionReq = constructTakeActionRpc(appIdentityHash, multisigAddress, validAction);
 
-      await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(INVALID_ACTION);
+      await expect(nodeA.rpcRouter.dispatch(takeActionReq)).to.eventually.be.rejectedWith(
+        "Cannot compute state transition",
+      );
     });
   });
 });

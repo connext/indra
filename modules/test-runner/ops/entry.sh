@@ -1,30 +1,24 @@
 #!/bin/bash
 set -e
 
-project="indra"
+if [[ -d "modules/test-runner" ]]
+then cd modules/test-runner
+fi
+
 cmd="${1:-test}"
 
-export STORE_DIR="./.test-store"
-export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-0}"
-export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://ethprovider:8545}"
-export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-export INDRA_NODE_URL="${INDRA_NODE_URL:-http://node:8080}"
-export INDRA_NATS_URL="${INDRA_NATS_URL:-nats://nats:4222}"
-export INDRA_PG_DATABASE="${INDRA_PG_DATABASE:-$project}"
-export INDRA_PG_HOST="${INDRA_PG_HOST:-database}"
-export INDRA_PG_PASSWORD="${INDRA_PG_PASSWORD:-$project}"
-export INDRA_PG_PORT="${INDRA_PG_PORT:-5432}"
-export INDRA_PG_USERNAME="${INDRA_PG_USERNAME:-$project}"
-export INDRA_REDIS_URL="${INDRA_REDIS_URL:-redis://redis:6379}"
+# Set defaults in src/util/env instead of here
+export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
+export INDRA_CHAIN_PROVIDERS="$INDRA_CHAIN_PROVIDERS"
+export INDRA_CLIENT_LOG_LEVEL="$INDRA_CLIENT_LOG_LEVEL"
+export INDRA_CONTRACT_ADDRESSES="$INDRA_CONTRACT_ADDRESSES"
+export INDRA_NATS_URL="$INDRA_NATS_URL"
+export INDRA_NODE_URL="$INDRA_NODE_URL"
+
 export NODE_ENV="${NODE_ENV:-development}"
 
-echo "Integration Tester Container launched!"
-echo
-
-function finish {
-  echo && echo "Integration tester container exiting.." && exit
-}
-trap finish SIGTERM SIGINT
+########################################
+# Wait for indra stack dependencies
 
 function wait_for {
   name=$1
@@ -45,11 +39,11 @@ function wait_for {
   wait-for -t 60 $host 2> /dev/null
 }
 
-wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
-wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 wait_for "node" "$INDRA_NODE_URL"
-wait_for "redis" "$INDRA_REDIS_URL"
 wait_for "nats" "$INDRA_NATS_URL"
+
+########################################
+# Launch tests
 
 bundle=dist/tests.bundle.js
 
@@ -64,11 +58,11 @@ fi
 
 if [[ "$cmd" == "watch" ]]
 then
+  echo "Starting test-watcher"
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
   mocha --slow 1000 --timeout 180000 --bail --check-leaks --watch $bundle
 else
+  echo "Starting test-runner"
   mocha --slow 1000 --timeout 180000 --bail --check-leaks --exit $noOnly $bundle
 fi
-
-rm -rf $STORE_DIR

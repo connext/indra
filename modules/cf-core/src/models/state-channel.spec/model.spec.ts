@@ -2,10 +2,12 @@ import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumberish, utils, constants } from "ethers";
 
+import { expect } from "../../testing/assertions";
 import { getRandomContractAddresses } from "../../testing/mocks";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import { getChainId } from "../../testing/utils";
 
 import { StateChannel } from "../state-channel";
-import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { FreeBalanceClass } from "../free-balance";
 import { flipTokenIndexedBalances } from "../utils";
 
@@ -13,7 +15,7 @@ const { getAddress } = utils;
 const { AddressZero } = constants;
 
 describe("StateChannel", () => {
-  test("should be able to instantiate", () => {
+  it("should be able to instantiate", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
@@ -21,17 +23,18 @@ describe("StateChannel", () => {
 
     const sc = new StateChannel(
       multisigAddress,
+      getChainId(),
       { ProxyFactory, MinimumViableMultisig },
       initiator,
       responder,
     );
 
-    expect(sc).not.toBe(null);
-    expect(sc).not.toBe(undefined);
-    expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userIdentifiers).toMatchObject([initiator, responder]);
-    expect(sc.numActiveApps).toBe(0);
-    expect(sc.numProposedApps).toBe(0);
+    expect(sc).not.to.eq(null);
+    expect(sc).not.to.eq(undefined);
+    expect(sc.multisigAddress).to.eq(multisigAddress);
+    expect(sc.userIdentifiers).to.deep.eq([initiator, responder]);
+    expect(sc.numActiveApps).to.eq(0);
+    expect(sc.numProposedApps).to.eq(0);
   });
 
   // TODO: moar tests!
@@ -56,6 +59,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        getChainId(),
         initiator,
         responder,
       );
@@ -67,26 +71,26 @@ describe("StateChannel", () => {
         [AddressZero, tokenAddress],
       );
       sc = init.setFreeBalance(freeBalance);
-      expect(sc).toBeDefined();
+      expect(sc).to.be.ok;
       const freeBalanceClass = sc.getFreeBalanceClass();
       [...init.multisigOwners].forEach((addr) => {
         const eth = freeBalanceClass.getBalance(AddressZero, addr);
         const token = freeBalanceClass.getBalance(tokenAddress, addr);
-        expect(eth.toString()).toBe(channelInitialDeposit.toString());
-        expect(token.toString()).toBe(channelInitialDeposit.toString());
+        expect(eth.toString()).to.eq(channelInitialDeposit.toString());
+        expect(token.toString()).to.eq(channelInitialDeposit.toString());
       });
     });
 
     describe("channel{initiator,responder} !== app{initiator,responder}", () => {
       beforeEach(() => {
-        expect(sc).toBeDefined();
+        expect(sc).to.be.ok;
         appInitiator = sc.multisigOwners[1];
         appResponder = sc.multisigOwners[0];
       });
 
       describe("app deposit asset id is not the same for initiator and responder", () => {
         beforeEach(() => {
-          expect(sc).toBeDefined();
+          expect(sc).to.be.ok;
           appInitiatorAssetId = tokenAddress; // channel responder
           appResponderAssetId = AddressZero; // channel initiator
         });
@@ -123,18 +127,18 @@ describe("StateChannel", () => {
             .getFreeBalanceClass()
             .toTokenIndexedCoinTransferMap();
           // check token address coin transfers
-          expect(balancesIndexedByToken).toMatchObject(expected);
+          expect(balancesIndexedByToken).to.deep.eq(expected);
         };
 
-        test("should work when responder has no balance change", () => {
+        it("should work when responder has no balance change", () => {
           runTest(7, 0);
         });
 
-        test("should work when initiator has no balance change", () => {
+        it("should work when initiator has no balance change", () => {
           runTest(0, 3);
         });
 
-        test("should work when both initiator and responder have balance changes", async () => {
+        it("should work when both initiator and responder have balance changes", async () => {
           runTest(7, 3);
         });
       });
@@ -150,44 +154,45 @@ describe("StateChannel", () => {
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
 
-    beforeAll(() => {
+    before(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        getChainId(),
         initiator,
         responder,
       );
       json = sc.toJson();
     });
 
-    test("it should have app instance arrays", () => {
-      expect(json.appInstances).toEqual([]);
+    it("it should have app instance arrays", () => {
+      expect(json.appInstances).to.deep.eq([]);
     });
 
-    test("should have proposed app instance array", () => {
-      expect(json.proposedAppInstances).toEqual([]);
+    it("should have proposed app instance array", () => {
+      expect(json.proposedAppInstances).to.deep.eq([]);
     });
 
-    test("should have a free balance app instance", () => {
-      expect(json.freeBalanceAppInstance).toBeDefined();
+    it("should have a free balance app instance", () => {
+      expect(json.freeBalanceAppInstance).to.be.ok;
     });
 
-    test("should not change the user addresss", () => {
-      expect(json.userIdentifiers[0]).toEqual(initiator);
-      expect(json.userIdentifiers[1]).toEqual(responder);
+    it("should not change the user addresss", () => {
+      expect(json.userIdentifiers[0]).to.eq(initiator);
+      expect(json.userIdentifiers[1]).to.eq(responder);
     });
 
-    test("should not change the multisig address", () => {
-      expect(json.multisigAddress).toEqual(multisigAddress);
+    it("should not change the multisig address", () => {
+      expect(json.multisigAddress).to.eq(multisigAddress);
     });
 
-    test("should have the correct critical state channel addresses", () => {
-      expect(json.addresses.ProxyFactory).toEqual(sc.addresses.ProxyFactory);
-      expect(sc.addresses.ProxyFactory).toEqual(ProxyFactory);
-      expect(json.addresses.MinimumViableMultisig).toEqual(sc.addresses.MinimumViableMultisig);
-      expect(sc.addresses.MinimumViableMultisig).toEqual(MinimumViableMultisig);
+    it("should have the correct critical state channel addresses", () => {
+      expect(json.addresses.ProxyFactory).to.eq(sc.addresses.ProxyFactory);
+      expect(sc.addresses.ProxyFactory).to.eq(ProxyFactory);
+      expect(json.addresses.MinimumViableMultisig).to.eq(sc.addresses.MinimumViableMultisig);
+      expect(sc.addresses.MinimumViableMultisig).to.eq(MinimumViableMultisig);
     });
   });
 
@@ -201,12 +206,13 @@ describe("StateChannel", () => {
     let json: StateChannelJSON;
     let rehydrated: StateChannel;
 
-    beforeAll(() => {
+    before(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        getChainId(),
         initiator,
         responder,
       );
@@ -214,37 +220,37 @@ describe("StateChannel", () => {
       rehydrated = StateChannel.fromJson(json);
     });
 
-    test("should work", () => {
+    it("should work", () => {
       for (const prop of Object.keys(sc)) {
         if (typeof sc[prop] === "function" || prop === "freeBalanceAppInstance") {
           // skip fns
           // free balance asserted below
           continue;
         }
-        expect(rehydrated[prop]).toEqual(sc[prop]);
+        expect(rehydrated[prop]).to.deep.eq(sc[prop]);
       }
     });
 
-    test("should have app instance maps", () => {
-      expect(rehydrated.appInstances).toEqual(sc.appInstances);
+    it("should have app instance maps", () => {
+      expect(rehydrated.appInstances).to.deep.eq(sc.appInstances);
     });
 
-    test("should have proposed app instance maps", () => {
-      expect(rehydrated.proposedAppInstances).toEqual(sc.proposedAppInstances);
+    it("should have proposed app instance maps", () => {
+      expect(rehydrated.proposedAppInstances).to.deep.eq(sc.proposedAppInstances);
     });
 
-    test("should have a free balance app instance", () => {
+    it("should have a free balance app instance", () => {
       // will fail because of { _hex: "" } vs BigNumber comparison
-      expect(rehydrated.freeBalance).toMatchObject(bigNumberifyJson(sc.freeBalance));
+      expect(rehydrated.freeBalance).to.deep.contain(bigNumberifyJson(sc.freeBalance));
     });
 
-    test("should not change the user addresss", () => {
-      expect(rehydrated.userIdentifiers[0]).toEqual(initiator);
-      expect(rehydrated.userIdentifiers[1]).toEqual(responder);
+    it("should not change the user addresss", () => {
+      expect(rehydrated.userIdentifiers[0]).to.eq(initiator);
+      expect(rehydrated.userIdentifiers[1]).to.eq(responder);
     });
 
-    test("should not change the multisig address", () => {
-      expect(rehydrated.multisigAddress).toEqual(sc.multisigAddress);
+    it("should not change the multisig address", () => {
+      expect(rehydrated.multisigAddress).to.eq(sc.multisigAddress);
     });
   });
 });

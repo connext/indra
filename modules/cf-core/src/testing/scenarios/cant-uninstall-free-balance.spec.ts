@@ -3,12 +3,13 @@ import { CANNOT_UNINSTALL_FREE_BALANCE } from "../../errors";
 
 import { setup, SetupContext } from "../setup";
 import { constructUninstallRpc, createChannel, constructGetStateChannelRpc } from "../utils";
+import { expect } from "../assertions";
 
 describe("Confirms that a FreeBalance cannot be uninstalled", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
 
-  beforeAll(async () => {
+  before(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
@@ -23,7 +24,7 @@ describe("Confirms that a FreeBalance cannot be uninstalled", () => {
           result: { data: channel },
         },
       } = await nodeA.rpcRouter.dispatch(constructGetStateChannelRpc(multisigAddress));
-      expect(channel.multisigAddress).toBe(multisigAddress);
+      expect(channel.multisigAddress).to.eq(multisigAddress);
 
       const fbUninstallReq = constructUninstallRpc(
         channel.freeBalanceAppInstance.identityHash,
@@ -33,7 +34,7 @@ describe("Confirms that a FreeBalance cannot be uninstalled", () => {
       try {
         await nodeA.rpcRouter.dispatch(fbUninstallReq);
       } catch (e) {
-        expect(e.toString()).toMatch(CANNOT_UNINSTALL_FREE_BALANCE(multisigAddress));
+        expect(e.toString()).to.includes(CANNOT_UNINSTALL_FREE_BALANCE(multisigAddress));
       }
     });
   });

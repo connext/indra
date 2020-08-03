@@ -1,10 +1,11 @@
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
 
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
-import { env, expect, MockConfigService } from "../utils";
+import { env, ethProviderUrl, MockConfigService } from "../utils";
 
 describe("Startup", () => {
   const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
@@ -27,12 +28,15 @@ describe("Startup", () => {
       .useClass(MockConfigService)
       .compile();
     app = moduleFixture.createNestApplication();
-    expect(app.init()).to.not.be.rejected;
-    await app.listen();
+    await app.init();
+    const configService = moduleFixture.get<ConfigService>(ConfigService);
+    await app.listen(configService.getPort());
   });
 
   it("should still start up even if the node has zero balance", async () => {
-    const configService = new MockConfigService(getRandomChannelSigner(env.ethProviderUrl));
+    const configService = new MockConfigService({
+      signer: getRandomChannelSigner(ethProviderUrl),
+    });
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -40,7 +44,7 @@ describe("Startup", () => {
       .useValue(configService)
       .compile();
     app = moduleFixture.createNestApplication();
-    expect(app.init()).to.not.be.rejected;
-    await app.listen();
+    await app.init();
+    await app.listen(configService.getPort());
   });
 });

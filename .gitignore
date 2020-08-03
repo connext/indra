@@ -7,6 +7,8 @@
 **/dist/**
 **/node_modules/**
 **/tsconfig.tsbuildinfo
+*.docker-compose.yml
+docker-compose.yml
 modules/*/package-lock.json
 
 # Cache
@@ -14,6 +16,7 @@ modules/*/package-lock.json
 **/.buidler
 **/.cache
 **/.config
+**/.connext-store/**
 **/.git
 **/.jest.cache
 **/.local
@@ -23,6 +26,11 @@ modules/*/package-lock.json
 **/.rpt2_cache
 **/.test-store
 **/cache/**
+
+# Data Storage
+**/.bot-store/
+**/.chaindata
+**/.db-snapshots
 
 # Docs
 modules/client/docs
@@ -52,13 +60,6 @@ cypress/videos
 # Sensitive Data
 **/.env
 **/react-app-env.d.ts
-ops/database/snapshots
-
-# Http files
-ganache.http
-modules/bot/.connext-store/
-modules/bot-registry/.node-persist/
-
 .secret
 
 # Local address book

@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
@@ -13,20 +12,15 @@ import { WithdrawRepository } from "./withdraw.repository";
 import { WithdrawService } from "./withdraw.service";
 
 @Module({
-    controllers: [],
-    exports: [WithdrawService],
-    imports: [
-      CFCoreModule,
-      ConfigModule,
-      OnchainTransactionModule,
-      LoggerModule,
-      TypeOrmModule.forFeature([
-        OnchainTransactionRepository,
-        AppRegistryRepository,
-        WithdrawRepository,
-        ChannelRepository,
-      ]),
-    ],
-    providers: [WithdrawService],
+  controllers: [],
+  exports: [WithdrawService],
+  imports: [
+    CFCoreModule,
+    ConfigModule,
+    OnchainTransactionModule,
+    LoggerModule,
+    TypeOrmModule.forFeature([OnchainTransactionRepository, WithdrawRepository, ChannelRepository]),
+  ],
+  providers: [WithdrawService],
 })
 export class WithdrawModule {}

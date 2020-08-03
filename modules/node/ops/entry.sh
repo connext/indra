@@ -3,18 +3,29 @@ set -e
 
 if [[ -d "modules/node" ]]
 then cd modules/node
-elif [[ ! -f "src/main.ts" && ! -f "dist/src/main.js" ]]
-then echo "Fatal: couldn't find file to run" && exit 1
 fi
+
+########################################
+# Convert secrets to env vars
 
 if [[ -z "$INDRA_PG_PASSWORD" && -n "$INDRA_PG_PASSWORD_FILE" ]]
 then export INDRA_PG_PASSWORD="`cat $INDRA_PG_PASSWORD_FILE`"
 fi
 
-if [[ -z "$INDRA_ETH_MNEMONIC" && -n "$INDRA_ETH_MNEMONIC_FILE" ]]
-then
-  export INDRA_ETH_MNEMONIC="`cat $INDRA_ETH_MNEMONIC_FILE`"
+if [[ -z "$INDRA_MNEMONIC" && -n "$INDRA_MNEMONIC_FILE" ]]
+then export INDRA_MNEMONIC="`cat $INDRA_MNEMONIC_FILE`"
 fi
+
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -n "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_FILE" ]]
+then export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="`cat $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_FILE`"
+fi
+
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY" && -n "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_FILE" ]]
+then export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="`cat $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_FILE`"
+fi
+
+########################################
+# Wait for indra stack dependencies
 
 function wait_for {
   name=$1
@@ -37,8 +48,10 @@ function wait_for {
 
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
-wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 wait_for "redis" "$INDRA_REDIS_URL"
+
+########################################
+# Launch Node
 
 if [[ "$NODE_ENV" == "development" ]]
 then
@@ -55,11 +68,6 @@ then
     ./src/main.ts
 else
   echo "Starting indra node in prod-mode"
-  if [[ -n "$INSPECT" ]]
-  then
-    exec node --inspect=0.0.0.0:9229 --no-deprecation dist/src/main.js
-  else
-    exec node --no-deprecation dist/src/main.js
-  fi
+  exec node --no-deprecation dist/bundle.js
 fi
 

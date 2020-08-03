@@ -5,9 +5,9 @@ import {
   MethodName,
   MethodParam,
   MethodResult,
-  NetworkContext,
   Opcode,
-  ProtocolMessageData,
+  NetworkContexts,
+  ProtocolMessage,
 } from "@connext/types";
 import { StateChannel } from "./models";
 
@@ -29,11 +29,12 @@ export type PersistCommitmentType = typeof PersistCommitmentType[keyof typeof Pe
 
 export const PersistStateChannelType = {
   CreateChannel: "CreateChannel",
-  SyncNumProposedApps: "SyncNumProposedApps",
   SyncProposal: "SyncProposal",
-  NoChange: "NoChange",
-  SyncFreeBalance: "SyncFreeBalance",
+  SyncInstall: "SyncInstall",
+  SyncUninstall: "SyncUninstall",
   SyncAppInstances: "SyncAppInstances",
+  NoChange: "NoChange",
+  SyncRejectedProposals: "SyncRejectedProposals",
 } as const;
 export type PersistStateChannelType = keyof typeof PersistStateChannelType;
 
@@ -51,8 +52,8 @@ export type Instruction = Function | Opcode;
 export interface Context {
   store: IStoreService;
   log: ILoggerService;
-  message: ProtocolMessageData;
-  network: NetworkContext;
+  message: ProtocolMessage;
+  networks: NetworkContexts;
   preProtocolStateChannel?: StateChannel;
 }
 

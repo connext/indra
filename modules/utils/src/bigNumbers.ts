@@ -6,7 +6,13 @@ export const isBN = BigNumber.isBigNumber;
 export const isBNJson = (value: any): boolean => !isBN(value) && !!value._hex;
 
 export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
-  BigNumber.from(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
+  BigNumber.from(
+    (n && typeof (n as BigNumberJson)._hex === "string")
+      ? (n as BigNumberJson)._hex
+      : typeof n.toString === "function"
+        ? n.toString()
+        : "0",
+  );
 
 export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
   _hex: toBN(n).toHexString(),

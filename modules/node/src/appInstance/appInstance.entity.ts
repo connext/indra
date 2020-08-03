@@ -3,13 +3,12 @@ import {
   AppName,
   AppStates,
   HexString,
-  JSONSerializer,
   OutcomeType,
   TwoPartyFixedOutcomeInterpreterParamsJson,
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
 import {
   Column,
   CreateDateColumn,
@@ -21,13 +20,14 @@ import {
 
 import { Channel } from "../channel/channel.entity";
 import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
-import { bigNumberifyJson, deBigNumberifyJson } from "@connext/utils";
+import { transformBN } from "../utils";
+
+const { Zero } = constants;
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
   INSTANCE = "INSTANCE",
   FREE_BALANCE = "FREE_BALANCE",
-  REJECTED = "REJECTED", // removed proposal
   UNINSTALLED = "UNINSTALLED", // removed app
 }
 
@@ -59,12 +59,7 @@ export class AppInstance<T extends AppName = any> {
   @Column("integer")
   latestVersionNumber!: number;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   initiatorDeposit!: BigNumber;
 
   @Column("text")
@@ -82,12 +77,7 @@ export class AppInstance<T extends AppName = any> {
   @IsValidPublicIdentifier()
   responderIdentifier!: string;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   responderDeposit!: BigNumber;
 
   @Column("text")
@@ -99,14 +89,6 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
-
-  @Column("text")
-  @IsValidPublicIdentifier()
-  userIdentifier!: string;
-
-  @Column("text")
-  @IsValidPublicIdentifier()
-  nodeIdentifier!: string;
 
   @Column("jsonb", { nullable: true })
   meta!: any;
@@ -121,7 +103,7 @@ export class AppInstance<T extends AppName = any> {
     | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
     | {};
 
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
   @CreateDateColumn()
@@ -130,101 +112,3 @@ export class AppInstance<T extends AppName = any> {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-
-export interface AppInstanceJSON<T extends AppName = any> {
-  identityHash: string;
-  type: AppType;
-  appDefinition: string;
-  stateEncoding: string;
-  actionEncoding: string;
-  appSeqNo: number;
-  initialState: AppStates[T];
-  latestState: AppStates[T];
-  latestVersionNumber: number;
-  initiatorDeposit: BigNumber;
-  initiatorDepositAssetId: string;
-  outcomeType: OutcomeType;
-  initiatorIdentifier: string;
-  responderIdentifier: string;
-  responderDeposit: BigNumber;
-  responderDepositAssetId: string;
-  defaultTimeout: HexString;
-  stateTimeout: HexString;
-  userIdentifier?: string;
-  nodeIdentifier?: string;
-  meta?: object;
-  latestAction: AppActions[T];
-  outcomeInterpreterParameters?: any;
-  channel: Channel;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON> = class {
-  static fromJSON(input: AppInstanceJSON): AppInstance {
-    const inst = new AppInstance();
-    Object.assign(
-      inst,
-      bigNumberifyJson<AppInstanceJSON>({
-        identityHash: input.identityHash,
-        type: input.type,
-        appDefinition: input.appDefinition,
-        stateEncoding: input.stateEncoding,
-        actionEncoding: input.actionEncoding,
-        appSeqNo: input.appSeqNo,
-        initialState: input.initialState,
-        latestState: input.latestState,
-        latestVersionNumber: input.latestVersionNumber,
-        initiatorDeposit: input.initiatorDeposit,
-        initiatorDepositAssetId: input.initiatorDepositAssetId,
-        outcomeType: input.outcomeType,
-        initiatorIdentifier: input.initiatorIdentifier,
-        responderIdentifier: input.responderIdentifier,
-        responderDeposit: input.responderDeposit,
-        responderDepositAssetId: input.responderDepositAssetId,
-        defaultTimeout: input.defaultTimeout,
-        stateTimeout: input.stateTimeout,
-        userIdentifier: input.userIdentifier,
-        nodeIdentifier: input.nodeIdentifier,
-        meta: input.meta,
-        latestAction: input.latestAction,
-        outcomeInterpreterParameters: input.outcomeInterpreterParameters,
-        channel: input.channel,
-      }),
-    );
-    // cannot bignumberify these - they get mangled
-    inst.createdAt = new Date(input.createdAt);
-    inst.updatedAt = new Date(input.updatedAt);
-    return inst;
-  }
-
-  static toJSON(input: AppInstance): AppInstanceJSON {
-    return deBigNumberifyJson<AppInstanceJSON>({
-      identityHash: input.identityHash,
-      type: input.type,
-      appDefinition: input.appDefinition,
-      stateEncoding: input.stateEncoding,
-      actionEncoding: input.actionEncoding,
-      appSeqNo: input.appSeqNo,
-      latestState: input.latestState,
-      latestVersionNumber: input.latestVersionNumber,
-      initiatorDeposit: input.initiatorDeposit,
-      initiatorDepositAssetId: input.initiatorDepositAssetId,
-      outcomeType: input.outcomeType,
-      initiatorIdentifier: input.initiatorIdentifier,
-      responderIdentifier: input.responderIdentifier,
-      responderDeposit: input.responderDeposit,
-      responderDepositAssetId: input.responderDepositAssetId,
-      defaultTimeout: input.defaultTimeout,
-      stateTimeout: input.stateTimeout,
-      userIdentifier: input.userIdentifier,
-      nodeIdentifier: input.nodeIdentifier,
-      meta: input.meta,
-      latestAction: input.latestAction,
-      outcomeInterpreterParameters: input.outcomeInterpreterParameters,
-      channel: input.channel,
-      createdAt: input.createdAt ? input.createdAt.getTime() : Date.now(),
-      updatedAt: input.updatedAt ? input.updatedAt.getTime() : Date.now(),
-    });
-  }
-};

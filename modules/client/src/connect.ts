@@ -10,7 +10,14 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner, ConsoleLogger, logTime, stringify, delay } from "@connext/utils";
+import {
+  ChannelSigner,
+  ConsoleLogger,
+  logTime,
+  stringify,
+  delay,
+  getChainId,
+} from "@connext/utils";
 
 import { Contract, providers } from "ethers";
 
@@ -34,12 +41,12 @@ export const connect = async (
     ethProviderUrl,
     loggerService,
     messagingUrl,
+    nodeUrl,
     logLevel,
+    skipSync,
+    skipInitStore,
   } = opts;
-  let { store, messaging, nodeUrl } = opts;
-  if (store) {
-    await store.init();
-  }
+  let { messaging } = opts;
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -53,10 +60,21 @@ export const connect = async (
     }`,
   );
 
-  // setup ethProvider + network information
-  logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const network = await ethProvider.getNetwork();
+  const store = opts.store || getLocalStore();
+
+  if (!skipInitStore) {
+    await store.init();
+  }
+  logger.info(
+    `Using ${opts.store ? "given" : "local"} store containing ${
+      (await store.getAllChannels()).length
+    } channels`,
+  );
+
+  // setup ethProvider
+  logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
+  const chainId = await getChainId(ethProviderUrl);
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -75,14 +93,15 @@ export const connect = async (
     }
     logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    nodeUrl = channelProvider.config.nodeUrl;
     node = await NodeApiClient.init({
       ethProvider,
       messaging,
       messagingUrl,
       logger,
-      nodeUrl,
+      nodeUrl: channelProvider.config.nodeUrl,
       channelProvider,
+      skipSync,
+      chainId,
     });
     config = node.config;
     messaging = node.messaging;
@@ -96,8 +115,6 @@ export const connect = async (
         ? new ChannelSigner(opts.signer, ethProviderUrl)
         : opts.signer;
 
-    store = store || getLocalStore();
-
     node = await NodeApiClient.init({
       store,
       ethProvider,
@@ -106,6 +123,8 @@ export const connect = async (
       logger,
       nodeUrl,
       signer,
+      skipSync,
+      chainId,
     });
     config = node.config;
     messaging = node.messaging;
@@ -115,7 +134,7 @@ export const connect = async (
   }
 
   // create a token contract based on the provided token
-  const token = new Contract(config.contractAddresses.Token, ERC20.abi, ethProvider);
+  const token = new Contract(config.contractAddresses[chainId].Token, ERC20.abi, ethProvider);
 
   // create appRegistry
   const appRegistry = await node.appRegistry();
@@ -128,11 +147,12 @@ export const connect = async (
     ethProvider,
     logger,
     messaging,
-    network,
+    network: await ethProvider.getNetwork(),
     node,
     signer,
     store,
     token,
+    chainId,
   });
 
   logger.info(`Done creating connext client`);
@@ -175,9 +195,7 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      logger.info(
-        `Our store does not contain channel, attempting to restore: ${e.message}`,
-      );
+      logger.info(`Our store does not contain channel, attempting to restore: ${e.message}`);
       await client.restoreState();
       logger.info(`State restored successfully`);
     } else {
@@ -189,7 +207,9 @@ export const connect = async (
   // Make sure our store schema is up-to-date
   const schemaVersion = await client.channelProvider.getSchemaVersion();
   if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    logger.info(`Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`);
+    logger.info(
+      `Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`,
+    );
     await client.restoreState();
     logger.info(`State restored successfully`);
     // increment / update store schema version, defaults to types const of `STORE_SCHEMA_VERSION`
@@ -199,7 +219,9 @@ export const connect = async (
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
   if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    logger.info(`State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`);
+    logger.info(
+      `State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`,
+    );
     await client.restoreState();
     logger.info(`State restored successfully`);
   }
@@ -240,20 +262,16 @@ export const connect = async (
   logger.info("Checked in with node");
 
   // watch for/prune lingering withdrawals
-  logger.info("Getting user withdrawals");
+  logger.debug("Getting user withdrawals");
   const previouslyActive = await client.getUserWithdrawals();
   if (previouslyActive.length === 0) {
-    logger.info("No user withdrawals found");
+    logger.debug("No user withdrawals found");
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
   try {
-    logger.info(`Watching for user withdrawals`);
-    const transactions = await client.watchForUserWithdrawal();
-    if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map((tx) => tx.hash)}`);
-    }
+    await client.watchForUserWithdrawal();
   } catch (e) {
     logger.error(
       `Could not complete watching for user withdrawals: ${

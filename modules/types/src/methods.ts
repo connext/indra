@@ -12,6 +12,7 @@ import { enumify } from "./utils";
 
 type CreateChannelParams = {
   owners: PublicIdentifier[];
+  chainId: number;
 };
 
 type CreateChannelResult = {
@@ -68,6 +69,7 @@ type GetAppInstancesResult = {
 
 type GetStateDepositHolderAddressParams = {
   owners: Address[]; // [initiator, responder]
+  chainId: number;
 };
 
 type GetStateDepositHolderAddressResult = {
@@ -132,6 +134,7 @@ type GetStateChannelResult = {
 type InstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  protocolMeta?: any;
 };
 
 type InstallResult = {
@@ -166,6 +169,7 @@ type ProposeInstallParams = {
   responderDeposit: BigNumber;
   responderDepositAssetId: AssetId;
   stateTimeout?: BigNumber;
+  protocolMeta?: any;
 };
 
 type ProposeInstallResult = {
@@ -189,6 +193,7 @@ type TakeActionParams = {
   action: SolidityValueType;
   multisigAddress: Address;
   stateTimeout?: BigNumber;
+  protocolMeta?: any;
 };
 
 type TakeActionResult = {
@@ -201,6 +206,7 @@ type UninstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
   action?: SolidityValueType;
+  protocolMeta?: any;
 };
 
 type UninstallResult = {
@@ -250,6 +256,7 @@ type WithdrawCommitmentResult = {
 
 type SyncParams = {
   multisigAddress: Address;
+  protocolMeta?: any;
 };
 
 type SyncResult = {

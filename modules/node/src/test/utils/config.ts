@@ -1,32 +1,54 @@
 import { ChannelSigner } from "@connext/utils";
-import { constants, providers, Wallet } from "ethers";
+import { providers, Wallet } from "ethers";
 
 import { ConfigService } from "../../config/config.service";
+import { LoggerService } from "../../logger/logger.service";
+import { Address } from "@connext/types";
 
 export const env = {
-  ethProviderUrl: process.env.INDRA_ETH_RPC_URL,
-  indraLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
-  logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
-  mnemonic: process.env.INDRA_ETH_MNEMONIC,
+  chainProviders: JSON.parse(process.env.INDRA_CHAIN_PROVIDERS),
+  defaultChain: parseInt(process.env.INDRA_DEFAULT_CHAIN || "0", 10),
+  contractAddresses: JSON.parse(process.env.INDRA_CONTRACT_ADDRESSES),
+  logLevel: parseInt(process.env.CLIENT_LOG_LEVEL || "0", 10),
+  messagingUrl: "nats://indra_nats_node_tester:4222",
+  mnemonic: process.env.INDRA_MNEMONIC,
+  nodeUrl: "http://localhost:8080",
+  serverLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
 };
+
+export const ethProviderUrl = env.chainProviders[env.defaultChain];
 
 export const defaultSigner = new ChannelSigner(
   Wallet.fromMnemonic(env.mnemonic).privateKey,
-  env.ethProviderUrl,
+  ethProviderUrl,
 );
 
+// add overrides as needed in tests
+export type ConfigOverrides = {
+  signer: ChannelSigner;
+  extraSupportedTokens: { [chainId: number]: string[] };
+};
+
 export class MockConfigService extends ConfigService {
-  private nodeSigner;
-  constructor(signer: ChannelSigner = defaultSigner) {
-    super();
-    this.nodeSigner = signer;
+  private nodeSigner: ChannelSigner;
+  private supportedTokens: { [chainId: number]: Address[] };
+
+  constructor(overrides: Partial<ConfigOverrides> = {}) {
+    super(new LoggerService("Test"));
+    this.nodeSigner = overrides.signer || defaultSigner;
+    const realSupported = super.getSupportedTokens();
+    Object.keys(overrides.extraSupportedTokens || []).forEach((chainId) => {
+      realSupported[chainId] = realSupported[chainId].concat(
+        overrides.extraSupportedTokens[chainId],
+      );
+    });
+    this.supportedTokens = realSupported;
   }
-  getEthProvider = () => new providers.JsonRpcProvider(this.getEthRpcUrl());
-  getEthRpcUrl = () => env.ethProviderUrl;
-  getLogLevel = (): number => env.indraLogLevel;
+  getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
+  getProviderUrls = () => [ethProviderUrl!];
+  getLogLevel = (): number => env.serverLogLevel;
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;
   getSignerAddress = async () => this.getSigner().address;
-  getSupportedTokenAddresses = (): string[] => this.getSupportedTokens();
-  getSupportedTokens = (): string[] => [constants.AddressZero];
+  getSupportedTokens = (): { [chainId: number]: Address[] } => this.supportedTokens;
 }

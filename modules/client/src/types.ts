@@ -17,6 +17,7 @@ export type InternalClientOptions = {
   channelProvider: IChannelProvider;
   config: NodeResponses.GetConfig;
   ethProvider: providers.JsonRpcProvider;
+  chainId: number;
   logger: ILoggerService;
   messaging: IMessagingService;
   network: Network;

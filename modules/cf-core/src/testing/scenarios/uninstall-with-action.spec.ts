@@ -9,32 +9,28 @@ import {
   SimpleLinkedTransferAppName,
   AppActions,
 } from "@connext/types";
+import { getRandomBytes32, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeEq } from "../bignumber-jest-matcher";
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
+  getAppInstance,
+  getContractAddresses,
   getFreeBalanceState,
   getInstalledAppInstances,
   installApp,
-  getAppInstance,
 } from "../utils";
 import { AppInstance } from "../../models";
-import { getRandomBytes32 } from "@connext/utils";
+import { expect } from "../assertions";
 
 const { One, Two, Zero, HashZero } = constants;
 const { soliditySha256 } = utils;
-
-expect.extend({ toBeEq });
-
-const { SimpleLinkedTransferApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,
@@ -43,6 +39,7 @@ function assertUninstallMessage(
   uninstalledApp: AppInstanceJson,
   action: AppAction,
   msg: ProtocolEventMessage<"UNINSTALL_EVENT">,
+  protocolMeta?: any,
 ) {
   assertMessage<typeof EventNames.UNINSTALL_EVENT>(msg, {
     from: senderId,
@@ -52,6 +49,7 @@ function assertUninstallMessage(
       multisigAddress,
       uninstalledApp,
       action,
+      protocolMeta,
     },
   });
 }
@@ -72,7 +70,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
-    provider = nodeA.networkContext.provider;
+    provider = (Object.values(global["networks"])[0] as any).provider;
 
     multisigAddress = await createChannel(nodeA, nodeB);
     await collateralizeChannel(multisigAddress, nodeA, nodeB, depositAmount);
@@ -89,7 +87,8 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     };
   });
 
-  it("should take action + uninstall linked app", async (done) => {
+  it("should take action + uninstall SimpleLinkedTransferApp app", async () => {
+    const { SimpleLinkedTransferApp } = getContractAddresses();
     [appIdentityHash] = await installApp(
       nodeA,
       nodeB,
@@ -103,29 +102,39 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     );
     const appPreUninstall = AppInstance.fromJson(await getAppInstance(nodeA, appIdentityHash));
     const expected = appPreUninstall
-      .setState(await appPreUninstall.computeStateTransition(action, provider), Zero)
+      .setState(
+        await appPreUninstall.computeStateTransition(
+          getSignerAddressFromPublicIdentifier(nodeB.publicIdentifier),
+          action,
+          provider,
+        ),
+        Zero,
+      )
       .toJson();
+
+    const protocolMeta = { hello: "world" };
 
     await Promise.all([
       new Promise(async (resolve, reject) => {
-        nodeB.on(EventNames.UNINSTALL_EVENT, async (msg) => {
+        nodeA.on(EventNames.UNINSTALL_EVENT, async (msg) => {
           if (msg.data.appIdentityHash !== appIdentityHash) {
             return;
           }
           try {
             assertUninstallMessage(
-              nodeA.publicIdentifier,
+              nodeB.publicIdentifier,
               multisigAddress,
               appIdentityHash,
               expected,
               action,
               msg,
+              protocolMeta,
             );
 
             const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-            expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Zero);
-            expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Two);
-            expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+            expect(balancesSeenByB[nodeA.signerAddress]).to.eq(Zero);
+            expect(balancesSeenByB[nodeB.signerAddress]).to.eq(Two);
+            expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
             resolve();
           } catch (e) {
             reject(e);
@@ -134,22 +143,20 @@ describe("Node A and B install an app, then uninstall with a given action", () =
       }),
       new Promise(async (resolve, reject) => {
         try {
-          await nodeA.rpcRouter.dispatch(
-            constructUninstallRpc(appIdentityHash, multisigAddress, action),
+          await nodeB.rpcRouter.dispatch(
+            constructUninstallRpc(appIdentityHash, multisigAddress, action, protocolMeta),
           );
 
           const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-          expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
-          expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Two);
+          expect(balancesSeenByA[nodeA.signerAddress]).to.eq(Zero);
+          expect(balancesSeenByA[nodeB.signerAddress]).to.eq(Two);
 
-          expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+          expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
           resolve();
         } catch (e) {
           reject(e);
         }
       }),
     ]);
-
-    done();
   });
 });

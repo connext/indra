@@ -19,6 +19,7 @@ import {
   signChannelMessage,
 } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
+import { getChainId } from "./chainId";
 
 export const getRandomChannelSigner = (provider?: UrlString | providers.Provider) =>
   new ChannelSigner(getRandomPrivateKey(), provider);
@@ -50,13 +51,15 @@ export class ChannelSigner extends Signer implements IChannelSigner {
 
   public encrypt = encrypt;
 
-  public connectProvider(provider?: UrlString | providers.Provider): void {
+  public async connectProvider(provider?: UrlString | providers.Provider): Promise<void> {
     this.provider =
-      typeof provider === "string" ? new providers.JsonRpcProvider(provider) : provider;
+      typeof provider === "string"
+        ? new providers.JsonRpcProvider(provider, await getChainId(provider))
+        : provider;
   }
 
   public connect(provider: providers.Provider): Signer {
-    this.connectProvider(provider);
+    this.provider = provider;
     return this;
   }
 

@@ -18,14 +18,14 @@ export class SyncController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.multisigAddress) {
       throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.multisigAddress];
   }
 
   protected async executeMethodImplementation(
@@ -55,7 +55,9 @@ export class SyncController extends MethodController {
         multisigAddress,
         initiatorIdentifier: publicIdentifier,
         responderIdentifier,
+        chainId: preProtocolStateChannel.chainId,
       },
+      preProtocolStateChannel,
     );
 
     return { syncedChannel: updated.toJson() };

@@ -4,17 +4,21 @@ import {
   MethodResults,
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
+  EventNames,
+  ProposeMessage,
 } from "@connext/types";
+import { appIdentityToHash, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 
 import {
   NULL_INITIAL_STATE_FOR_PROPOSAL,
   NO_STATE_CHANNEL_FOR_OWNERS,
   NO_MULTISIG_IN_PARAMS,
+  TOO_MANY_APPS_IN_CHANNEL,
 } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-
 import { MethodController } from "../controller";
+import { MAX_CHANNEL_APPS } from "../../constants";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -27,22 +31,22 @@ export class ProposeInstallAppInstanceController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.multisigAddress) {
       throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
-    const { initialState, responderIdentifier } = params;
+  ): Promise<MethodResults.ProposeInstall | undefined> {
+    const { initialState, responderIdentifier, appDefinition, defaultTimeout } = params;
     const { publicIdentifier } = requestHandler;
 
     if (!initialState) {
@@ -53,6 +57,25 @@ export class ProposeInstallAppInstanceController extends MethodController {
       throw new Error(
         NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
       );
+    }
+
+    if (preProtocolStateChannel.proposedAppInstances.size >= MAX_CHANNEL_APPS) {
+      throw new Error(TOO_MANY_APPS_IN_CHANNEL);
+    }
+
+    const appIdentity = {
+      participants: [
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
+        getSignerAddressFromPublicIdentifier(responderIdentifier),
+      ],
+      multisigAddress: preProtocolStateChannel.multisigAddress,
+      appDefinition,
+      defaultTimeout,
+      channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
+    };
+    const appIdentityHash = appIdentityToHash(appIdentity);
+    if (preProtocolStateChannel.proposedAppInstances.has(appIdentityHash)) {
+      return { appIdentityHash };
     }
 
     const {
@@ -66,6 +89,7 @@ export class ProposeInstallAppInstanceController extends MethodController {
 
     params.initiatorDepositAssetId = initiatorDepositAssetId;
     params.responderDepositAssetId = responderDepositAssetId;
+    return undefined;
   }
 
   protected async executeMethodImplementation(
@@ -76,6 +100,9 @@ export class ProposeInstallAppInstanceController extends MethodController {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin propose protocol with");
+    }
 
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
       router,
@@ -86,8 +113,24 @@ export class ProposeInstallAppInstanceController extends MethodController {
         initiatorIdentifier: publicIdentifier,
         responderIdentifier: responderIdentifier,
       },
-      preProtocolStateChannel!,
+      preProtocolStateChannel,
     );
     return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
+  }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.ProposeInstall,
+    returnValue: MethodResults.ProposeInstall,
+  ): Promise<void> {
+    const { router, publicIdentifier } = requestHandler;
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.PROPOSE_INSTALL_EVENT,
+      data: { params: params as any, appInstanceId: returnValue.appIdentityHash },
+    } as ProposeMessage;
+
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }

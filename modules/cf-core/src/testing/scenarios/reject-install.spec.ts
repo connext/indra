@@ -2,19 +2,18 @@ import { EventNames, ProposeMessage } from "@connext/types";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
   collateralizeChannel,
   constructRejectInstallRpc,
   createChannel,
+  getContractAddresses,
   getInstalledAppInstances,
   getProposedAppInstances,
   makeAndSendProposeCall,
 } from "../utils";
-
-const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+import { expect } from "../assertions";
 
 describe("Node method follows spec - rejectInstall", () => {
   let nodeA: CFCore;
@@ -27,71 +26,78 @@ describe("Node method follows spec - rejectInstall", () => {
   });
 
   describe("Rejects proposal with non-null initial state", () => {
-    it("Node A installs, node b rejects", async (done) => {
-      const multisigAddress = await createChannel(nodeA, nodeB);
+    it("Node A installs, node b rejects", async () => {
+      return new Promise(async (done) => {
+        const { TicTacToeApp } = getContractAddresses();
 
-      await collateralizeChannel(multisigAddress, nodeA, nodeB);
+        const multisigAddress = await createChannel(nodeA, nodeB);
 
-      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
-      expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+        await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-      nodeA.on(EventNames.REJECT_INSTALL_EVENT, async (msg) => {
-        assertMessage<typeof EventNames.REJECT_INSTALL_EVENT>(
-          msg,
-          {
-            from: nodeB.publicIdentifier,
-            type: EventNames.REJECT_INSTALL_EVENT,
-            data: { reason: "Rejected" },
-          },
-          ["data.appInstance"],
-        );
-        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(0);
-        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(0);
-        done();
+        expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
+        expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
+
+        nodeA.on(EventNames.REJECT_INSTALL_EVENT, async (msg) => {
+          assertMessage<typeof EventNames.REJECT_INSTALL_EVENT>(
+            msg,
+            {
+              from: nodeB.publicIdentifier,
+              type: EventNames.REJECT_INSTALL_EVENT,
+              data: { reason: "Rejected" },
+            },
+            ["data.appInstance"],
+          );
+          expect((await getProposedAppInstances(nodeA, multisigAddress)).length).to.eq(0);
+          expect((await getProposedAppInstances(nodeB, multisigAddress)).length).to.eq(0);
+          done();
+        });
+
+        // node B then decides to reject the proposal
+        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId, multisigAddress);
+          expect((await getProposedAppInstances(nodeB, multisigAddress)).length).to.eq(1);
+          await nodeB.rpcRouter.dispatch(rejectReq);
+        });
+
+        await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
+        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).to.eq(1);
       });
-
-      // node B then decides to reject the proposal
-      nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-        const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId, multisigAddress);
-        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
-        await nodeB.rpcRouter.dispatch(rejectReq);
-      });
-
-      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
-      expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
 
-    it("Node A installs, node a rejects", async (done) => {
-      const multisigAddress = await createChannel(nodeA, nodeB);
+    it("Node A installs, node a rejects", async () => {
+      return new Promise(async (done) => {
+        const { TicTacToeApp } = getContractAddresses();
+        const multisigAddress = await createChannel(nodeA, nodeB);
 
-      await collateralizeChannel(multisigAddress, nodeA, nodeB);
+        await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
-      expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
+        expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
 
-      nodeB.on(EventNames.REJECT_INSTALL_EVENT, async (msg) => {
-        assertMessage<typeof EventNames.REJECT_INSTALL_EVENT>(
-          msg,
-          {
-            from: nodeA.publicIdentifier,
-            type: EventNames.REJECT_INSTALL_EVENT,
-            data: { reason: "Rejected" },
-          },
-          ["data.appInstance"],
-        );
-        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(0);
-        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(0);
-        done();
+        nodeB.on(EventNames.REJECT_INSTALL_EVENT, async (msg) => {
+          assertMessage<typeof EventNames.REJECT_INSTALL_EVENT>(
+            msg,
+            {
+              from: nodeA.publicIdentifier,
+              type: EventNames.REJECT_INSTALL_EVENT,
+              data: { reason: "Rejected" },
+            },
+            ["data.appInstance"],
+          );
+          expect((await getProposedAppInstances(nodeA, multisigAddress)).length).to.eq(0);
+          expect((await getProposedAppInstances(nodeB, multisigAddress)).length).to.eq(0);
+          done();
+        });
+
+        // node A then decides to reject the proposal
+        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId, multisigAddress);
+          expect((await getProposedAppInstances(nodeB, multisigAddress)).length).to.eq(1);
+          await nodeA.rpcRouter.dispatch(rejectReq);
+        });
+
+        await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
       });
-
-      // node A then decides to reject the proposal
-      nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-        const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId, multisigAddress);
-        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
-        await nodeA.rpcRouter.dispatch(rejectReq);
-      });
-
-      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
     });
   });
 });

@@ -3,19 +3,17 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeLt } from "../bignumber-jest-matcher";
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
-import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
+import {
+  collateralizeChannel,
+  createChannel,
+  getContractAddresses,
+  makeInstallCall,
+  makeProposeCall,
+} from "../utils";
 
 const { One } = constants;
 const { parseEther } = utils;
-
-expect.extend({ toBeLt });
-
-jest.setTimeout(7_500);
-
-const { TicTacToeApp } = global[`contracts`] as TestContractAddresses;
 
 describe(`Node method follows spec - install`, () => {
   let multisigAddress: string;
@@ -41,33 +39,37 @@ describe(`Node method follows spec - install`, () => {
         );
       });
 
-      it(`install app with ETH`, async (done) => {
-        let completedInstalls = 0;
+      it(`install app with ETH`, async () => {
+        return new Promise(async (done) => {
+          const { TicTacToeApp } = getContractAddresses();
 
-        nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
-          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
+          let completedInstalls = 0;
+
+          nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
+            makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
+          });
+
+          nodeA.on(`INSTALL_EVENT`, () => {
+            completedInstalls += 1;
+            if (completedInstalls === 2) {
+              done();
+            }
+          });
+
+          const rpc = makeProposeCall(
+            nodeB,
+            TicTacToeApp,
+            multisigAddress,
+            /* initialState */ undefined,
+            One,
+            CONVENTION_FOR_ETH_ASSET_ID,
+            One,
+            CONVENTION_FOR_ETH_ASSET_ID,
+          );
+
+          nodeA.rpcRouter.dispatch(rpc);
+          nodeA.rpcRouter.dispatch(rpc);
         });
-
-        nodeA.on(`INSTALL_EVENT`, () => {
-          completedInstalls += 1;
-          if (completedInstalls === 2) {
-            done();
-          }
-        });
-
-        const rpc = makeProposeCall(
-          nodeB,
-          TicTacToeApp,
-          multisigAddress,
-          /* initialState */ undefined,
-          One,
-          CONVENTION_FOR_ETH_ASSET_ID,
-          One,
-          CONVENTION_FOR_ETH_ASSET_ID,
-        );
-
-        nodeA.rpcRouter.dispatch(rpc);
-        nodeA.rpcRouter.dispatch(rpc);
       });
     },
   );

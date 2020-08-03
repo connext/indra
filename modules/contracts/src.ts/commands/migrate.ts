@@ -1,4 +1,4 @@
-import { Wallet, constants, utils } from "ethers";
+import { Wallet, constants, providers, utils } from "ethers";
 
 import { Argv } from "yargs";
 
@@ -7,13 +7,14 @@ import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
 import { getProvider } from "../utils";
 
-const { EtherSymbol } = constants;
+const { EtherSymbol, Zero } = constants;
 const { formatEther } = utils;
 
-const coreContracts = [
+export const coreContracts = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",
   "DepositApp",
+  "GraphSignedTransferApp",
   "HashLockTransferApp",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -26,20 +27,24 @@ const coreContracts = [
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
   "WithdrawApp",
+  "WithdrawInterpreter",
 ];
 
 export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<void> => {
   ////////////////////////////////////////
   // Environment Setup
 
+  const chainId = process?.env?.REAL_CHAIN_ID || (await wallet.provider.getNetwork()).chainId;
   const balance = await wallet.getBalance();
-  const chainId = (await wallet.provider.getNetwork()).chainId;
   const nonce = await wallet.getTransactionCount();
+  const providerUrl = (wallet.provider as providers.JsonRpcProvider).connection.url;
 
-  console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
-  console.log(
-    `Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`,
-  );
+  console.log(`\nPreparing to migrate contracts to provider ${providerUrl} w chainId: ${chainId}`);
+  console.log(`Deployer address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`);
+
+  if (balance.eq(Zero)) {
+    throw new Error(`Account ${wallet.address} has zero balance on chain ${chainId}, aborting contract migration`);
+  }
 
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
 
@@ -47,8 +52,11 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   // Deploy contracts
 
   for (const name of coreContracts) {
-    const savedAddress = addressBook.getEntry(name).address;
-    if (await isContractDeployed(name, savedAddress, addressBook, wallet.provider)) {
+    const savedAddress = addressBook.getEntry(name)["address"];
+    if (
+      savedAddress &&
+      (await isContractDeployed(name, savedAddress, addressBook, wallet.provider))
+    ) {
       console.log(`${name} is up to date, no action required`);
       console.log(`Address: ${savedAddress}\n`);
     } else {

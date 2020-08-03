@@ -15,28 +15,41 @@ export const fund = async (
   amount: DecString,
   tokenAddress?: Address,
 ): Promise<void> => {
-  if (tokenAddress && tokenAddress !== AddressZero) {
-    const token = new Contract(tokenAddress, tokenArtifacts.abi, sender);
-    const tx = await token.transfer(recipient, parseEther(amount));
-    console.log(`Sending ${amount} tokens to ${recipient} via tx ${tx.hash}`);
-    await sender.provider.waitForTransaction(tx.hash);
-    const recipientBal = `${formatEther(await token.balanceOf(recipient))} tokens`;
-    const senderBal = `${formatEther(await token.balanceOf(sender.address))} tokens`;
-    console.log(`Tx mined! New balances: recipient ${recipientBal} | sender ${senderBal}`);
-  } else {
-    const tx = await sender.sendTransaction({
-      to: recipient,
-      value: parseEther(amount),
-    });
-    console.log(`Sending ${EtherSymbol} ${amount} to ${recipient} via tx: ${tx.hash}`);
-    await sender.provider.waitForTransaction(tx.hash!);
-    const recipientBal = `${EtherSymbol} ${formatEther(
-      await sender.provider.getBalance(recipient),
-    )}`;
-    const senderBal = `${EtherSymbol} ${formatEther(
-      await sender.provider.getBalance(sender.address),
-    )}`;
-    console.log(`Tx mined! New balances: recipient ${recipientBal} | sender ${senderBal}`);
+  const fundAttempt = async () => {
+    if (tokenAddress && tokenAddress !== AddressZero) {
+      const token = new Contract(tokenAddress, tokenArtifacts.abi, sender);
+      const tx = await token.transfer(recipient, parseEther(amount));
+      console.log(`Sending ${amount} tokens to ${recipient} via tx ${tx.hash}`);
+      await sender.provider.waitForTransaction(tx.hash);
+      const recipientBal = `${formatEther(await token.balanceOf(recipient))} tokens`;
+      const senderBal = `${formatEther(await token.balanceOf(sender.address))} tokens`;
+      console.log(`Tx mined! New balances: recipient ${recipientBal} | sender ${senderBal}`);
+    } else {
+      const tx = await sender.sendTransaction({
+        to: recipient,
+        value: parseEther(amount),
+      });
+      console.log(`Sending ${EtherSymbol} ${amount} to ${recipient} via tx: ${tx.hash}`);
+      await sender.provider.waitForTransaction(tx.hash!);
+      const recipientBal = `${EtherSymbol} ${formatEther(
+        await sender.provider.getBalance(recipient),
+      )}`;
+      const senderBal = `${EtherSymbol} ${formatEther(
+        await sender.provider.getBalance(sender.address),
+      )}`;
+      console.log(`Tx mined! New balances: recipient ${recipientBal} | sender ${senderBal}`);
+    }
+  };
+
+  try {
+    await fundAttempt();
+  } catch (e) {
+    if (e.message.includes("the tx doesn't have the correct nonce")) {
+      console.warn(`Wrong nonce, let's try one more time.`);
+      await fundAttempt();
+    } else {
+      throw e;
+    }
   }
 };
 

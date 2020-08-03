@@ -10,7 +10,7 @@ const useToken = async (
   addressBookPath: string,
   tokenAddress: string,
 ) => {
-  const chainId = (await ethProvider.getNetwork()).chainId;
+  const chainId = process?.env?.REAL_CHAIN_ID || (await ethProvider.getNetwork()).chainId;
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
   addressBook.setEntry("Token", { address: tokenAddress });
 };

@@ -24,7 +24,7 @@ export const stringify = (value: any, abrv = false, spaces = 2): string =>
       value && value._hex
         ? BigNumber.from(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("indra")
-        ? abbreviate(value, 5)
+        ? abbreviate(value)
         : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12
         ? abbreviate(value)
         : value,

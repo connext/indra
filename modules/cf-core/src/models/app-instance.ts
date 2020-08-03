@@ -1,6 +1,10 @@
 import {
+  Address,
+  AppABIEncodings,
   AppIdentity,
   AppInstanceJson,
+  AssetId,
+  DecString,
   HexString,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
@@ -11,10 +15,6 @@ import {
   SolidityValueType,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  DecString,
-  AssetId,
-  AppABIEncodings,
-  Address,
 } from "@connext/types";
 import {
   appIdentityToHash,
@@ -26,12 +26,14 @@ import {
   toBN,
 } from "@connext/utils";
 import { BigNumber, Contract, constants, utils, providers } from "ethers";
-import { Memoize } from "typescript-memoize";
 
+import { execEvmBytecode } from "../pure-evm";
 import { CounterfactualApp } from "../contracts";
 
 const { Zero } = constants;
-const { defaultAbiCoder, keccak256 } = utils;
+const { defaultAbiCoder, keccak256, Interface } = utils;
+
+const appInterface = new Interface(CounterfactualApp.abi);
 
 /**
  * Representation of an AppInstance.
@@ -113,34 +115,32 @@ export class AppInstance {
     // an example would be having an `undefined` value for the `actionEncoding`
     // of an AppInstance that's not turn based
     return deBigNumberifyJson({
-      multisigAddress: this.multisigAddress,
-      identityHash: this.identityHash,
-      initiatorIdentifier: this.initiatorIdentifier,
-      initiatorDeposit: this.initiatorDeposit,
-      initiatorDepositAssetId: this.initiatorDepositAssetId,
-      responderIdentifier: this.responderIdentifier,
-      responderDeposit: this.responderDeposit,
-      responderDepositAssetId: this.responderDepositAssetId,
       abiEncodings: this.abiEncodings,
       appDefinition: this.appDefinition,
       appSeqNo: this.appSeqNo,
       defaultTimeout: this.defaultTimeout,
-      stateTimeout: this.stateTimeout,
+      identityHash: this.identityHash,
+      initiatorDeposit: this.initiatorDeposit,
+      initiatorDepositAssetId: this.initiatorDepositAssetId,
+      initiatorIdentifier: this.initiatorIdentifier,
+      latestAction: this.latestAction,
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber,
-      outcomeType: this.outcomeType,
       meta: this.meta,
-      latestAction: this.latestAction,
+      multisigAddress: this.multisigAddress,
       outcomeInterpreterParameters: this.outcomeInterpreterParametersInternal,
+      outcomeType: this.outcomeType,
+      responderDeposit: this.responderDeposit,
+      responderDepositAssetId: this.responderDepositAssetId,
+      responderIdentifier: this.responderIdentifier,
+      stateTimeout: this.stateTimeout,
     });
   }
 
-  @Memoize()
   public get identityHash() {
     return appIdentityToHash(this.identity);
   }
 
-  @Memoize()
   public get participants() {
     return [
       getSignerAddressFromPublicIdentifier(this.initiatorIdentifier),
@@ -148,7 +148,6 @@ export class AppInstance {
     ];
   }
 
-  @Memoize()
   public get identity(): AppIdentity {
     return {
       participants: this.participants,
@@ -159,17 +158,14 @@ export class AppInstance {
     };
   }
 
-  @Memoize()
   public get hashOfLatestState() {
     return keccak256(this.encodedLatestState);
   }
 
-  @Memoize()
   public get encodedLatestState() {
     return defaultAbiCoder.encode([this.abiEncodings.stateEncoding], [this.latestState]);
   }
 
-  @Memoize()
   public get encodedInterpreterParams() {
     switch (this.outcomeType) {
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
@@ -266,8 +262,21 @@ export class AppInstance {
   public async computeOutcome(
     state: SolidityValueType,
     provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
   ): Promise<string> {
-    return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
+    if (bytecode) {
+      try {
+        const functionData = appInterface.encodeFunctionData("computeOutcome", [
+          this.encodedLatestState,
+        ]);
+        const output = await execEvmBytecode(bytecode, functionData);
+        return appInterface.decodeFunctionResult("computeOutcome", output)[0];
+      } catch (e) {
+        return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
+      }
+    } else {
+      return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
+    }
   }
 
   public async isStateTerminal(
@@ -279,24 +288,88 @@ export class AppInstance {
 
   public async computeOutcomeWithCurrentState(
     provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
   ): Promise<string> {
-    return this.computeOutcome(this.state, provider);
+    return this.computeOutcome(this.state, provider, bytecode);
+  }
+
+  public async computeTurnTaker(
+    provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
+  ): Promise<string> {
+    let turnTaker: undefined | string = undefined;
+    // attempt evm if available
+    if (bytecode) {
+      try {
+        const functionData = appInterface.encodeFunctionData("getTurnTaker", [
+          this.encodedLatestState,
+          this.participants,
+        ]);
+        const output = await execEvmBytecode(bytecode, functionData);
+        turnTaker = appInterface.decodeFunctionResult("getTurnTaker", output)[0];
+      } catch (e) {}
+    }
+    if (turnTaker) {
+      return turnTaker;
+    }
+    // otherwise, if err or if no bytecode, execute read fn
+    turnTaker = (await this.toEthersContract(provider).getTurnTaker(
+      this.encodedLatestState,
+      this.participants,
+    )) as string;
+    return turnTaker;
+  }
+
+  public async isCorrectTurnTaker(
+    attemptedTurnTaker: string,
+    provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
+  ) {
+    const turnTaker = await this.computeTurnTaker(provider, bytecode);
+    return attemptedTurnTaker === turnTaker;
   }
 
   public async computeStateTransition(
+    actionTaker: Address,
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
   ): Promise<SolidityValueType> {
-    const computedNextState = this.decodeAppState(
-      await this.toEthersContract(provider).applyAction(
+    let computedNextState: SolidityValueType;
+    const turnTaker = await this.computeTurnTaker(provider, bytecode);
+    if (actionTaker !== turnTaker) {
+      throw new Error(
+        `Cannot compute state transition, got invalid turn taker for action on app at ${this.appDefinition}. Expected ${turnTaker}, got ${actionTaker}`,
+      );
+    }
+    if (bytecode) {
+      try {
+        const functionData = appInterface.encodeFunctionData("applyAction", [
+          this.encodedLatestState,
+          this.encodeAction(action),
+        ]);
+        const output = await execEvmBytecode(bytecode, functionData);
+        computedNextState = this.decodeAppState(
+          appInterface.decodeFunctionResult("applyAction", output)[0],
+        );
+      } catch (e) {
+        const encoded = await this.toEthersContract(provider).applyAction(
+          this.encodedLatestState,
+          this.encodeAction(action),
+        );
+        computedNextState = this.decodeAppState(encoded);
+      }
+    } else {
+      const encoded = await this.toEthersContract(provider).applyAction(
         this.encodedLatestState,
         this.encodeAction(action),
-      ),
-    );
+      );
+      computedNextState = this.decodeAppState(encoded);
+    }
 
     // ethers returns an array of [ <each value by index>, <each value by key> ]
     // so we need to recursively clean this response before returning
-    const keyify = (templateObj: any, dataObj: any, key?: string): any => {
+    const keyify = (templateObj: any, dataObj: any, key?: string): Promise<any> => {
       const template = key ? templateObj[key] : templateObj;
       const data = key ? dataObj[key] : dataObj;
       let output;
@@ -318,7 +391,8 @@ export class AppInstance {
       return output;
     };
 
-    return bigNumberifyJson(keyify(this.state, computedNextState)) as any;
+    const keyified = keyify(this.state, computedNextState);
+    return bigNumberifyJson(keyified);
   }
 
   public encodeAction(action: SolidityValueType) {

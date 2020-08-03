@@ -1,9 +1,9 @@
 import { Grid, Typography, withStyles } from "@material-ui/core";
 import React from "react";
 
-// import { ethers as eth } from "ethers";
+import { TOKEN_DECIMALS } from "../App.js";
 
-const styles = theme => ({
+const styles = (theme) => ({
   row: {
     color: "white",
   },
@@ -16,9 +16,9 @@ const styles = theme => ({
   },
 });
 
-export const ChannelCard = withStyles(styles)(props => {
+export const ChannelCard = withStyles(styles)((props) => {
   const { balance, classes, swapRate } = props;
-  const split = balance => {
+  const split = (balance) => {
     const bal = balance.format({ decimals: 2, symbol: false, round: false });
     const whole = bal.substring(0, bal.indexOf("."));
     const part = bal.substring(bal.indexOf("."));
@@ -48,10 +48,26 @@ export const ChannelCard = withStyles(styles)(props => {
               {"$ "}
             </Typography>
             <Typography style={{ display: "inline-block" }} variant="h1" className={classes.row}>
-              <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
+              <span>
+                {
+                  split(
+                    TOKEN_DECIMALS === 18
+                      ? balance.channel.token.toDAI(swapRate)
+                      : balance.channel.token.toGWEI(swapRate),
+                  ).whole
+                }
+              </span>
             </Typography>
             <Typography style={{ display: "inline-block" }} variant="h3" className={classes.row}>
-              <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
+              <span>
+                {
+                  split(
+                    TOKEN_DECIMALS === 18
+                      ? balance.channel.token.toDAI(swapRate)
+                      : balance.channel.token.toGWEI(swapRate),
+                  ).part
+                }
+              </span>
             </Typography>
           </span>
           {/* <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span> */}

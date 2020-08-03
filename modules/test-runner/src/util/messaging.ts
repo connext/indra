@@ -15,6 +15,7 @@ import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
 import { env } from "./env";
+import { ethProviderUrl } from "./ethprovider";
 import { combineObjects } from "./misc";
 import { expect } from "./assertions";
 
@@ -102,6 +103,7 @@ export type TestMessagingConfig = {
   protocolLimits: ProtocolMessageLimitInputs;
   apiLimits: ApiLimits;
   signer: IChannelSigner;
+  stopOnCeilingReached: boolean;
 };
 
 type InternalMessagingConfig = Omit<TestMessagingConfig, "protocolLimits"> & {
@@ -165,12 +167,13 @@ const defaultOpts = (): TestMessagingConfig => {
     },
     apiLimits: getDefaultApiLimits(),
     protocolLimits: getDefaultProtocolLimits(),
-    signer: new ChannelSigner(Wallet.createRandom().privateKey, env.ethProviderUrl),
+    signer: new ChannelSigner(Wallet.createRandom().privateKey, ethProviderUrl),
+    stopOnCeilingReached: false,
   };
 };
 
 export const initApiCounter = (): ApiCounter => {
-  let ret = {};
+  const ret = {};
   Object.keys(MessagingEvents).forEach((key) => {
     ret[key] = 0;
   });
@@ -178,7 +181,7 @@ export const initApiCounter = (): ApiCounter => {
 };
 
 export const initProtocolCounter = (): ProtocolMessageCounter => {
-  let ret = {};
+  const ret = {};
   Object.keys(ProtocolNames).forEach((key) => {
     ret[key] = { [SEND]: 0, [RECEIVED]: 0 };
   });
@@ -195,6 +198,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   private apiCounter: ApiCounter = initApiCounter();
   public providedOptions: Partial<TestMessagingConfig>;
   public options: InternalMessagingConfig;
+  private hasReachedCeiling: boolean = false;
 
   constructor(opts: Partial<TestMessagingConfig>) {
     super();
@@ -205,7 +209,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       ...combineObjects(opts, defaults),
       signer:
         opts.signer && typeof opts.signer === "string"
-          ? new ChannelSigner(opts.signer, env.ethProviderUrl)
+          ? new ChannelSigner(opts.signer, ethProviderUrl)
           : opts.signer || defaults.signer,
     } as InternalMessagingConfig;
     const getSignature = (msg: string) => this.options.signer.signMessage(msg);
@@ -215,10 +219,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
       try {
-        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${userIdentifier}`);
+        const authUrl = `${this.options.nodeUrl}/auth`;
+        const nonce = await axios.get(`${authUrl}/${userIdentifier}`);
         const sig = await getSignature(nonce.data);
         const bearerToken: AxiosResponse<string> = await axios.post(
-          `${this.options.nodeUrl}/auth`,
+          authUrl,
           {
             sig,
             userIdentifier: userIdentifier,
@@ -231,9 +236,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    const key = `INDRA`;
-    this.connection = new MessagingService(this.options.messagingConfig, key, () =>
-      getBearerToken(this.options.signer.publicIdentifier, getSignature),
+    log.info(`Creating test messaging service w opts: ${stringify(this.options)}`);
+    this.connection = new MessagingService(
+      { ...this.options.messagingConfig, logger: log.newContext("TestMessagingService") },
+      `INDRA`,
+      () => getBearerToken(this.options.signer.publicIdentifier, getSignature),
     );
   }
 
@@ -315,7 +322,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         return callback(msg);
       }
       const canContinue = this.incrementProtocolCount(protocol, msg, RECEIVED);
-      if (!canContinue) {
+      if (!canContinue || (this.hasReachedCeiling && this.options.stopOnCeilingReached)) {
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (received). ${stringify(
           this.protocolCounter[protocol],
         )}`;
@@ -349,7 +356,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       return this.connection.send(to, msg);
     }
     const canContinue = this.incrementProtocolCount(protocol, msg, SEND);
-    if (!canContinue) {
+    if (!canContinue || (this.hasReachedCeiling && this.options.stopOnCeilingReached)) {
       const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (send). ${stringify(
         this.protocolCounter[protocol],
       )}`;
@@ -438,6 +445,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     const evaluateCeiling = () => {
       if (this.protocolCounter[protocol][apiType] >= ceiling) {
+        this.hasReachedCeiling = true;
         return false;
       }
       this.protocolCounter[protocol][apiType]++;

@@ -1,17 +1,17 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
   ILoggerService,
-  NetworkContext,
   ChallengeEvents,
   IChainListener,
   ChallengeEvent,
   ChallengeEventData,
   ChallengeStatus,
   Address,
+  ContractAddresses,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { BigNumber, Contract, Event, providers, utils } from "ethers";
-import EventEmitter from "eventemitter3";
+import { Ctx, Evt } from "evt";
 
 const { Interface } = utils;
 
@@ -29,19 +29,23 @@ const chunkSize = 30;
 export class ChainListener implements IChainListener {
   private log: ILoggerService;
   private enabled: boolean = false;
-  private emitter: EventEmitter;
   private challengeRegistry: Contract;
 
   constructor(
     private readonly provider: providers.JsonRpcProvider,
-    private readonly context: NetworkContext,
+    private readonly context: ContractAddresses,
     loggerService: ILoggerService,
+    private readonly evtChallengeUpdated: Evt<
+      ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated]
+    > = Evt.create<ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated]>(),
+    private readonly evtStateProgressed: Evt<
+      ChallengeEventData[typeof ChallengeEvents.StateProgressed]
+    > = Evt.create<ChallengeEventData[typeof ChallengeEvents.StateProgressed]>(),
   ) {
     this.log = loggerService.newContext("ChainListener");
     this.log.debug(
       `Creating new ChainListener for ChallengeRegistry at ${this.context.ChallengeRegistry}`,
     );
-    this.emitter = new EventEmitter();
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
       ChallengeRegistry.abi,
@@ -63,6 +67,7 @@ export class ChainListener implements IChainListener {
     if (!this.enabled) {
       return;
     }
+    this.detach();
     this.removeChallengeRegistryListeners();
     this.enabled = false;
   };
@@ -112,11 +117,11 @@ export class ChainListener implements IChainListener {
 
     progressedLogs.concat(updatedLogs).forEach((log) => {
       const parsed = new Interface(ChallengeRegistry.abi).parseLog(log);
-      const { identityHash, versionNumber } = parsed.values;
+      const { identityHash, versionNumber } = parsed.args;
       switch (parsed.name) {
         case ChallengeEvents.ChallengeUpdated: {
-          const { appStateHash, finalizesAt, status } = parsed.values;
-          this.emit(ChallengeEvents.ChallengeUpdated, {
+          const { appStateHash, finalizesAt, status } = parsed.args;
+          this.evtChallengeUpdated.post({
             identityHash,
             status,
             appStateHash,
@@ -126,8 +131,8 @@ export class ChainListener implements IChainListener {
           break;
         }
         case ChallengeEvents.StateProgressed: {
-          const { action, timeout, turnTaker, signature } = parsed.values;
-          this.emit(ChallengeEvents.StateProgressed, {
+          const { action, timeout, turnTaker, signature } = parsed.args;
+          this.evtStateProgressed.post({
             identityHash,
             action,
             versionNumber,
@@ -144,32 +149,95 @@ export class ChainListener implements IChainListener {
     });
   };
 
-  //////// Listener methods
-  public emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void {
-    this.emitter.emit(event, data);
-  }
-
-  public on<T extends ChallengeEvent>(
+  //////// Evt methods
+  public attach<T extends ChallengeEvent>(
     event: T,
     callback: (data: ChallengeEventData[T]) => Promise<void>,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
   ): void {
-    this.emitter.on(event, callback);
+    const filter = (data: ChallengeEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    const addToEvt = (evt: Evt<ChallengeEventData[T]>) => {
+      if (!ctx) {
+        evt.attach(filter, callback);
+        return;
+      }
+      evt.attach(filter, ctx, callback);
+    };
+    return addToEvt(
+      event === ChallengeEvents.ChallengeUpdated
+        ? (this.evtChallengeUpdated as any)
+        : (this.evtStateProgressed as any),
+    );
   }
 
-  public once<T extends ChallengeEvent>(event: T, callback: (data: any) => Promise<void>): void {
-    this.emitter.once(event, callback);
+  public attachOnce<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
+  ): void {
+    const filter = (data: ChallengeEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    const addToEvt = (evt: Evt<ChallengeEventData[T]>) => {
+      if (!ctx) {
+        evt.attachOnce(filter, callback);
+        return;
+      }
+      evt.attachOnce(filter, ctx, callback);
+    };
+    return addToEvt(
+      event === ChallengeEvents.ChallengeUpdated
+        ? (this.evtChallengeUpdated as any)
+        : (this.evtStateProgressed as any),
+    );
   }
 
-  public removeListener<T extends ChallengeEvent>(event: T): void {
-    this.emitter.removeListener(event);
+  public async waitFor<T extends ChallengeEvent>(
+    event: T,
+    timeout: number,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
+  ): Promise<ChallengeEventData[T]> {
+    const filter = (data: ChallengeEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    const addToEvt = (evt: Evt<ChallengeEventData[T]>) => {
+      if (!ctx) {
+        return evt.waitFor(filter, timeout);
+      }
+      return evt.waitFor(filter, ctx, timeout);
+    };
+    return addToEvt(
+      event === ChallengeEvents.ChallengeUpdated
+        ? (this.evtChallengeUpdated as any)
+        : (this.evtStateProgressed as any),
+    );
   }
 
-  public removeAllListeners(): void {
-    this.emitter.removeAllListeners();
+  // Creates a new void context for easy listener detachment
+  public createContext<T extends ChallengeEvent>(): Ctx<ChallengeEventData[T]> {
+    return Evt.newCtx<ChallengeEventData[T]>();
+  }
+
+  public detach<T extends ChallengeEvent>(ctx?: Ctx<ChallengeEventData[T]>): void {
+    this.evtChallengeUpdated.detach(ctx as any);
+    this.evtStateProgressed.detach(ctx as any);
   }
 
   //////// Private methods
-  // created listeners for the challenge registry
 
   private removeChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
@@ -196,7 +264,7 @@ export class ChainListener implements IChainListener {
         signature: string,
         event: Event,
       ) => {
-        this.emit(ChallengeEvents.StateProgressed, {
+        this.evtStateProgressed.post({
           identityHash,
           action,
           versionNumber: toBN(versionNumber),
@@ -216,7 +284,7 @@ export class ChainListener implements IChainListener {
         versionNumber: BigNumber,
         finalizesAt: BigNumber,
       ) => {
-        this.emit(ChallengeEvents.ChallengeUpdated, {
+        this.evtChallengeUpdated.post({
           identityHash,
           status,
           appStateHash,

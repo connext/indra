@@ -2,15 +2,15 @@ import {
   GenericMiddleware,
   ILoggerService,
   IStoreService,
-  NetworkContext,
   Opcode,
-  ProtocolMessageData,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
   EventNames,
   ProtocolEventMessage,
+  NetworkContexts,
+  ProtocolMessage,
 } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -20,6 +20,7 @@ import { Context } from "../types";
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel, AppInstance } from "../models";
 import { RpcRouter } from "../rpc-router";
+import { generateProtocolMessageData } from "../protocol/utils";
 
 const firstRecipientFromProtocolName = (protocolName: ProtocolName) => {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -32,7 +33,7 @@ export class ProtocolRunner {
   public middlewares: MiddlewareContainer;
 
   constructor(
-    public readonly network: NetworkContext,
+    public readonly networks: NetworkContexts,
     public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {
@@ -48,19 +49,19 @@ export class ProtocolRunner {
   /// `IO_SEND_AND_WAIT`
   public async runProtocolWithMessage(
     router: RpcRouter,
-    msg: ProtocolMessageData,
+    msg: ProtocolMessage,
     preProtocolStateChannel?: StateChannel,
   ) {
-    const protocol = getProtocolFromName(msg.protocol);
-    const step = protocol[msg.seq];
+    const protocol = getProtocolFromName(msg.data.protocol);
+    const step = protocol[msg.data.seq];
     if (typeof step === "undefined") {
-      throw new Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
+      throw new Error(`Received invalid seq ${msg.data.seq} for protocol ${msg.data.protocol}`);
     }
     try {
       const protocolRet = await this.runProtocol(step, msg, preProtocolStateChannel);
       return protocolRet;
     } catch (error) {
-      const { protocol, params } = msg;
+      const { protocol, params } = msg.data;
       const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params!, error);
       await emitOutgoingMessage(router, outgoingData);
       throw error;
@@ -77,12 +78,18 @@ export class ProtocolRunner {
       const protocolRet = await this.runProtocol(
         getProtocolFromName(protocolName)[0],
         {
-          params,
-          protocol: protocolName,
-          processID: uuid(),
-          seq: 0,
-          to: params[firstRecipientFromProtocolName(protocolName)],
-          customData: {},
+          data: {
+            ...generateProtocolMessageData(
+              params[firstRecipientFromProtocolName(protocolName)],
+              protocolName,
+              uuid(),
+              0,
+              params,
+              { customData: {} },
+            ),
+          },
+          from: params.initiatorIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
         },
         preProtocolStateChannel,
       );
@@ -100,12 +107,18 @@ export class ProtocolRunner {
       const protocolRet = await this.runProtocol(
         getProtocolFromName(protocol)[0],
         {
-          protocol,
-          params,
-          processID: uuid(),
-          seq: 0,
-          to: params[firstRecipientFromProtocolName(protocol)],
-          customData: {},
+          data: {
+            ...generateProtocolMessageData(
+              params[firstRecipientFromProtocolName(protocol)],
+              protocol,
+              uuid(),
+              0,
+              params,
+              { customData: {} },
+            ),
+          },
+          from: params.initiatorIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
         },
         {} as any,
       );
@@ -119,14 +132,14 @@ export class ProtocolRunner {
 
   private async runProtocol(
     instruction: (context: Context) => AsyncIterableIterator<any>,
-    message: ProtocolMessageData,
+    message: ProtocolMessage,
     preProtocolStateChannel?: StateChannel,
-  ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance }> {
+  ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance; protocolMeta: any }> {
     const context: Context = {
       log: this.log,
       message,
       store: this.store,
-      network: this.network,
+      networks: this.networks,
       preProtocolStateChannel,
     };
 

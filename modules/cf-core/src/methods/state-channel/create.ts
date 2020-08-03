@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
-import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
+import { NO_NETWORK_PROVIDER_FOR_CHAIN_ID } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
@@ -16,9 +16,7 @@ import { MethodController } from "../controller";
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
  * having been opened via the deterministical calculation of the multisig contract's
- * address. This also deploys the multisig contract to chain though it's not
- * strictly needed to deploy it here as per
- * https://github.com/counterfactual/monorepo/issues/1183.
+ * address.
  *
  * This then sends the details of this multisig to the peer with whom the multisig
  * is owned and the multisig's _address_ is sent as an event
@@ -29,34 +27,40 @@ export class CreateChannelController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.owners) {
       throw new Error(`No owners provided in params. ${stringify(params)}`);
     }
-    return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
+    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
   ): Promise<MethodResults.CreateChannel> {
-    const { owners } = params;
-    const { networkContext, store } = requestHandler;
+    const { owners, chainId } = params;
+    const { networkContexts, store } = requestHandler;
 
     // safe to use network context proxy factory address directly here
     // using the assumption that `create` is only called for new state
     // channels. also because the `getMultisigAddressWithCounterparty` const
     // will default to using any existing multisig address for the provided
     // owners before creating one
-    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
+    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwnersAndChainId(
+      owners,
+      chainId,
+    )) || {
       multisigAddress: undefined,
     };
-    if (!networkContext.provider && !storedMultisig) {
-      throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
+
+    const networkContext = networkContexts[chainId];
+    if (!networkContext?.provider) {
+      throw new Error(NO_NETWORK_PROVIDER_FOR_CHAIN_ID(chainId));
     }
+
     const multisigAddress =
       storedMultisig ||
       (await getCreate2MultisigAddress(
@@ -85,6 +89,7 @@ export class CreateChannelController extends MethodController {
 
     await protocolRunner.runSetupProtocol(router, {
       multisigAddress,
+      chainId: params.chainId,
       responderIdentifier,
       initiatorIdentifier: publicIdentifier,
     });

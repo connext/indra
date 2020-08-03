@@ -33,19 +33,21 @@ interface PendingAsyncTransfer {
 ////////////////////////////////////
 // Swap Rate Management
 
-export type AllowedSwap = {
-  from: Address;
-  to: Address;
-};
-
 export const PriceOracleTypes = enumify({
   UNISWAP: "UNISWAP",
   HARDCODED: "HARDCODED",
 });
 export type PriceOracleTypes = typeof PriceOracleTypes[keyof typeof PriceOracleTypes];
 
+export type AllowedSwap = {
+  from: Address;
+  to: Address;
+  fromChainId: number;
+  toChainId: number;
+  priceOracleType: PriceOracleTypes;
+};
+
 export type SwapRate = AllowedSwap & {
   rate: string; // DecString?
-  priceOracleType: PriceOracleTypes;
   blockNumber?: number;
 };

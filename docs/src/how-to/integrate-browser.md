@@ -1,4 +1,3 @@
-
 # How To Integrate With a Browser App
 
 The connext client `@connext/client` has built-in defaults that make it easy to use in a web browser. By default, the client will store it's state in localStorage (Look for keys prefixed with `INDRA_CLIENT_CF_CORE`).
@@ -15,8 +14,8 @@ npm install @connext/client
 
 Connext exposes 2 Indra nodes for public use:
 
- - `https://rinkeby.indra.connext.network/api`: Good for testing & experimenting on the Rinkeby test net
- - `https://indra.connext.network/api`: To interact with mainnet channels in production.
+- `https://rinkeby.indra.connext.network`: Good for testing & experimenting on the Rinkeby test net
+- `https://indra.connext.network`: To interact with mainnet channels in production.
 
 You can also run your own Indra node locally by running the start command in an indra repo.
 
@@ -69,7 +68,6 @@ import { Wallet } from "ethers";
 
   const channel = await connect("rinkeby", {
     signer: Wallet.createRandom().privateKey,
-    nodeUrl: "https://rinkeby.indra.connext.network/api",
   });
 
   console.log(`Successfully connected channel with public id: ${channel.publicIdentifier}`);
@@ -80,5 +78,6 @@ import { Wallet } from "ethers";
 ## Reference Implementations
 
 ### DaiCard
- - Live at https://daicard.io
- - Code is open source at https://github.com/connext/indra/tree/staging/modules/daicard
+
+- Live at https://daicard.io
+- Code is open source at https://github.com/connext/indra/tree/staging/modules/daicard

@@ -9,7 +9,6 @@ import {
   HashLockTransferAppState,
   IChannelProvider,
   ILoggerService,
-  MethodNames,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppName,
@@ -31,6 +30,12 @@ import {
   ProtocolEventMessage,
   ProtocolParams,
   AppInstanceJson,
+  GraphSignedTransferAppName,
+  CreatedGraphSignedTransferMeta,
+  GraphSignedTransferAppState,
+  GraphSignedTransferAppAction,
+  UnlockedGraphSignedTransferMeta,
+  ConditionalTransferAppNames,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -103,8 +108,21 @@ export class ConnextListener {
       this.log.info(`Deposit started: ${msg.data.hash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
-    INSTALL_EVENT: (msg): void => {
+    INSTALL_EVENT: async (msg): Promise<void> => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
+      const { appIdentityHash, appInstance } = msg.data;
+      const registryAppInfo = this.connext.appRegistry.find(
+        (app: DefaultApp): boolean => app.appDefinitionAddress === appInstance.appDefinition,
+      );
+      // install and run post-install tasks
+      await this.runPostInstallTasks(appIdentityHash, registryAppInfo, appInstance, msg.from);
+      this.log.info(
+        `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`,
+      );
+      await this.connext.node.messaging.publish(
+        `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
+        stringify(appInstance),
+      );
     },
     INSTALL_FAILED_EVENT: (msg): void => {
       this.emitAndLog(INSTALL_FAILED_EVENT, msg.data);
@@ -148,8 +166,10 @@ export class ConnextListener {
       await this.handleAppUninstall(
         msg.data.appIdentityHash,
         latestState as AppState,
+        msg.from,
         msg.data.action as AppAction,
         msg.data.uninstalledApp,
+        msg.data.protocolMeta,
       );
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
@@ -246,7 +266,9 @@ export class ConnextListener {
 
   private registerLinkedTranferSubscription = async (): Promise<void> => {
     this.attach(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      this.log.info(`Received event CONDITIONAL_TRANSFER_CREATED_EVENT: ${stringify(payload)}`);
+      this.log.info(
+        `Received event CONDITIONAL_TRANSFER_CREATED_EVENT: ${stringify(payload, true, 0)}`,
+      );
       const start = Date.now();
       const time = () => `in ${Date.now() - start} ms`;
 
@@ -291,12 +313,17 @@ export class ConnextListener {
     this.log.info(
       `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
         params,
+        true,
+        0,
       )}`,
     );
     if (!registryAppInfo) {
       throw new Error(`Could not find registry info for app ${params.appDefinition}`);
     }
     // install or reject app
+    if (Object.values(ConditionalTransferAppNames).includes(registryAppInfo.name as any)) {
+      return;
+    }
     try {
       // NOTE: by trying to install here, if the installation fails,
       // the proposal is automatically removed from the store
@@ -309,100 +336,117 @@ export class ConnextListener {
       if (e.message.includes("No proposed AppInstance exists")) {
         return;
       } else {
-        this.log.error(`Caught error, rejecting install: ${e.message}`);
+        this.log.error(`Caught error, rejecting install of ${appIdentityHash}: ${e.message}`);
         await this.connext.rejectInstallApp(appIdentityHash, e.message);
         return;
       }
     }
-    // install and run post-install tasks
-    await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
-    this.log.info(`handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`);
-    const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
-    await this.connext.node.messaging.publish(
-      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
-      stringify(appInstance),
-    );
   };
 
   private runPostInstallTasks = async (
     appIdentityHash: string,
     registryAppInfo: DefaultApp,
-    params: ProtocolParams.Propose,
+    appInstance: AppInstanceJson,
+    from: string,
   ): Promise<void> => {
-    this.log.info(
-      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
-        params,
-      )}`,
-    );
+    this.log.info(`runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started`);
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
-        const appInstance = (await this.connext.getAppInstance(appIdentityHash)).appInstance;
-        this.connext.respondToNodeWithdraw(appInstance);
+        // withdraw actions only needed if we initiated the install on withdraw
+        if (from !== this.connext.publicIdentifier) {
+          break;
+        }
+        await this.connext.respondToNodeWithdraw(appInstance);
         break;
       }
-      case SimpleSignedTransferAppName: {
-        const initialState = params.initialState as SimpleSignedTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
-        const amount = initialState.coinTransfers[0].amount;
+      case GraphSignedTransferAppName: {
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as GraphSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            signerAddress: initialState.signerAddress,
-            chainId: initialState.chainId,
-            verifyingContract: initialState.verifyingContract,
-            requestCID: initialState.requestCID,
-            subgraphDeploymentID: initialState.subgraphDeploymentID,
+            signerAddress: initialState?.signerAddress,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
+            requestCID: initialState?.requestCID,
+            subgraphDeploymentID: initialState?.subgraphDeploymentID,
+          } as CreatedGraphSignedTransferMeta,
+          type: ConditionalTransferTypes.GraphTransfer,
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
+        } as EventPayloads.GraphTransferCreated);
+        break;
+      }
+      case SimpleSignedTransferAppName: {
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as SimpleSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta?.sender,
+          transferMeta: {
+            signerAddress: initialState?.signerAddress,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
           } as CreatedSignedTransferMeta,
           type: ConditionalTransferTypes.SignedTransfer,
-          paymentId: initialState.paymentId,
-          recipient: meta["recipient"],
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.SignedTransferCreated);
         break;
       }
       case HashLockTransferAppName: {
-        const initialState = params.initialState as HashLockTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
-        const amount = initialState.coinTransfers[0].amount;
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as HashLockTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            lockHash: initialState.lockHash,
-            expiry: initialState.expiry,
-            timelock: meta["timelock"],
+            lockHash: initialState?.lockHash,
+            expiry: initialState?.expiry,
+            timelock: meta?.timelock,
           } as CreatedHashLockTransferMeta,
           type: ConditionalTransferTypes.HashLockTransfer,
-          paymentId: initialState.lockHash,
-          recipient: meta["recipient"],
+          paymentId: meta?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.HashLockTransferCreated);
         break;
       }
       case SimpleLinkedTransferAppName: {
-        const initialState = params.initialState as SimpleLinkedTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
-        const amount = initialState.coinTransfers[0].amount;
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as SimpleLinkedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.log.info(
-          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta["paymentId"]}`,
+          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta?.paymentId}`,
         );
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            encryptedPreImage: meta["encryptedPreImage"],
+            encryptedPreImage: meta?.encryptedPreImage,
           } as CreatedLinkedTransferMeta,
           type: ConditionalTransferTypes.LinkedTransfer,
-          paymentId: meta["paymentId"],
-          recipient: meta["recipient"],
+          paymentId: meta?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.LinkedTransferCreated);
         break;
       }
@@ -415,11 +459,13 @@ export class ConnextListener {
   private handleAppUninstall = async (
     appIdentityHash: string,
     state: AppState,
+    from: string,
     action?: AppAction,
     appContext?: AppInstanceJson,
+    protocolMeta?: any,
   ): Promise<void> => {
     const appInstance =
-      appContext || (await this.connext.getAppInstance(appIdentityHash)).appInstance;
+      appContext || ((await this.connext.getAppInstance(appIdentityHash)) || {}).appInstance;
     if (!appInstance) {
       this.log.info(
         `Could not find app instance, this likely means the app has been uninstalled, doing nothing`,
@@ -431,6 +477,23 @@ export class ConnextListener {
     });
 
     switch (registryAppInfo.name) {
+      case WithdrawAppName: {
+        if (from !== this.connext.publicIdentifier) {
+          const withdrawState = state as WithdrawAppState;
+          const params = {
+            amount: withdrawState.transfers[0].amount,
+            recipient: withdrawState.transfers[0].to,
+            assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
+            nonce: withdrawState.nonce,
+          };
+          await this.connext.saveWithdrawCommitmentToStore(
+            params,
+            withdrawState.signatures,
+            protocolMeta.withdrawTx,
+          );
+        }
+        break;
+      }
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState;
         const transferAction = action as SimpleLinkedTransferAppAction;
@@ -472,6 +535,27 @@ export class ConnextListener {
         } as EventPayloads.HashLockTransferUnlocked);
         break;
       }
+      case GraphSignedTransferAppName: {
+        const transferState = state as GraphSignedTransferAppState;
+        const transferAction = action as GraphSignedTransferAppAction;
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).isZero()
+          ? toBN(transferState.coinTransfers[1].amount)
+          : toBN(transferState.coinTransfers[0].amount);
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+          type: ConditionalTransferTypes.GraphTransfer,
+          amount: transferAmount,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
+          paymentId: transferState.paymentId,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
+          meta: appInstance.meta,
+          transferMeta: {
+            signature: transferAction?.signature,
+            responseCID: transferAction?.responseCID,
+          } as UnlockedGraphSignedTransferMeta,
+        } as EventPayloads.GraphTransferUnlocked);
+        break;
+      }
       case SimpleSignedTransferAppName: {
         const transferState = state as SimpleSignedTransferAppState;
         const transferAction = action as SimpleSignedTransferAppAction;
@@ -488,7 +572,7 @@ export class ConnextListener {
           meta: appInstance.meta,
           transferMeta: {
             signature: transferAction?.signature,
-            responseCID: transferAction?.responseCID,
+            data: transferAction?.data,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
         break;

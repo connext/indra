@@ -19,7 +19,6 @@ import {
   notLessThanOrEqualTo,
   toBN,
   delayAndThrow,
-  stringify,
 } from "@connext/utils";
 import { BigNumber, Contract, constants } from "ethers";
 
@@ -29,7 +28,7 @@ const { AddressZero, Zero } = constants;
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
-    this.log.info(`deposit started: ${JSON.stringify(params)}`);
+    this.log.info(`Deposit started: ${JSON.stringify(params)}`);
     const amount = toBN(params.amount);
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)

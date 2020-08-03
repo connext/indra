@@ -1,19 +1,18 @@
 import {
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
   SetupMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, parseProtocolMessage, generateProtocolMessageData } from "./utils";
 
 const protocol = ProtocolNames.setup;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
@@ -24,19 +23,21 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL }
  * specs.counterfactual.com/04-setup-protocol
  */
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function* (context: Context & { preProtocolChannel: StateChannel }) {
-    const { message, network } = context;
+  0 /* Initiating */: async function* (context: Context) {
+    const { message, networks } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
-    let substart;
-    const { processID, params } = message;
-    log.info(`[${processID}] Initiation started`);
-    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
+    let substart: number;
+    const { processID, params } = message.data;
+    const loggerId = params?.multisigAddress || processID;
+    log.info(`[${loggerId}] Initiation started`);
+    log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params)}`);
 
     const {
       multisigAddress,
       responderIdentifier,
       initiatorIdentifier,
+      chainId,
     } = params as ProtocolParams.Setup;
 
     const error = yield [
@@ -49,15 +50,17 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     }
 
     // 56 ms
+    const network = networks[chainId];
     const stateChannel = StateChannel.setupChannel(
       network.contractAddresses.IdentityApp,
       network.contractAddresses,
       multisigAddress,
+      chainId,
       initiatorIdentifier,
       responderIdentifier,
     );
 
-    const setupCommitment = getSetupCommitment(context, stateChannel);
+    const setupCommitment = getSetupCommitment(network, stateChannel);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -65,11 +68,22 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
 
     // 32 ms
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
+    const freeBalanceUpdateData = getSetStateCommitment(network, stateChannel.freeBalance);
     const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
+    const { message: m2 } = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params, {
+        prevMessageReceived: start,
+        customData: {
+          setupSignature: mySetupSignature,
+          setStateSignature: mySignatureOnFreeBalanceState,
+        },
+      }),
+    ];
+    logTime(log, substart, `[${loggerId}] Received responder's sigs`);
     const {
       data: {
         customData: {
@@ -77,21 +91,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setStateSignature: responderSignatureOnFreeBalanceState,
         },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        to: responderIdentifier,
-        customData: {
-          setupSignature: mySetupSignature,
-          setStateSignature: mySignatureOnFreeBalanceState,
-        },
-      } as ProtocolMessageData,
-    ] as any;
-    logTime(log, substart, `[${processID}] Received responder's sigs`);
+    } = parseProtocolMessage(m2);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -108,7 +108,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData.hashToSign(),
       responderSignatureOnFreeBalanceState,
     );
-    logTime(log, substart, `[${processID}] Verified responder's sigs`);
+    logTime(log, substart, `[${loggerId}] Verified responder's sigs`);
 
     // add sigs to commitments
     await setupCommitment.addSignatures(mySetupSignature as any, responderSetupSignature);
@@ -125,14 +125,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
     ];
 
-    logTime(log, start, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${loggerId}] Initiation finished`);
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, network } = context;
+    const { message, networks } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
-    let substart;
+    let substart = start;
     const {
       processID,
       params,
@@ -140,12 +140,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         setupSignature: initiatorSetupSignature,
         setStateSignature: initiatorSignatureOnFreeBalanceState,
       },
-    } = message;
-    log.info(`[${processID}] Response started`);
-    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
+    } = message.data;
+    const loggerId = params?.multisigAddress || processID;
+    log.info(`[${loggerId}] Response started`);
+    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       multisigAddress,
+      chainId,
       initiatorIdentifier,
       responderIdentifier,
     } = params as ProtocolParams.Setup;
@@ -159,21 +161,24 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error(error);
     }
 
+    const network = networks[chainId];
     // 73 ms
     const stateChannel = StateChannel.setupChannel(
       network.contractAddresses.IdentityApp,
       network.contractAddresses,
       multisigAddress,
+      chainId,
       initiatorIdentifier,
       responderIdentifier,
     );
 
-    const setupCommitment = getSetupCommitment(context, stateChannel);
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
+    const setupCommitment = getSetupCommitment(network, stateChannel);
+    const freeBalanceUpdateData = getSetStateCommitment(network, stateChannel.freeBalance);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
+    // eslint-disable-next-line prefer-const
     substart = Date.now();
     const initatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
     await assertIsValidSignature(
@@ -186,7 +191,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData.hashToSign(),
       initiatorSignatureOnFreeBalanceState,
     );
-    logTime(log, substart, `[${processID}] Verified initator's sig`);
+    logTime(log, substart, `[${loggerId}] Verified initator's sig`);
 
     // 49 ms
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
@@ -208,19 +213,23 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       IO_SEND,
-      {
+      generateProtocolMessageData(
+        initiatorIdentifier,
         protocol,
         processID,
-        to: initiatorIdentifier,
-        seq: UNASSIGNED_SEQ_NO,
-        customData: {
-          setupSignature: mySetupSignature,
-          setStateSignature: mySignatureOnFreeBalanceState,
+        UNASSIGNED_SEQ_NO,
+        params,
+        {
+          prevMessageReceived: start,
+          customData: {
+            setupSignature: mySetupSignature,
+            setStateSignature: mySignatureOnFreeBalanceState,
+          },
         },
-      } as ProtocolMessageData,
+      ),
       stateChannel,
     ];
 
-    logTime(log, start, `[${processID}] Response finished`);
+    logTime(log, start, `[${loggerId}] Response finished`);
   },
 };

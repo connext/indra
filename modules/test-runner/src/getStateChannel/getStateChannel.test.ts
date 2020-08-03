@@ -68,6 +68,7 @@ const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
   stateTimeout: toBNJson(17),
   versionNumber: toBNJson(23),
+  transactionData: "0xdeadbeef",
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
@@ -77,7 +78,7 @@ describe("Get State Channel", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
   });

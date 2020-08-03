@@ -14,7 +14,7 @@ import { HashLockTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-const { Zero } = constants;
+const { Zero, HashZero } = constants;
 const { defaultAbiCoder, soliditySha256 } = utils;
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
@@ -99,7 +99,17 @@ describe("HashLockTransferApp", () => {
     };
   });
 
-  describe("update state", () => {
+  describe("getTurnTaker", () => {
+    it("will return payment recipient", async () => {
+      const ret = await hashLockTransferApp.getTurnTaker(encodeAppState(preState), [
+        senderAddr,
+        receiverAddr,
+      ]);
+      expect(ret).to.be.eq(receiverAddr);
+    });
+  });
+
+  describe("applyAction", () => {
     it("will redeem a payment with correct hash within expiry", async () => {
       const action: HashLockTransferAppAction = {
         preImage,
@@ -137,7 +147,44 @@ describe("HashLockTransferApp", () => {
       validateOutcome(ret, expectedPostState);
     });
 
-    it("will revert action with incorrect hash", async () => {
+    it("will cancel a payment if an empty action is given", async () => {
+      const action: HashLockTransferAppAction = {
+        preImage: HashZero, // cancel hash
+      };
+
+      let ret = await applyAction(preState, action);
+      const afterActionState = decodeAppState(ret);
+
+      const expectedPostState: HashLockTransferAppState = {
+        coinTransfers: [
+          {
+            amount: transferAmount,
+            to: senderAddr,
+          },
+          {
+            amount: Zero,
+            to: receiverAddr,
+          },
+        ],
+        lockHash,
+        preImage: HashZero,
+        expiry,
+        finalized: true,
+      };
+
+      expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
+      expect(afterActionState.coinTransfers[0].amount).to.eq(
+        expectedPostState.coinTransfers[0].amount,
+      );
+      expect(afterActionState.coinTransfers[1].amount).to.eq(
+        expectedPostState.coinTransfers[1].amount,
+      );
+
+      ret = await computeOutcome(afterActionState);
+      validateOutcome(ret, expectedPostState);
+    });
+
+    it("will not redeem a payment if an incorrect hash is given", async () => {
       const action: HashLockTransferAppAction = {
         preImage: getRandomBytes32(), // incorrect hash
       };

@@ -1,5 +1,5 @@
 import { connect } from "@connext/client";
-import { getLocalStore, getMemoryStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import {
   ClientOptions,
   IChannelProvider,
@@ -15,29 +15,31 @@ import {
   ChannelSigner,
   ColorfulLogger,
   getRandomPrivateKey,
+  getRandomBytes32,
 } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
-import { ethWallet } from "./ethprovider";
+import { ethProviderUrl, ethWallet } from "./ethprovider";
 import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
 
 export const createClient = async (
   opts: Partial<ClientOptions & { id: string; logLevel: number }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const store = opts.store || getMemoryStore();
   const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
+  const store = opts.store || getMemoryStore({ prefix: getRandomBytes32() });
+  await store.init();
   const clientOpts: ClientOptions = {
-    ethProviderUrl: env.ethProviderUrl,
+    ...opts,
+    ethProviderUrl: opts.ethProviderUrl || ethProviderUrl,
     loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
     signer: opts.signer || getRandomPrivateKey(),
-    nodeUrl: env.nodeUrl,
-    messagingUrl: env.natsUrl,
+    nodeUrl: opts.nodeUrl || env.nodeUrl,
+    messagingUrl: opts.messagingUrl || env.natsUrl,
     store,
-    ...opts,
   };
   log.info(`connect() called`);
   let start = Date.now();
@@ -52,8 +54,12 @@ export const createClient = async (
     });
     log.debug(`transaction sent ${ethTx.hash}, waiting...`);
     await ethTx.wait();
-    const token = new Contract(client.config.contractAddresses.Token!, ERC20.abi, ethWallet);
-    log.info(`sending client tokens`);
+    const token = new Contract(
+      client.config.contractAddresses[client.chainId].Token!,
+      ERC20.abi,
+      ethWallet,
+    );
+    log.info(`sending client ${client.config.contractAddresses[client.chainId].Token} tokens on chain ${client.chainId} from funding account ${ethWallet.address} with balance ${await token.balanceOf(ethWallet.address)}`);
     const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
     log.debug(`transaction sent ${tokenTx.hash}, waiting...`);
     await tokenTx.wait();
@@ -69,7 +75,7 @@ export const createRemoteClient = async (
 ): Promise<IConnextClient> => {
   const clientOpts: ClientOptions = {
     channelProvider,
-    ethProviderUrl: env.ethProviderUrl,
+    ethProviderUrl: ethProviderUrl,
     loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
     messagingUrl: env.natsUrl,
   };
@@ -82,7 +88,7 @@ export const createRemoteClient = async (
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
   // TODO: allow test-runner to access external urls
   const urlOptions = {
-    ethProviderUrl: env.ethProviderUrl,
+    ethProviderUrl: ethProviderUrl,
     nodeUrl: env.nodeUrl,
     messagingUrl: env.natsUrl,
   };
@@ -90,7 +96,6 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
-    store: getLocalStore(), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet") {
     clientOpts = {
@@ -110,13 +115,14 @@ export type ClientTestMessagingInputOpts = {
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
   store?: IStoreService;
+  stopOnCeilingReached?: boolean;
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> & { id?: string; logLevel?: number } = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, signer: signerOpts, params } = opts;
-  const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
+  const { protocol, ceiling, params } = opts;
+  const signer = opts.signer || getRandomChannelSigner(ethProviderUrl);
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
@@ -145,7 +151,11 @@ export const createClientWithMessagingLimits = async (
       },
     };
   }
-  const messaging = new TestMessagingService({ ...messageOptions, signer });
+  const messaging = new TestMessagingService({
+    ...messageOptions,
+    signer,
+    stopOnCeilingReached: opts.stopOnCeilingReached,
+  });
   // verification of messaging settings
   const expectedCount = {
     [SEND]: 0,

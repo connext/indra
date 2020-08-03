@@ -15,8 +15,10 @@ export class GetStateDepositHolderAddressController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.GetStateDepositHolderAddress,
   ): Promise<MethodResults.GetStateDepositHolderAddress> {
-    const { owners } = params;
-    const { networkContext, store } = requestHandler;
+    const { owners, chainId } = params;
+    const { networkContexts, store } = requestHandler;
+    const networkContext = networkContexts[chainId];
+
     if (!networkContext.provider) {
       throw new Error(NO_NETWORK_PROVIDER_CREATE2);
     }
@@ -25,7 +27,10 @@ export class GetStateDepositHolderAddressController extends MethodController {
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
-    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
+    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwnersAndChainId(
+      owners,
+      chainId,
+    )) || {
       multisigAddress: undefined,
     };
     if (!networkContext.provider && !storedMultisig) {

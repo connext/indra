@@ -1,21 +1,21 @@
 import { EntityRepository, Repository } from "typeorm";
 import { ConditionalTransactionCommitment } from "./conditionalCommitment.entity";
-import { ConditionalTransactionCommitmentJSON, ContractAddresses } from "@connext/types";
+import { ConditionalTransactionCommitmentJSON } from "@connext/types";
 import { AppType } from "../appInstance/appInstance.entity";
 
 export const convertConditionalCommitmentToJson = (
   commitment: ConditionalTransactionCommitment,
-  contractAddresses: ContractAddresses,
 ): ConditionalTransactionCommitmentJSON => {
   return {
     appIdentityHash: commitment.app.identityHash,
     freeBalanceAppIdentityHash: commitment.freeBalanceAppIdentityHash,
-    contractAddresses,
+    contractAddresses: commitment.contractAddresses,
     signatures: commitment.signatures,
     interpreterAddr: commitment.interpreterAddr,
     interpreterParams: commitment.interpreterParams,
     multisigAddress: commitment.multisigAddress,
     multisigOwners: commitment.multisigOwners,
+    transactionData: commitment.transactionData,
   };
 };
 
@@ -45,14 +45,9 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
   ): Promise<ConditionalTransactionCommitment[]> {
     return this.createQueryBuilder("conditional")
       .leftJoinAndSelect("conditional.app", "app")
-      .where(
-        "app.type <> :rejected", { rejected: AppType.REJECTED },
-      )
-      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .where("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
       .leftJoinAndSelect("app.channel", "channel")
-      .where(
-        "channel.multisigAddress = :multisigAddress", { multisigAddress },
-      )
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
       .getMany();
   }
 }

@@ -5,10 +5,10 @@ import {
   ChallengeEvent,
   ChallengeEventData,
   ChallengeUpdatedEventPayload,
-  NetworkContext,
   SignedCancelChallengeRequest,
   StateProgressedEventPayload,
   ChallengeEvents,
+  ContractAddresses,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -20,6 +20,7 @@ import {
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
 import { ILoggerService, ILogger } from "./logger";
+import { Ctx } from "evt";
 
 ////////////////////////////////////////
 // Watcher external parameters
@@ -27,7 +28,7 @@ import { ILoggerService, ILogger } from "./logger";
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: providers.JsonRpcProvider | string;
-  context: NetworkContext;
+  context: ContractAddresses;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
   logLevel?: number;
@@ -137,13 +138,19 @@ export interface IWatcher {
   on<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
+    filter?: (payload: WatcherEventData[T]) => boolean,
   ): void;
   once<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
+    filter?: (payload: WatcherEventData[T]) => boolean,
   ): void;
-  removeListener<T extends WatcherEvent>(event: T): void;
-  removeAllListeners(): void;
+  waitFor<T extends WatcherEvent>(
+    event: T,
+    timeout: number,
+    filter?: (payload: WatcherEventData[T]) => boolean,
+  ): Promise<WatcherEventData[T]>;
+  off(): void;
 
   //////// Public methods
   enable(): Promise<void>;
@@ -159,18 +166,30 @@ export interface IWatcher {
 // Listener interface
 
 export interface IChainListener {
-  //////// Listener methods
-  emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void;
-  on<T extends ChallengeEvent>(
+  //////// Evt methods
+  attach<T extends ChallengeEvent>(
     event: T,
     callback: (data: ChallengeEventData[T]) => Promise<void>,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
   ): void;
-  once<T extends ChallengeEvent>(
+
+  attachOnce<T extends ChallengeEvent>(
     event: T,
     callback: (data: ChallengeEventData[T]) => Promise<void>,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
   ): void;
-  removeListener<T extends ChallengeEvent>(event: T): void;
-  removeAllListeners(): void;
+
+  waitFor<T extends ChallengeEvent>(
+    event: T,
+    timeout: number,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
+  ): Promise<ChallengeEventData[T]>;
+
+  createContext<T extends ChallengeEvent>(): Ctx<ChallengeEventData[T]>;
+  detach<T extends ChallengeEvent>(ctx?: Ctx<ChallengeEventData[T]>): void;
 
   //////// Public methods
   enable(): Promise<void>;
@@ -222,7 +241,10 @@ export interface IWatcherStoreService {
   // State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
-  getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
+  getStateChannelByOwnersAndChainId(
+    owners: Address[],
+    chainId: number,
+  ): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
 
   // App instances

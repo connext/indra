@@ -15,6 +15,9 @@ import {
   SimpleSignedTransferAppName,
   DepositAppName,
   SimpleTwoPartySwapAppName,
+  GraphSignedTransferAppName,
+  GraphSignedTransferAppAction,
+  GraphSignedTransferAppState,
 } from "./apps";
 import { enumify } from "../utils";
 import { CoinTransfer } from "./funding";
@@ -35,6 +38,7 @@ export const GenericConditionalTransferAppName = "GenericConditionalTransferApp"
 export const AppNames = {
   [DepositAppName]: DepositAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
+  [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
@@ -46,6 +50,7 @@ export type AppName = keyof typeof AppNames;
 interface AppActionMap {
   [DepositAppName]: {}; // no action
   [HashLockTransferAppName]: HashLockTransferAppAction;
+  [GraphSignedTransferAppName]: GraphSignedTransferAppAction;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppAction;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
   [SimpleTwoPartySwapAppName]: {}; // no action
@@ -59,6 +64,7 @@ export type AppActions = {
 interface AppStateMap {
   [DepositAppName]: DepositAppState;
   [HashLockTransferAppName]: HashLockTransferAppState;
+  [GraphSignedTransferAppName]: GraphSignedTransferAppState;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppState;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
   [SimpleTwoPartySwapAppName]: SimpleSwapAppState;
@@ -71,6 +77,7 @@ export type AppStates = {
 
 export type AppAction =
   | HashLockTransferAppAction
+  | GraphSignedTransferAppAction
   | SimpleLinkedTransferAppAction
   | SimpleSignedTransferAppAction
   | WithdrawAppAction;
@@ -78,6 +85,7 @@ export type AppAction =
 export type AppState =
   | DepositAppState
   | HashLockTransferAppState
+  | GraphSignedTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState
   | SimpleSwapAppState
@@ -85,6 +93,7 @@ export type AppState =
   | GenericConditionalTransferAppState;
 
 export const SupportedApplicationNames = enumify({
+  [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
@@ -94,3 +103,27 @@ export const SupportedApplicationNames = enumify({
 });
 
 export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof typeof SupportedApplicationNames];
+
+// These apps have actions which do not depend on contract storage & have zero side-effects
+// This array is used to determine whether or not it is safe to run some app's
+// computeOutcome or computeStateTransition in a local evm vs needing to make an eth_call
+export const PureActionApps = [
+  GraphSignedTransferAppName,
+  SimpleSignedTransferAppName,
+  SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
+];
+
+export type AddressBookEntry = {
+  address: string;
+  constructorArgs?: Array<{ name: string; value: string }>;
+  creationCodeHash?: string;
+  runtimeCodeHash?: string;
+  txHash?: string;
+};
+
+export type AddressBookJson = {
+  [chainId: string]: {
+    [contractName: string]: AddressBookEntry;
+  };
+};

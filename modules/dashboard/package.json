@@ -10,17 +10,17 @@
     "eject": "./node_modules/.bin/react-scripts eject"
   },
   "dependencies": {
-    "@connext/cf-core": "6.7.1",
-    "@connext/messaging": "6.7.1",
-    "@connext/types": "6.7.1",
-    "@material-ui/core": "4.10.1",
+    "@connext/cf-core": "7.0.2",
+    "@connext/messaging": "7.0.2",
+    "@connext/types": "7.0.2",
+    "@material-ui/core": "4.11.0",
     "@material-ui/icons": "4.9.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "react-json-tree": "0.11.2",
     "react-router-dom": "5.2.0",
     "react-scripts": "3.4.0",
-    "ts-natsutil": "1.0.6"
+    "ts-natsutil": "1.1.1"
   },
   "browserslist": {
     "production": [

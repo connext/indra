@@ -11,7 +11,7 @@ export const addRebalanceProfile = async (
   assertProfile: boolean = true,
 ) => {
   const msg = await nats.request(
-    `admin.${client.publicIdentifier}.channel.add-profile`,
+    `admin.${client.publicIdentifier}.${client.chainId}.channel.add-profile`,
     5000,
     JSON.stringify({
       id: Date.now(),

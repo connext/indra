@@ -10,7 +10,7 @@ export class TransferRepository extends Repository<AppInstance> {
   >(paymentId: string): Promise<AppInstance<T>[]> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+      .where("app_instance.type = :type", { type: AppType.INSTANCE })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .getMany() as Promise<AppInstance<T>[]>;
   }
@@ -20,11 +20,11 @@ export class TransferRepository extends Repository<AppInstance> {
   >(paymentId: string, senderSignerAddress: string): Promise<AppInstance<T> | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
-      .getOne() as Promise<AppInstance<T>>;
+      .getOne() as Promise<AppInstance<T> | undefined>;
   }
 
   findTransferAppByPaymentIdAndReceiver<
@@ -32,10 +32,23 @@ export class TransferRepository extends Repository<AppInstance> {
   >(paymentId: string, receiverSignerAddress: string): Promise<AppInstance<T> | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
       )
       .getOne() as Promise<AppInstance<T>>;
+  }
+
+  findTransferAppsByChannelUserIdentifierAndReceiver<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(userIdentifier: string, receiverSignerAddress: string): Promise<AppInstance<T>[] | []> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
+      .andWhere(`app_instance."meta"::JSONB #> '{ "paymentId" }' IS NOT NULL`)
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
+      )
+      .getMany() as Promise<AppInstance<T>[] | []>;
   }
 }

@@ -1,14 +1,14 @@
-import { Controller, Get } from "@nestjs/common";
+import { AppRegistry } from "@connext/types";
+import { Controller, Get, Param } from "@nestjs/common";
 
-import { AppRegistry } from "./appRegistry.entity";
-import { AppRegistryRepository } from "./appRegistry.repository";
+import { CFCoreService } from "../cfCore/cfCore.service";
 
 @Controller("app-registry")
 export class AppRegistryController {
-  constructor(private readonly appRegistryRepository: AppRegistryRepository) {}
+  constructor(private readonly cfCoreService: CFCoreService) {}
 
-  @Get()
-  async get(): Promise<AppRegistry[]> {
-    return this.appRegistryRepository.find();
+  @Get(":chainId")
+  async get(@Param("chainId") chainId: number): Promise<AppRegistry> {
+    return this.cfCoreService.getAppRegistry(chainId);
   }
 }

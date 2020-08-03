@@ -4,23 +4,27 @@
 
 ### Accessing Channel State
 
-Information about channel state can be accessed with `getChannel()`. This includes current node and client balances, availability of channel, and more. 
+Information about channel state can be accessed with `getChannel()`. This includes current node and client balances, availability of channel, and more.
 
 #### Usage Example
 
 Information about channel state retrieved with `getChannel()` can be used (for example) to stop execution if certain conditions are not met:
 
 ```javascript
-    var channelAvailable = (await channel.getChannel()).available
-    if (!channelAvailable) {
-      console.warn(`Channel not available yet.`);
-      return;
-    }
+var channelAvailable = (await channel.getChannel()).available;
+if (!channelAvailable) {
+  console.warn(`Channel not available yet.`);
+  return;
+}
 ```
 
 ### Event Monitoring
 
-The Connext client is an event emitter. You can trigger actions such as transfer confirmations in your application by listening for events using `connext.on()`. `connext.on()` accepts a string representing the event you'd like to listen for, as well as a callback. The callback has a single parameter `data` which contains contextual data from the event. Available events are:
+The Connext client is an event emitter. You can trigger actions such as transfer confirmations in your application by listening for events using `connext.on()`. `connext.on()` accepts a string representing the event you'd like to listen for, as well as a callback.
+
+Our event emitter uses the [EVT](https://www.evt.land/) package, which includes useful methods such as [`waitFor`](https://docs.evt.land/api/evt/waitfor) which can be more convenient than using `.on()` or `.once()`.
+
+The callback has a single parameter `data` which contains contextual data from the event. Available events are:
 
 Channel Events:
 
@@ -56,18 +60,19 @@ PROTOCOL_MESSAGE_EVENT,
 Transfer Events:
 
 ```javascript
-RECEIVE_TRANSFER_FAILED_EVENT,
-RECEIVE_TRANSFER_FINISHED_EVENT,
-RECEIVE_TRANSFER_STARTED_EVENT
+CONDITIONAL_TRANSFER_CREATED,
+CONDITIONAL_TRANSFER_UNLOCKED,
+CONDITIONAL_TRANSFER_FAILED,
 ```
 
 Events exist in the types package as well, example:
 
 ```typescript
-import { ConnextEvents, DEPOSIT_STARTED_EVENT } from "@connext/types";
+import { ConnextEvents, EventNames } from "@connext/types";
 
-connext.on(DEPOSIT_STARTED_EVENT, (data) => {
-  console.log("Your deposit has begun")
+connext.on(EventNames.DEPOSIT_STARTED_EVENT, (data) => {
+  console.log("Your deposit has begun");
+  // data type is inferred
   const { txHash, value } = data;
   showDepositStarted(value);
   showTxStatus(txHash);
@@ -83,8 +88,6 @@ An example use case is requesting deposit rights, then sending funds to a user t
 ## Creating a Custom Backup Service
 
 Backup services store channel states on behalf of the client in case their store compromised or otherwise unavailable (i.e. for clearing `localStorage` in a browser, using incognito mode, or seamless multidevice channel usage). If a backup service is not available, the client will still function properly in these scenarios, but will rely on a trusted restore from the node’s version of the channel state.
-
-[Pisa](https://connext-rinkeby.pisa.watch/docs.html) hosts a backup service you can use as well, but is only currently active on rinkeby. If you would like to have backups on mainnet, you will have to create a custom implementation.
 
 ### Interface
 
@@ -112,11 +115,11 @@ To use a backup service with the client, simply instantiate the client with the 
 
 ```typescript
 /**
-  * Imagine that there is an REST API available at some URL that has two endpoints, a
-  * GET endpoint `restore` and a POST endpoint for `backup`.
-  *
-  * NOTE: This code has not been tested, and is designed to be purely illustrative.
-  */
+ * Imagine that there is an REST API available at some URL that has two endpoints, a
+ * GET endpoint `restore` and a POST endpoint for `backup`.
+ *
+ * NOTE: This code has not been tested, and is designed to be purely illustrative.
+ */
 
 import { connect } from "@connext/client";
 import { ClientOptions, IBackupService, StorePair } from "@connext/types";
@@ -124,15 +127,13 @@ import * as axios from "axios";
 
 class BackupService implements IBackupService {
   private client: any;
-  constructor(
-    private readonly baseUrl: string,
-  ) {
+  constructor(private readonly baseUrl: string) {
     this.client = axios.create({
       baseURL,
-      responseType: 'json',
+      responseType: "json",
       headers: {
-        'Content-Type': 'application/json'
-      }
+        "Content-Type": "application/json",
+      },
     });
   }
 
@@ -149,9 +150,8 @@ class BackupService implements IBackupService {
 const connectOptions: ClientOptions = {
   backupService: new BackupService("https://myawesomebackup.com"),
   ethProviderUrl: "https://rinkeby.indra.connext.network/api/ethprovider",
-  nodeUrl: "https://rinkeby.indra.connext.network/api/messaging",
-  mnemonic:
-    "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  nodeUrl: "https://rinkeby.indra.connext.network",
+  mnemonic: "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
 };
 
 const client = await connect(connectOptions);

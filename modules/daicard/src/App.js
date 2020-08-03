@@ -1,8 +1,8 @@
 import * as connext from "@connext/client";
 import { ERC20 } from "@connext/contracts";
-import { getLocalStore, PisaBackupService } from "@connext/store";
+import { getLocalStore } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
-import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
+import { Currency, minBN, toBN, calculateExchangeWad } from "@connext/utils";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, Wallet, providers, constants, utils } from "ethers";
@@ -35,22 +35,17 @@ const { formatEther } = utils;
 
 const urls = {
   ethProviderUrl:
-    process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}/api`,
+  process.env.REACT_APP_ETH_URL_OVERRIDE || `http://${window.location.hostname}:8545`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `http://${window.location.hostname}:3000`,
   legacyUrl: (chainId) =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"
       : chainId.toString() === "4"
       ? "https://rinkeby.hub.connext.network/api/hub"
       : undefined,
-  // pisaUrl: chainId =>
-  //   chainId.toString() === "1"
-  //     ? "https://connext.pisa.watch"
-  //     : chainId.toString() === "4"
-  //     ? "https://connext-rinkeby.pisa.watch"
-  //     : undefined,
-  pisaUrl: (chainId) => undefined,
 };
+
+console.log("Using urls:", urls);
 
 // LogLevel for testing ChannelProvider
 const LOG_LEVEL = 5;
@@ -60,10 +55,8 @@ const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 
-// it is important to add a default payment
-// profile on initial load in the case the
-// user is being paid without depositing, or
-// in the case where the user is redeeming a link
+// change to use token with custom decimals
+export const TOKEN_DECIMALS = 18;
 
 const style = withStyles((theme) => ({
   paper: {
@@ -208,14 +201,7 @@ class App extends React.Component {
     // if choose mnemonic
     let channel;
     if (!useWalletConnext) {
-      let store;
-      const pisaUrl = urls.pisaUrl(network.chainId);
-      if (pisaUrl) {
-        console.log(`Using external state backup service: ${pisaUrl}`);
-        store = getLocalStore(new PisaBackupService({ pisaUrl, wallet }));
-      } else {
-        store = getLocalStore();
-      }
+      const store = getLocalStore();
 
       // If store has double prefixes, flush and restore
       for (const k of Object.keys(localStorage)) {
@@ -262,7 +248,12 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    const token = new Contract(channel.config.contractAddresses.Token, ERC20.abi, ethProvider);
+    const chainId = channel.chainId;
+    const token = new Contract(
+      channel.config.contractAddresses[chainId].Token,
+      ERC20.abi,
+      ethProvider,
+    );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -313,10 +304,15 @@ class App extends React.Component {
 
   getSaiBalance = async (wallet) => {
     const { channel } = this.state;
-    if (!channel.config.contractAddresses.SAIToken) {
+    const chainId = channel.chainId;
+    if (!channel.config.contractAddresses[chainId].SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, ERC20.abi, wallet);
+    const saiToken = new Contract(
+      channel.config.contractAddresses[chainId].SAIToken,
+      ERC20.abi,
+      wallet,
+    );
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;
@@ -511,7 +507,12 @@ class App extends React.Component {
       return;
     }
 
-    const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate);
+    const maxSwap = calculateExchangeWad(
+      maxDeposit.toDAI().wad.sub(balance.channel.token.wad),
+      18,
+      swapRate,
+      18,
+    );
     const availableWeiToSwap = minBN([balance.channel.ether.wad, maxSwap]);
 
     if (availableWeiToSwap.isZero()) {
@@ -525,7 +526,7 @@ class App extends React.Component {
 
     console.log(
       `Attempting to swap ${formatEther(availableWeiToSwap)} eth for ${formatEther(
-        weiToToken(availableWeiToSwap, swapRate),
+        calculateExchangeWad(availableWeiToSwap, 18, swapRate, 18),
       )} dai at rate: ${swapRate}`,
     );
     machine.send(["START_SWAP"]);

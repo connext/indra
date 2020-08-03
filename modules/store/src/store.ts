@@ -21,12 +21,11 @@ import {
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
-import { constants, utils } from "ethers";
+import { utils } from "ethers";
 
 import { storeKeys } from "./constants";
 import { KeyValueStorage } from "./types";
 
-const { Zero } = constants;
 const { defaultAbiCoder } = utils;
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
@@ -134,7 +133,9 @@ export class StoreService implements IStoreService {
     return Object.entries(store);
   }
 
-  clear(): Promise<void> {
+  async clear(): Promise<void> {
+    const keys = await this.storage.getKeys();
+    await Promise.all(keys.map((key) => this.storage.removeItem(key)));
     return this.storage.setItem(storeKeys.STORE, {});
   }
 
@@ -168,10 +169,15 @@ export class StoreService implements IStoreService {
     return item ? properlyConvertChannelNullVals(item) : undefined;
   }
 
-  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
+  async getStateChannelByOwnersAndChainId(
+    owners: string[],
+    chainId: number,
+  ): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(
-      (channel) => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
+      (channel) =>
+        [...channel.userIdentifiers].sort().toString() === owners.sort().toString() &&
+        channel.chainId === chainId,
     );
   }
 
@@ -207,7 +213,11 @@ export class StoreService implements IStoreService {
     });
   }
 
-  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+  async updateNumProposedApps(
+    multisigAddress: string,
+    numProposedApps: number,
+    stateChannel: StateChannelJSON,
+  ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
@@ -215,7 +225,7 @@ export class StoreService implements IStoreService {
       }
       const updatedStore = this.setStateChannel(store, {
         ...channel,
-        monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        monotonicNumProposedApps: numProposedApps,
       });
       return this.saveStore(updatedStore);
     });
@@ -338,7 +348,7 @@ export class StoreService implements IStoreService {
 
   async removeAppInstance(
     multisigAddress: string,
-    appIdentityHash: string,
+    appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -350,14 +360,14 @@ export class StoreService implements IStoreService {
         );
         return store;
       }
-      if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
+      if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         // does not exist
         this.log.debug(
-          `No app with hash ${appIdentityHash} found in channel with multisig ${multisigAddress}`,
+          `No app with hash ${appInstance.identityHash} found in channel with multisig ${multisigAddress}`,
         );
         return store;
       }
-      const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
+      const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
       const presplice = channel.appInstances.length;
       channel.appInstances.splice(idx, 1);
       this.log.debug(
@@ -380,6 +390,15 @@ export class StoreService implements IStoreService {
           toBN(oldFreeBalanceUpdate.versionNumber).toString(),
         );
       }
+      this.log.debug(`Removing app commitments from store`);
+      updatedStore = this.unsetConditionalTransactionCommitment(
+        this.unsetSetStateCommitment(
+          updatedStore,
+          appInstance.identityHash,
+          toBN(appInstance.latestVersionNumber).toString(),
+        ),
+        appInstance.identityHash,
+      );
       this.log.debug(`Updating channel with new free balance updates without app instance`);
       updatedStore = this.setSetStateCommitment(
         this.setStateChannel(store, {
@@ -528,35 +547,22 @@ export class StoreService implements IStoreService {
   ////// Watcher methods
   async getAppChallenge(identityHash: string): Promise<StoredAppChallenge | undefined> {
     const key = this.getKey(storeKeys.CHALLENGE, identityHash);
-    return this.getItem<StoredAppChallenge>(key);
+    const existing = await this.storage.getItem<StoredAppChallenge>(key);
+    if (existing === null) {
+      return undefined;
+    }
+    return existing;
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
-    return this.execute((store) => {
-      const { identityHash } = data;
-      const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
-      const existing = store[challengeKey];
-      if (
-        existing &&
-        toBN(existing.versionNumber).gt(data.versionNumber) &&
-        data.versionNumber.gt(Zero) // cancel challenge special case
-      ) {
-        this.log.debug(
-          `Existing challenge has nonce ${toBN(
-            existing.versionNumber,
-          ).toString()} and data has nonce ${data.versionNumber.toString()}, doing nothing.`,
-        );
-        return store;
-      }
-      store[challengeKey] = data;
-      return this.saveStore(store);
-    });
+    const key = this.getKey(storeKeys.CHALLENGE, data.identityHash);
+    return this.storage.setItem(key, data);
   }
 
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     // get all stored challenges
-    const store = await this.execute((store) => store);
-    const challengeKeys = Object.keys(store).filter(
+    const keys = await this.storage.getKeys();
+    const challengeKeys = keys.filter(
       (key) =>
         key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
     );
@@ -564,7 +570,7 @@ export class StoreService implements IStoreService {
       StoredAppChallengeStatus.NO_CHALLENGE,
       StoredAppChallengeStatus.CONDITIONAL_SENT,
     ];
-    const challenges = challengeKeys.map((key) => store[key]);
+    const challenges = await Promise.all(challengeKeys.map((key) => this.storage.getItem(key)));
     return challenges.filter(
       (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
     );
@@ -572,65 +578,53 @@ export class StoreService implements IStoreService {
 
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
-    const store = await this.execute((store) => store);
     const key = this.getKey(storeKeys.BLOCK_PROCESSED);
-    const item = store[key];
+    const item = await this.storage.getItem(key);
     return item ? parseInt(`${item}`) : 0;
   }
 
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    return this.execute((store) => {
-      const key = this.getKey(storeKeys.BLOCK_PROCESSED);
-      store[key] = blockNumber;
-      return this.saveStore(store);
-    });
+    const key = this.getKey(storeKeys.BLOCK_PROCESSED);
+    return this.storage.setItem(key, blockNumber);
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, appIdentityHash);
-    const store = await this.execute((store) => store);
-    return store[key] || [];
+    const stored = await this.storage.getItem<StateProgressedEventPayload[]>(key);
+    return stored || [];
   }
 
   async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
-    return this.execute((store) => {
-      const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
-      const existing = store[key] || [];
-      const idx = existing.findIndex((stored) =>
-        toBN(stored.versionNumber).eq(event.versionNumber),
-      );
-      if (idx !== -1) {
-        this.log.debug(
-          `Found existing state progressed event for nonce ${event.versionNumber.toString()}, doing nothing.`,
-        );
-        return store;
-      }
-      this.log.debug(`Adding state progressed event: ${stringify(event)}`);
-      store[key] = existing.concat(event);
-      return this.saveStore(store);
-    });
+    const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
+    const stored = await this.getStateProgressedEvents(event.identityHash);
+    const existing = stored.find((e) => toBN(e.versionNumber).eq(event.versionNumber));
+    if (existing) {
+      return;
+    }
+    stored.push(event);
+    return this.storage.setItem(key, stored);
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
-    const store = await this.execute((store) => store);
     const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, appIdentityHash);
-    return store[key] || [];
+    const stored = await this.storage.getItem<ChallengeUpdatedEventPayload[]>(key);
+    return stored || [];
   }
 
   async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
-    return this.execute((store) => {
-      const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
-      const existing: ChallengeUpdatedEventPayload[] = store[key] || [];
-      if (existing.map((stored) => stringify(stored)).includes(stringify(event))) {
-        this.log.debug(`Found existing identical challenge created event, doing nothing.`);
-        return store;
-      }
-      this.log.debug(`Adding challenge updated event: ${stringify(event)}`);
-      store[key] = existing.concat(event);
-      return this.saveStore(store);
-    });
+    const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
+    const stored = await this.getChallengeUpdatedEvents(event.identityHash);
+    const existing = stored.find(
+      (e) => e.status === event.status && toBN(e.versionNumber).eq(event.versionNumber),
+    );
+    if (existing) {
+      return;
+    }
+    stored.push(event);
+    this.log.debug(`Adding challenge updated event: ${stringify(event)}`);
+    return this.storage.setItem(key, stored);
   }
 
   async addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
@@ -715,11 +709,6 @@ export class StoreService implements IStoreService {
       latestAction: defaultAbiCoder.decode([ourApp.abiEncodings.actionEncoding], encodedAction),
     };
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
-
-    // update the challenge
-    const challengeKey = this.getKey(storeKeys.CHALLENGE, appIdentityHash);
-    // TODO: sync challenge events?
-    return this.setItem(challengeKey, onchainChallenge);
   }
 
   ////// Helper methods
@@ -774,9 +763,17 @@ export class StoreService implements IStoreService {
     store: any,
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<any> {
+  ): any {
     const conditionalCommitmentKey = this.getKey(storeKeys.CONDITIONAL_COMMITMENT, appIdentityHash);
     store[conditionalCommitmentKey] = commitment;
+    return store;
+  }
+
+  private unsetConditionalTransactionCommitment(store: any, appIdentityHash: string): any {
+    const conditionalCommitmentKey = this.getKey(storeKeys.CONDITIONAL_COMMITMENT, appIdentityHash);
+    if (store[conditionalCommitmentKey]) {
+      delete store[conditionalCommitmentKey];
+    }
     return store;
   }
 
@@ -800,7 +797,11 @@ export class StoreService implements IStoreService {
     const remaining = existing.filter((commitment) =>
       toBN(commitment.versionNumber).gt(versionNumber),
     );
-    store[setStateKey] = remaining;
+    if (remaining.length === 0) {
+      delete store[setStateKey];
+    } else {
+      store[setStateKey] = remaining;
+    }
     return store;
   }
 
@@ -827,6 +828,7 @@ export class StoreService implements IStoreService {
     this.deferred.push((store) => instruction(store));
     const updatedStore = await pWaterfall(this.deferred, store);
     this.deferred = [];
+    // const updatedStore = await instruction(store);
     return updatedStore;
   };
 }

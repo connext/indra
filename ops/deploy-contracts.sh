@@ -1,46 +1,47 @@
 #!/bin/bash
 set -e
 
-# Make sure docker swarm mode is enabled so we can use the secret store
-docker swarm init 2> /dev/null || true
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
-
-localProvider="http://localhost:8545"
-ETH_PROVIDER="${1:-$localProvider}"
-mode="${MODE:-local}"
+chain_url="${1:-http://localhost:8545}"
 
 ########################################
 # Calculate stuff based on env
 
-cwd="`pwd`"
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+else version="latest"
+fi
 
-registry="docker.io/connextproject"
-
-commit="`git rev-parse HEAD | head -c 8`"
-release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
-name=${project}_contract_deployer
-
-if [[ -f "$cwd/address-book.json" ]]
-then address_book="$cwd/address-book.json"
-else address_book="$cwd/modules/contracts/address-book.json"
+if [[ -f "$root/address-book.json" ]]
+then address_book="$root/address-book.json"
+else address_book="$root/modules/contracts/address-book.json"
 fi
 
 ########################################
-# Load private key into secret store
-# Unless we're using ganache, in which case we'll use the ETH_MNEMONIC
+# Get mnemonic
 
-if [[ "$ETH_PROVIDER" == "$localProvider" ]]
-then
-  SECRET_ENV="--env=ETH_MNEMONIC=candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+chain_host="${chain_url#*://}"
+chain_host="${chain_host%/*}"
+chain_port="${chain_host#*:}"
+
+if [[ \
+  "$chain_url" == "http://localhost:$chain_port" && \
+  -n `docker container ls -f publish=8545 | grep "0.0.0.0:$chain_port" | grep "indra_"` \
+  ]]
+then mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 else
-  echo "Copy the mnemonic for an account that holds funds for given provider to your clipboard"
+  echo "Copy the mnemonic for the account that will pay for gas"
   echo "Paste it below & hit enter (no echo)"
   echo -n "> "
-  read -s secret
-  SECRET_ENV="--env=ETH_MNEMONIC=$secret"
+  read -s mnemonic
   echo
 fi
 
@@ -53,34 +54,31 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-if [[ "$mode" == "local" ]]
+image="${project}_ethprovider:$version"
+
+if [[ -n "`docker container ls -q $image`" ]]
 then
-  echo "Deploying $mode-mode contract deployer (image: builder)..."
+  echo "Deploying contract deployer (image: $image)..."
   exec docker run \
     $interactive \
-    "$SECRET_ENV" \
-    --entrypoint="bash" \
-    --env="ETH_PROVIDER=$ETH_PROVIDER" \
-    --mount="type=bind,source=$cwd,target=/root" \
-    --mount="type=volume,source=${project}_chain_dev,target=/data" \
-    --name="$name" \
+    --env=MNEMONIC="$mnemonic" \
+    --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
+    --mount="type=bind,source=$address_book,target=/data/address-book.json" \
+    --name="${project}_contract_deployer" \
     --rm \
-    ${project}_builder -c "cd modules/contracts && bash ops/entry.sh deploy"
+    $image deploy
 
-elif [[ "$mode" == "release" ]]
-then image="${registry}/${project}_ethprovider:$release"
-elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:$commit"
+else
+  image=${project}_builder
+  echo "Deploying contract deployer (image: $image)..."
+  exec docker run \
+    $interactive \
+    --entrypoint="bash" \
+    --env=MNEMONIC="$mnemonic" \
+    --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
+    --mount="type=bind,source=$root,target=/root" \
+    --mount="type=bind,source=$address_book,target=/data/address-book.json" \
+    --name="${project}_contract_deployer" \
+    --rm \
+    $image modules/contracts/ops/deploy.sh
 fi
-
-echo "Deploying $mode-mode contract deployer (image: $image)..."
-
-exec docker run \
-  $interactive \
-  "$SECRET_ENV" \
-  --env="ETH_PROVIDER=$ETH_PROVIDER" \
-  --mount="type=bind,source=$address_book,target=/root/address-book.json" \
-  --mount="type=volume,source=${project}_chain_dev,target=/data" \
-  --name="$name" \
-  --rm \
-  $image deploy

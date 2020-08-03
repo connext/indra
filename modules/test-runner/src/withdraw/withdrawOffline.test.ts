@@ -13,6 +13,7 @@ import {
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
+  env,
   ETH_AMOUNT_SM,
   ethProvider,
   expect,
@@ -20,18 +21,17 @@ import {
   SEND,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
-  env,
+  ethProviderUrl,
   APP_PROTOCOL_TOO_LONG,
   CLIENT_INSTALL_FAILED,
   RECEIVED,
 } from "../util";
-import { addressBook } from "@connext/contracts";
 
 const { AddressZero } = constants;
 
 describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
-  const addr = addressBook[1337].WithdrawApp.address;
+  const addr = env.contractAddresses[1337].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
@@ -91,7 +91,7 @@ describe("Withdraw offline tests", () => {
   };
 
   beforeEach(async () => {
-    signer = getRandomChannelSigner(env.ethProviderUrl);
+    signer = getRandomChannelSigner(ethProviderUrl);
   });
 
   it("client goes offline during withdrawal app proposal", async () => {
@@ -161,7 +161,8 @@ describe("Withdraw offline tests", () => {
     await recreateClientAndRetryWithdraw(client, withdrawParams);
   });
 
-  it("client goes offline before node finishes submitting withdrawal (commitment is written to store and retried)", async () => {
+  // SKIPPED because withdraw doesn't use takeAction anymore
+  it.skip("client goes offline before node finishes submitting withdrawal (commitment is written to store and retried)", async () => {
     const client = await createAndFundChannel();
     const withdrawParams = {
       amount: ZERO_ZERO_ZERO_FIVE_ETH,

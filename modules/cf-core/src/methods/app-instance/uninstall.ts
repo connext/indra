@@ -29,22 +29,22 @@ export class UninstallController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.multisigAddress) {
       throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.multisigAddress, params.appIdentityHash];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ) {
-    const { appIdentityHash } = params;
+  ): Promise<MethodResults.Uninstall | undefined> {
+    const { appIdentityHash, action } = params;
 
     if (!appIdentityHash) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
@@ -61,11 +61,20 @@ export class UninstallController extends MethodController {
       throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(preProtocolStateChannel.multisigAddress));
     }
 
-    // check if its the balance refund app
-    const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
-    if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
+    // see notes in take-action method
+    if (action) {
+      if (!preProtocolStateChannel.hasAppInstance(appIdentityHash)) {
+        throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
+      }
+      return undefined;
     }
+
+    if (!preProtocolStateChannel.isAppInstanceInstalled(appIdentityHash)) {
+      // TODO: how to get app ref if its been uninstalled?
+      return {} as any;
+    }
+
+    return undefined;
   }
 
   protected async executeMethodImplementation(
@@ -76,12 +85,16 @@ export class UninstallController extends MethodController {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { appIdentityHash } = params;
 
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin uninstall protocol with");
+    }
+
     const { updatedChannel, uninstalledApp, action } = await uninstallAppInstanceFromChannel(
-      preProtocolStateChannel!,
+      preProtocolStateChannel,
       router,
       protocolRunner,
       publicIdentifier,
-      preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
+      preProtocolStateChannel.userIdentifiers.find((id) => id !== publicIdentifier)!,
       params,
     );
 
@@ -139,6 +152,7 @@ export async function uninstallAppInstanceFromChannel(
       appIdentityHash: appInstance.identityHash,
       action: params.action,
       stateTimeout: toBN(0), // Explicitly finalized states
+      protocolMeta: params.protocolMeta,
     },
     preProtocolStateChannel,
   );

@@ -19,7 +19,7 @@ import {
   STATE_OBJECT_NOT_ENCODABLE,
   NO_APP_INSTANCE_FOR_GIVEN_HASH,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
-  NO_MULTISIG_IN_PARAMS,
+  NO_APP_IDENTITY_HASH_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models/state-channel";
@@ -33,21 +33,21 @@ export class TakeActionController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-  ): Promise<string> {
-    if (!params.multisigAddress) {
-      throw new Error(NO_MULTISIG_IN_PARAMS(params));
+  ): Promise<string[]> {
+    if (!params.appIdentityHash) {
+      throw new Error(NO_APP_IDENTITY_HASH_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.appIdentityHash];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
+  ): Promise<MethodResults.TakeAction | undefined> {
     const { appIdentityHash, action } = params;
 
     if (!appIdentityHash) {
@@ -71,17 +71,24 @@ export class TakeActionController extends MethodController {
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);
     }
+    // NOTE: there's nothing that prevents the same action from being applied
+    // multiple times, so always execute the method.
+    return undefined;
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-    preProtocolStateChannel: StateChannel,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.TakeAction> {
     const { publicIdentifier, protocolRunner, router } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
-    const app = preProtocolStateChannel!.appInstances.get(appIdentityHash)!;
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin takeAction protocol with");
+    }
+
+    const app = preProtocolStateChannel.appInstances.get(appIdentityHash)!;
 
     const { channel } = await runTakeActionProtocol(
       appIdentityHash,

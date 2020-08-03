@@ -1,4 +1,4 @@
-import { utils, providers } from "ethers";
+import { providers, constants } from "ethers";
 import { EntityRepository, Repository, Between, getManager } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -7,7 +7,37 @@ import {
   OnchainTransaction,
   TransactionReason,
   AnonymizedOnchainTransaction,
+  TransactionStatus,
 } from "./onchainTransaction.entity";
+import { toBN } from "@connext/utils";
+const { Zero } = constants;
+
+export const onchainEntityToReceipt = (
+  entity: OnchainTransaction | undefined,
+): providers.TransactionReceipt | undefined => {
+  if (!entity) {
+    return undefined;
+  }
+  const { to, from, gasUsed, logsBloom, blockHash, hash: transactionHash, blockNumber } = entity;
+  return {
+    to,
+    from,
+    gasUsed,
+    logsBloom,
+    blockHash,
+    transactionHash,
+    blockNumber,
+  } as providers.TransactionReceipt;
+  // Missing the following fields:
+  // contractAddress: string;
+  // transactionIndex: number;
+  // root?: string;
+  // logs: Array<Log>;
+  // confirmations: number;
+  // cumulativeGasUsed: BigNumber;
+  // byzantium: boolean;
+  // status?: number;
+};
 
 @EntityRepository(OnchainTransaction)
 export class OnchainTransactionRepository extends Repository<OnchainTransaction> {
@@ -16,6 +46,18 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
       where: { hash: txHash },
       relations: ["channel"],
     });
+  }
+
+  async findFailedTransactions(withErrors: string[]): Promise<OnchainTransaction[]> {
+    const txes = await this.createQueryBuilder("onchain_transaction")
+      .leftJoinAndSelect("onchain_transaction.channel", "channel")
+      .where("onchain_transaction.status = :status", { status: TransactionStatus.FAILED })
+      .getMany();
+
+    // could do this in the query, but it was hard and probably doesn't matter
+    return txes.filter((tx) =>
+      Object.values(tx.errors).some((error) => withErrors.includes(error)),
+    );
   }
 
   async findByUserPublicIdentifier(
@@ -29,78 +71,101 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return txs;
   }
 
-  async findLatestWithdrawalByUserPublicIdentifier(
+  async findLatestTransactionToChannel(
+    multisigAddress: string,
+    reason: TransactionReason,
+  ): Promise<OnchainTransaction | undefined> {
+    const tx = await this.createQueryBuilder("onchainTransaction")
+      .leftJoinAndSelect("onchainTransaction.channel", "channel")
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
+      .where("onchainTransaction.reason = :reason", { reason })
+      .orderBy("onchainTransaction.nonce", "DESC")
+      .getOne();
+    return tx;
+  }
+
+  async findLatestWithdrawalByUserPublicIdentifierAndChain(
     userIdentifier: string,
+    chainId: number,
   ): Promise<OnchainTransaction | undefined> {
     const tx = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
-      .where("onchainTransaction.reason = :reason", { reason: TransactionReason.USER_WITHDRAWAL })
+      .andWhere("channel.chainId = :chainId", { chainId })
+      .andWhere("onchainTransaction.reason = :reason", {
+        reason: TransactionReason.USER_WITHDRAWAL,
+      })
       .orderBy("onchainTransaction.id", "DESC")
       .getOne();
     return tx;
   }
 
-  async addWithdrawal(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async addResponse(
+    tx: providers.TransactionResponse,
+    reason: TransactionReason,
+    channel: Channel,
+  ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
+      await transactionalEntityManager
         .createQueryBuilder()
         .insert()
         .into(OnchainTransaction)
         .values({
           ...tx,
-          reason: TransactionReason.USER_WITHDRAWAL,
+          data: tx.data.toString(),
+          value: toBN(tx.value),
+          gasPrice: toBN(tx.gasPrice),
+          gasLimit: toBN(tx.gasLimit),
+          nonce: toBN(tx.nonce).toNumber(),
+          chainId: tx.chainId.toString(),
+          reason,
+          status: TransactionStatus.PENDING,
           channel,
+          hash: tx.hash,
+          blockHash: tx.blockHash,
+          blockNumber: tx.blockNumber,
+          raw: tx.raw,
+          gasUsed: Zero,
         })
+        .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
+        .setParameter("nonce", toBN(tx.nonce).toNumber())
         .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
     });
   }
 
-  async addCollateralization(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async markFailed(
+    tx: providers.TransactionResponse,
+    errors: { [k: number]: string },
+  ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(OnchainTransaction)
-        .values({
-          ...tx,
-          reason: TransactionReason.COLLATERALIZATION,
-          channel,
-        })
-        .execute();
-
       await transactionalEntityManager
         .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
+        .update(OnchainTransaction)
+        .set({
+          status: TransactionStatus.FAILED,
+          errors,
+        })
+        .where("onchain_transaction.hash = :txHash", {
+          txHash: tx.hash,
+        })
+        .execute();
     });
   }
 
-  async addReclaim(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async addReceipt(tx: providers.TransactionReceipt): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(OnchainTransaction)
-        .values({
-          ...tx,
-          reason: TransactionReason.NODE_WITHDRAWAL,
-          channel,
-        })
-        .execute();
-
       await transactionalEntityManager
         .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
+        .update(OnchainTransaction)
+        .set({
+          status: TransactionStatus.SUCCESS,
+          gasUsed: tx.gasUsed || Zero,
+          logsBloom: tx.logsBloom,
+        })
+        .where("onchain_transaction.hash = :txHash", {
+          txHash: tx.transactionHash,
+        })
+        .execute();
     });
   }
 }

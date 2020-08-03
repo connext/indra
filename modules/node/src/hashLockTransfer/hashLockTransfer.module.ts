@@ -25,10 +25,7 @@ import { HashlockTransferRepository } from "./hashlockTransfer.repository";
     ConfigModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([
-      ChannelRepository,
-      HashlockTransferRepository,
-    ]),
+    TypeOrmModule.forFeature([ChannelRepository, HashlockTransferRepository]),
   ],
   providers: [HashLockTransferService, hashLockTransferProviderFactory],
 })

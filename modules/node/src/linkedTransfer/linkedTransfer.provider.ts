@@ -8,6 +8,7 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
+import { ConfigService } from "../config/config.service";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 
@@ -16,6 +17,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly configService: ConfigService,
     private readonly linkedTransferService: LinkedTransferService,
   ) {
     super(log, messaging);
@@ -24,6 +26,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getLinkedTransferByPaymentId(
     pubId: string,
+    chainId: number,
     data: { paymentId: string },
   ): Promise<NodeResponses.GetLinkedTransfer | undefined> {
     const { paymentId } = data;
@@ -37,7 +40,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const {
       senderApp,
       status,
-    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatus(paymentId);
+    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatusOnChain(
+      paymentId,
+      chainId,
+    );
     if (!senderApp) {
       return undefined;
     }
@@ -61,9 +67,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getPendingTransfers(
     userIdentifier: string,
+    chainId: number,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlockOnChain(
       userIdentifier,
+      chainId,
     );
     return transfers.map((transfer) => {
       return {
@@ -82,29 +90,27 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.get-linked",
-      this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-linked`,
+      this.authService.parseIdentifierAndChain(this.getLinkedTransferByPaymentId.bind(this)),
     );
-    // await super.connectRequestReponse(
-    //   "*.transfer.get-pending",
-    //   this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
-    // );
   }
 }
 
 export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, LinkedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
+    configService: ConfigService,
     linkedTransferService: LinkedTransferService,
   ): Promise<void> => {
     const transfer = new LinkedTransferMessaging(
       authService,
       logging,
       messaging,
+      configService,
       linkedTransferService,
     );
     await transfer.setupSubscriptions();

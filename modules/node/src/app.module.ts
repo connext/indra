@@ -20,6 +20,7 @@ import { RedisModule } from "./redis/redis.module";
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
+import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
   exports: [ConfigModule, LoggerModule, AuthModule],
@@ -41,6 +42,7 @@ import { TransferModule } from "./transfer/transfer.module";
     LoggerModule,
     MessagingModule,
     RedisModule,
+    ScheduleModule.forRoot(),
     SignedTransferModule,
     SwapRateModule,
     TransferModule,

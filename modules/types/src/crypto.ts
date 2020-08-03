@@ -1,4 +1,4 @@
-import { Signer } from "ethers";
+import { Signer, providers } from "ethers";
 import { Address, PublicKey, PublicIdentifier } from "./basic";
 
 export interface IChannelSigner extends Signer {
@@ -8,4 +8,5 @@ export interface IChannelSigner extends Signer {
   signMessage(message: string): Promise<string>;
   publicKey: PublicKey;
   publicIdentifier: PublicIdentifier;
+  connectProvider(provider: string | providers.Provider): Promise<void>;
 }

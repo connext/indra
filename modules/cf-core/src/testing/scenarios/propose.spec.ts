@@ -1,22 +1,27 @@
-import { MethodParams } from "@connext/types";
+import {
+  MethodParams,
+  MethodNames,
+  MethodResults,
+  CONVENTION_FOR_ETH_ASSET_ID,
+} from "@connext/types";
 import { deBigNumberifyJson } from "@connext/utils";
+import { constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeLt } from "../bignumber-jest-matcher";
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
+  getContractAddresses,
   createChannel,
   getAppInstanceJson,
   getProposedAppInstances,
   makeProposeCall,
+  makeAndSendProposeCall,
 } from "../utils";
-
-expect.extend({ toBeLt });
-
-const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+import { expect } from "../assertions";
+import { MAX_CHANNEL_APPS } from "../../constants";
+import { TOO_MANY_APPS_IN_CHANNEL } from "../../errors";
 
 async function assertEqualProposedApps(
   nodeA: CFCore,
@@ -26,14 +31,14 @@ async function assertEqualProposedApps(
 ): Promise<void> {
   const proposedA = await getProposedAppInstances(nodeA, multisigAddress);
   const proposedB = await getProposedAppInstances(nodeB, multisigAddress);
-  expect(proposedB.length).toEqual(proposedA.length);
-  expect(proposedB.length).toEqual(expectedAppIds.length);
-  expect(proposedA).toEqual(proposedB);
+  expect(proposedB.length).to.be.eq(proposedA.length);
+  expect(proposedB.length).to.be.eq(expectedAppIds.length);
+  expect(proposedA).to.deep.eq(proposedB);
   // check each appID
   for (const id of expectedAppIds) {
     const appA = await getAppInstanceJson(nodeA, id, multisigAddress);
     const appB = await getAppInstanceJson(nodeB, id, multisigAddress);
-    expect(appA).toEqual(appB);
+    expect(appA).to.deep.eq(appB);
   }
 }
 
@@ -51,7 +56,9 @@ describe("Node method follows spec - propose install", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
+    it("propose install an app with eth and a meta", async () => {
+      const { TicTacToeApp } = getContractAddresses();
+
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
@@ -91,7 +98,49 @@ describe("Node method follows spec - propose install", () => {
         }
       });
       await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [appId] as string[]);
-      done();
+    });
+
+    it("cannot propose more than the max number of apps", async () => {
+      const { TicTacToeApp } = getContractAddresses();
+
+      for (let i = 0; i < MAX_CHANNEL_APPS; i++) {
+        await makeAndSendProposeCall(
+          nodeA,
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          undefined,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        );
+      }
+
+      const {
+        result: {
+          result: { appInstances },
+        },
+      } = (await nodeA.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: MethodNames.chan_getProposedAppInstances,
+        parameters: { multisigAddress } as MethodParams.GetProposedAppInstances,
+      })) as { result: { result: MethodResults.GetProposedAppInstances } };
+      expect(appInstances.length).to.be.eq(MAX_CHANNEL_APPS);
+
+      await expect(
+        makeAndSendProposeCall(
+          nodeA,
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          undefined,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        ),
+      ).to.be.rejectedWith(TOO_MANY_APPS_IN_CHANNEL);
     });
   });
 });

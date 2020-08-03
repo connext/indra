@@ -1,62 +1,24 @@
-import {
-  HashLockTransferAppName,
-  HashLockTransferAppState,
-  HashLockTransferStatus,
-  Address,
-  Bytes32,
-} from "@connext/types";
-import { bigNumberifyJson } from "@connext/utils";
+import { HashLockTransferAppName, HashLockTransferStatus, Address, Bytes32 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
-import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
-import { AppType, AppInstance } from "../appInstance/appInstance.entity";
-import { HashlockTransferRepository } from "./hashlockTransfer.repository";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
-const { HashZero } = constants;
+import { HashlockTransferRepository } from "./hashlockTransfer.repository";
+import { appStatusesToTransferWithExpiryStatus } from "../utils";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
   senderApp: AppInstance<typeof HashLockTransferAppName>,
   receiverApp?: AppInstance<typeof HashLockTransferAppName>,
 ): HashLockTransferStatus | undefined => {
-  if (!receiverApp) {
-    return undefined;
-  }
-  const latestState = bigNumberifyJson(receiverApp.latestState) as HashLockTransferAppState;
-  const { expiry: senderExpiry } = latestState;
-  const isSenderExpired = senderExpiry.lt(currentBlockNumber);
-  const isReceiverExpired = !senderApp ? false : latestState.expiry.lt(currentBlockNumber);
-  // pending iff no receiver app + not expired
-  if (!senderApp) {
-    return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
-  } else if (
-    senderApp?.type === AppType.UNINSTALLED ||
-    receiverApp?.type === AppType.UNINSTALLED ||
-    senderApp.latestState.preImage !== HashZero ||
-    latestState.preImage !== HashZero
-  ) {
-    // iff sender uninstalled, payment is unlocked
-    return HashLockTransferStatus.COMPLETED;
-  } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
-    return HashLockTransferStatus.FAILED;
-  } else if (isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
-    // iff there is a receiver app, check for expiry
-    // do this last bc could be retrieving historically
-    return HashLockTransferStatus.EXPIRED;
-  } else if (!isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
-    // iff there is a receiver app, check for expiry
-    // do this last bc could be retrieving historically
-    return HashLockTransferStatus.PENDING;
-  } else {
-    throw new Error(
-      `Could not determine hash lock transfer status. Sender app type: ${
-        senderApp && senderApp.type
-      }, receiver app type: ${receiverApp && receiverApp.type}`,
-    );
-  }
+  return appStatusesToTransferWithExpiryStatus<typeof HashLockTransferAppName>(
+    currentBlockNumber,
+    senderApp,
+    receiverApp,
+  );
 };
 
 @Injectable()
@@ -73,11 +35,12 @@ export class HashLockTransferService {
   async findSenderAndReceiverAppsWithStatus(
     lockHash: Bytes32,
     assetId: Address,
+    chainId: number,
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} started`);
-    const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId);
-    const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId);
-    const block = await this.configService.getEthProvider().getBlockNumber();
+    const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId, chainId);
+    const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId, chainId);
+    const block = await this.configService.getEthProvider(chainId).getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
     const result = { senderApp, receiverApp, status };
     this.log.info(
@@ -89,6 +52,7 @@ export class HashLockTransferService {
   async findSenderAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
+    chainId: number,
   ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
@@ -97,6 +61,8 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
+      this.cfCoreService.getAppInfoByNameAndChain(HashLockTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
@@ -105,6 +71,7 @@ export class HashLockTransferService {
   async findReceiverAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
+    chainId: number,
   ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
@@ -113,6 +80,8 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
+      this.cfCoreService.getAppInfoByNameAndChain(HashLockTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;

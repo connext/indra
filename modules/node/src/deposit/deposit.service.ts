@@ -6,19 +6,17 @@ import {
   DepositAppName,
   DepositAppState,
   MinimalTransaction,
-  TransactionReceipt,
   EventNames,
   Bytes32,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { BigNumber, constants } from "ethers";
+import { BigNumber, constants, providers } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import {
@@ -36,20 +34,23 @@ export class DepositService {
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
+  async deposit(
+    channel: Channel,
+    amount: BigNumber,
+    assetId: string,
+  ): Promise<providers.TransactionResponse | undefined> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
+    const depositRegistry = this.cfCoreService.getAppInfoByNameAndChain(
       DepositAppName,
-      (await this.configService.getEthNetwork()).chainId,
+      channel.chainId,
     );
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
@@ -62,13 +63,19 @@ export class DepositService {
         getSignerAddressFromPublicIdentifier(channel.userIdentifier)
     ) {
       throw new Error(
-        `Cannot deposit, user has deposit app installed for asset ${assetId}, app: ${depositApp.identityHash}`,
+        `Cannot deposit, user has deposit app installed for asset ${assetId} on chain ${channel.chainId}, app: ${depositApp.identityHash}`,
       );
     }
 
     // don't allow deposit if an active deposit is in process
     if (channel.activeCollateralizations[assetId]) {
-      this.log.warn(`Collateral request is in flight for ${assetId}, waiting for transaction`);
+      this.log.warn(
+        `Collateral request is in flight for ${assetId} on chain ${channel.chainId}, waiting for transaction`,
+      );
+      const preDeposit = await this.cfCoreService.getFreeBalance(
+        channel.userIdentifier,
+        channel.multisigAddress,
+      );
       const waited = await this.waitForActiveDeposits(
         channel.userIdentifier,
         channel.multisigAddress,
@@ -76,50 +83,85 @@ export class DepositService {
       );
       if (!waited) {
         throw new Error(
-          `Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`,
+          `Attempted to wait for ongoing transaction on chain ${channel.chainId}, but it took longer than 5 blocks, retry later.`,
         );
       }
-      const fb = await this.cfCoreService.getFreeBalance(
+      const postDeposit = await this.cfCoreService.getFreeBalance(
         channel.userIdentifier,
         channel.multisigAddress,
       );
       this.log.warn(
         `Waited for active deposit, new collateral: ${stringify(
-          fb[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)],
+          postDeposit[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)],
         )}`,
       );
+      const diff = postDeposit[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)].sub(
+        preDeposit[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)],
+      );
+      if (diff.gte(amount)) {
+        // Do not continue with deposit
+        // TODO: choose right response?
+        return undefined;
+      }
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let appIdentityHash: Bytes32;
-    let receipt: TransactionReceipt;
+    let response: providers.TransactionResponse;
 
     const cleanUpDepositRights = async () => {
-      this.log.info(`Releasing in flight collateralization`);
-      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
-      this.log.info(`Released in flight collateralization`);
       if (appIdentityHash) {
-        this.log.info(`Releasing deposit rights`);
+        this.log.info(
+          `Releasing deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+        );
         await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
-        this.log.info(`Released deposit rights`);
+        this.log.info(
+          `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+        );
       }
+      this.log.info(
+        `Releasing in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
+      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+      this.log.info(
+        `Released in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
     };
 
     try {
-      this.log.info(`Requesting deposit rights before depositing`);
-      this.log.info(`Setting in flight collateralization`);
+      this.log.info(
+        `Requesting deposit rights before depositing on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
+      this.log.info(
+        `Setting in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
       await this.channelRepository.setInflightCollateralization(channel, assetId, true);
-      this.log.info(`Set in flight collateralization`);
+      this.log.info(
+        `Set in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
       appIdentityHash = await this.requestDepositRights(channel, assetId);
-      this.log.info(`Requested deposit rights, sending deposit to chain`);
-      receipt = await this.sendDepositToChain(channel, amount, assetId);
-      this.log.info(`Finished sending deposit to chain`);
+      this.log.info(
+        `Requested deposit rights, sending deposit to chain on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
+      response = await this.sendDepositToChain(channel, amount, assetId);
+      this.log.info(
+        `Deposit transaction broadcast on chain ${channel.chainId} for ${channel.multisigAddress}: ${response.hash}`,
+      );
     } catch (e) {
-      this.log.error(`Caught error collateralizing: ${e.message}`);
-    } finally {
+      this.log.error(
+        `Caught error collateralizing on chain ${channel.chainId} for ${channel.multisigAddress}: ${
+          e.stack || e
+        }`,
+      );
       await cleanUpDepositRights();
+      return undefined;
     }
-    return receipt;
+    // remove the deposit rights when transaction fails or is mined
+    response
+      .wait()
+      .then(async () => await cleanUpDepositRights())
+      .catch(async (e) => await cleanUpDepositRights());
+    return response;
   }
 
   async requestDepositRights(
@@ -136,7 +178,7 @@ export class DepositService {
   }
 
   async rescindDepositRights(appIdentityHash: string, multisigAddress: string): Promise<void> {
-    this.log.debug(`Uninstalling deposit app`);
+    this.log.debug(`Uninstalling deposit app for ${multisigAddress} with ${appIdentityHash}`);
     await this.cfCoreService.uninstallApp(appIdentityHash, multisigAddress);
   }
 
@@ -153,16 +195,20 @@ export class DepositService {
     multisigAddress: string,
     assetId: string,
   ): Promise<string[] | undefined> {
-    this.log.info(`Collateralization in flight for user ${userId}, waiting`);
-    const ethProvider = this.configService.getEthProvider();
+    this.log.info(`Collateralization in flight for user ${userId} on ${multisigAddress}, waiting`);
+    const ethProvider = this.configService.getEthProvider(
+      await this.channelRepository.getChainIdByMultisigAddress(multisigAddress),
+    );
     const signerAddr = await this.configService.getSignerAddress();
     const startingBlock = await ethProvider.getBlockNumber();
     const BLOCKS_TO_WAIT = 5;
 
     // get all deposit appIds
-    const depositApps = await this.cfCoreService.getAppInstancesByAppName(
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+        .appDefinitionAddress,
     );
     const ourDepositAppIds = depositApps
       .filter((app) => {
@@ -219,7 +265,7 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     tokenAddress: Address,
-  ): Promise<TransactionReceipt> {
+  ): Promise<providers.TransactionResponse> {
     // derive the proper minimal transaction for the
     // onchain transaction service
     let tx: MinimalTransaction;
@@ -230,13 +276,22 @@ export class DepositService {
         data: "0x",
       };
     } else {
-      const token = new Contract(tokenAddress, ERC20.abi, this.configService.getEthProvider());
+      const token = new Contract(
+        tokenAddress,
+        ERC20.abi,
+        this.configService.getEthProvider(channel.chainId),
+      );
       tx = {
         to: tokenAddress,
         value: 0,
         data: token.interface.encodeFunctionData("transfer", [channel.multisigAddress, amount]),
       };
     }
+    this.log.info(
+      `Creating transaction on ${channel.chainId} for ${
+        channel.multisigAddress
+      } for amount ${amount.toString()}: ${stringify(tx)}`,
+    );
     return this.onchainTransactionService.sendDeposit(channel, tx);
   }
 
@@ -244,12 +299,13 @@ export class DepositService {
     channel: Channel,
     tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
-    const ethProvider = this.configService.getEthProvider();
+    const ethProvider = this.configService.getEthProvider(channel.chainId);
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
+      this.log.info(`Checking withdrawn amount using ethProvider ${ethProvider.connection.url}`);
       startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
@@ -260,14 +316,24 @@ export class DepositService {
       // deployed withdrawal amount is 0
       startingTotalAmountWithdrawn = Zero;
     }
+    this.log.info(`startingTotalAmountWithdrawn: ${startingTotalAmountWithdrawn.toString()}`);
 
     // generate starting multisig balance
+    this.log.info(
+      `Checking starting multisig balance of ${channel.multisigAddress} asset ${tokenAddress} on chain ${channel.chainId} using ethProvider ${ethProvider.connection.url}`,
+    );
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.configService.getSigner()).balanceOf(
+        : await new Contract(tokenAddress, ERC20.abi, ethProvider).balanceOf(
             channel.multisigAddress,
           );
+
+    this.log.info(
+      `startingMultisigBalance of ${channel.multisigAddress} asset ${tokenAddress} on chain ${
+        channel.chainId
+      }: ${startingMultisigBalance.toString()}`,
+    );
 
     const initialState: DepositAppState = {
       transfers: [
@@ -293,7 +359,7 @@ export class DepositService {
       tokenAddress,
       Zero,
       tokenAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId),
       { reason: "Node deposit" }, // meta
       DEPOSIT_STATE_TIMEOUT,
     );

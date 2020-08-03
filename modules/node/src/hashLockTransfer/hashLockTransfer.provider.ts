@@ -8,19 +8,20 @@ import { constants } from "ethers";
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
-import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
+import { AppInstance } from "../appInstance/appInstance.entity";
+import { ConfigService } from "../config/config.service";
 
-const { AddressZero } = constants;
+const { AddressZero, HashZero } = constants;
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly configService: ConfigService,
     private readonly hashLockTransferService: HashLockTransferService,
   ) {
     super(log, messaging);
@@ -29,6 +30,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async getHashLockTransferByLockHash(
     pubId: string,
+    chainId: number,
     data: { lockHash: string; assetId: string },
   ): Promise<NodeResponses.GetHashLockTransfer> {
     const { lockHash, assetId } = data;
@@ -46,12 +48,13 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(
       lockHash,
       assetId || AddressZero,
+      chainId,
     );
     if (!senderApp && !receiverApp) {
       return undefined;
     }
 
-    let userApp;
+    let userApp: AppInstance<"HashLockTransferApp">;
     if (pubId === receiverApp?.responderIdentifier) {
       userApp = receiverApp;
     } else if (pubId === senderApp?.initiatorIdentifier) {
@@ -77,39 +80,37 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       lockHash: latestState.lockHash,
       status,
       meta,
-      preImage: !!receiverApp ? receiverApp.latestState.preImage : userApp.latestState.preImage,
+      preImage:
+        receiverApp?.latestState?.preImage === HashZero
+          ? userApp.latestState.preImage
+          : receiverApp?.latestState?.preImage,
       expiry: latestState.expiry,
     };
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.get-hashlock",
-      this.authService.parseIdentifier(this.getHashLockTransferByLockHash.bind(this)),
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-hashlock`,
+      this.authService.parseIdentifierAndChain(this.getHashLockTransferByLockHash.bind(this)),
     );
   }
 }
 
 export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    HashLockTransferService,
-    CFCoreService,
-    ChannelRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, HashLockTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
+    configService: ConfigService,
     hashLockTransferService: HashLockTransferService,
   ): Promise<void> => {
     const transfer = new HashLockTransferMessaging(
       authService,
       logging,
       messaging,
+      configService,
       hashLockTransferService,
     );
     await transfer.setupSubscriptions();

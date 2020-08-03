@@ -8,6 +8,7 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   DepositAppState,
   DepositAppStateEncoding,
+  EventName,
   EventNames,
   JsonRpcResponse,
   MethodNames,
@@ -15,23 +16,24 @@ import {
   MethodParams,
   MethodResults,
   OutcomeType,
+  ProtocolEventMessage,
   ProtocolParams,
   PublicIdentifier,
   Rpc,
+  SimpleLinkedTransferAppActionEncoding,
+  SimpleLinkedTransferAppStateEncoding,
   SolidityValueType,
   UninstallMessage,
-  EventName,
-  ProtocolEventMessage,
-  SimpleLinkedTransferAppStateEncoding,
-  SimpleLinkedTransferAppActionEncoding,
+  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getAddressFromAssetId,
+  getRandomAddress,
   getSignerAddressFromPublicIdentifier,
   toBN,
-  getRandomAddress,
+  delay,
 } from "@connext/utils";
 import { BigNumber, Contract, Wallet, providers, constants } from "ethers";
 
@@ -39,14 +41,12 @@ import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED, CALL_EXCEPTION } from "../errors";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
+import { expect } from "./assertions";
 
 import { TestContractAddresses } from "./contracts";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
-import { toBeEq } from "./bignumber-jest-matcher";
 
 const { AddressZero, One, Zero } = constants;
-
-expect.extend({ toBeEq });
 
 interface AppContext {
   appDefinition: string;
@@ -55,9 +55,10 @@ interface AppContext {
   outcomeType: OutcomeType;
 }
 
-const { DepositApp, DolphinCoin, TicTacToeApp, SimpleLinkedTransferApp } = global[
-  `contracts`
-] as TestContractAddresses;
+export const getChainId = (): number => parseInt(Object.keys(global["networks"])[0], 10);
+
+export const getContractAddresses = (chainId?: string): TestContractAddresses =>
+  (chainId ? global["networks"][chainId] : Object.values(global["networks"])[0]).contractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
   new Wallet(
@@ -141,6 +142,7 @@ export async function rescindDepositRights(
   multisigAddress: string,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
+  const { DepositApp } = getContractAddresses();
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositAppInstance = apps.filter(
     (app) =>
@@ -160,6 +162,7 @@ export async function getDepositApps(
   multisigAddr: string,
   tokenAddresses: string[] = [],
 ): Promise<AppInstanceJson[]> {
+  const { DepositApp } = getContractAddresses();
   const apps = await getInstalledAppInstances(node, multisigAddr);
   if (apps.length === 0) {
     return [];
@@ -192,12 +195,12 @@ export function assertMessage<T extends EventName>(
   shouldExist.forEach((key) => {
     let subset = { ...msg };
     key.split(`.`).forEach((k) => {
-      expect(subset[k]).toBeDefined();
+      expect(subset[k]).to.be.ok;
       subset = subset[k];
     });
   });
   // cast both to strings instead of BNs
-  expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
+  // expect(deBigNumberifyJson(msg)).to.deep.include(deBigNumberifyJson(expected));
 }
 
 export function assertProposeMessage(
@@ -260,6 +263,7 @@ export function constructChannelCreationRpc(owners: string[]) {
     methodName: MethodNames.chan_create,
     parameters: {
       owners,
+      chainId: getChainId(),
     } as MethodParams.CreateChannel,
   };
 }
@@ -406,7 +410,7 @@ export async function getMultisigAmountWithdrawn(
     return await multisig.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
-      if (!(e.message).toUpperCase().includes(CALL_EXCEPTION)) {
+      if (!e.message.toUpperCase().includes(CALL_EXCEPTION)) {
         throw new Error(e);
       }
     }
@@ -422,6 +426,7 @@ export async function getProposeDepositAppParams(
   responderIdentifier: string,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<MethodParams.ProposeInstall> {
+  const { DepositApp } = getContractAddresses();
   const tokenAddress = getAddressFromAssetId(assetId);
   const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
     multisigAddress,
@@ -485,7 +490,7 @@ export async function deposit(
           multisigAddress,
           amount,
         );
-  expect(tx.hash).toBeDefined();
+  expect(tx.hash).to.be.ok;
   // rescind rights
   await rescindDepositRights(node, responderNode, multisigAddress, assetId);
 }
@@ -574,30 +579,22 @@ export function confirmProposedAppInstance(
   nonInitiatingNode: boolean = false,
 ) {
   const proposalParams = methodParams as MethodParams.ProposeInstall;
-  expect(proposalParams.abiEncodings).toEqual(AppInstanceJson.abiEncodings);
-  expect(proposalParams.appDefinition).toEqual(AppInstanceJson.appDefinition);
+  expect(proposalParams.abiEncodings).to.deep.eq(AppInstanceJson.abiEncodings);
+  expect(proposalParams.appDefinition).to.eq(AppInstanceJson.appDefinition);
 
   if (nonInitiatingNode) {
-    expect(proposalParams.initiatorDeposit).toEqual(
-      BigNumber.from(AppInstanceJson.responderDeposit),
-    );
-    expect(proposalParams.responderDeposit).toEqual(
-      BigNumber.from(AppInstanceJson.initiatorDeposit),
-    );
+    expect(proposalParams.initiatorDeposit).to.eq(BigNumber.from(AppInstanceJson.responderDeposit));
+    expect(proposalParams.responderDeposit).to.eq(BigNumber.from(AppInstanceJson.initiatorDeposit));
   } else {
-    expect(proposalParams.initiatorDeposit).toEqual(
-      BigNumber.from(AppInstanceJson.initiatorDeposit),
-    );
-    expect(proposalParams.responderDeposit).toEqual(
-      BigNumber.from(AppInstanceJson.responderDeposit),
-    );
+    expect(proposalParams.initiatorDeposit).to.eq(BigNumber.from(AppInstanceJson.initiatorDeposit));
+    expect(proposalParams.responderDeposit).to.eq(BigNumber.from(AppInstanceJson.responderDeposit));
   }
 
-  expect(proposalParams.defaultTimeout).toEqual(toBN(AppInstanceJson.defaultTimeout));
-  expect(proposalParams.stateTimeout).toEqual(toBN(AppInstanceJson.stateTimeout));
+  expect(proposalParams.defaultTimeout).to.eq(toBN(AppInstanceJson.defaultTimeout));
+  expect(proposalParams.stateTimeout).to.eq(toBN(AppInstanceJson.stateTimeout));
 
   // TODO: uncomment when getState is implemented
-  // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
+  // expect(proposalParams.initialState).to.eq(appInstanceInitialState);
 }
 
 export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
@@ -638,12 +635,14 @@ export function constructUninstallRpc(
   appIdentityHash: string,
   multisigAddress: string,
   action?: SolidityValueType,
+  protocolMeta?: any,
 ): Rpc {
   return {
     parameters: {
       appIdentityHash,
       multisigAddress,
       action,
+      protocolMeta,
     } as MethodParams.Uninstall,
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,
@@ -680,7 +679,7 @@ export async function createChannel(nodeA: CFCore, nodeB: CFCore): Promise<strin
           },
           [`data.multisigAddress`],
         );
-        expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).to.deep.eq([]);
         resolve(msg.data.multisigAddress);
       });
     }),
@@ -703,8 +702,8 @@ export async function createChannel(nodeA: CFCore, nodeB: CFCore): Promise<strin
     }),
     getMultisigCreationAddress(nodeA, [nodeA.publicIdentifier, nodeB.publicIdentifier]),
   ]);
-  expect(multisigAddress).toBeDefined();
-  expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+  expect(multisigAddress).to.be.ok;
+  expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
   return multisigAddress;
 }
 
@@ -776,7 +775,6 @@ export async function installApp(
       );
       resolve(msg.data.appInstanceId);
     });
-
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
   });
 
@@ -795,7 +793,7 @@ export async function installApp(
           assertInstallMessage(nodeB.publicIdentifier, msg, appIdentityHash);
           const appInstanceNodeA = await getAppInstance(nodeA, appIdentityHash);
           const appInstanceNodeB = await getAppInstance(nodeB, appIdentityHash);
-          expect(appInstanceNodeA).toEqual(appInstanceNodeB);
+          expect(appInstanceNodeA).to.deep.eq(appInstanceNodeB);
           resolve();
         }
       });
@@ -813,10 +811,10 @@ export async function installApp(
     responderDepositAssetId,
   );
   Object.entries(postInstallInitiatorAsset).forEach(([addr, balance]) => {
-    expect(balance).toBeEq(expectedInitiatorAsset[addr]);
+    expect(balance).to.eq(expectedInitiatorAsset[addr]);
   });
   Object.entries(postInstallResponderAsset).forEach(([addr, balance]) => {
-    expect(balance).toBeEq(expectedResponderAsset[addr]);
+    expect(balance).to.eq(expectedResponderAsset[addr]);
   });
 
   return [appIdentityHash, proposedParams];
@@ -831,10 +829,10 @@ export async function confirmChannelCreation(
   const openChannelsNodeA = await getChannelAddresses(nodeA);
   const openChannelsNodeB = await getChannelAddresses(nodeB);
 
-  expect(openChannelsNodeA.has(data.multisigAddress)).toBeTruthy();
-  expect(openChannelsNodeB.has(data.multisigAddress)).toBeTruthy();
+  expect(openChannelsNodeA.has(data.multisigAddress)).to.be.ok;
+  expect(openChannelsNodeB.has(data.multisigAddress)).to.be.ok;
   if (data.owners) {
-    expect(data.owners).toMatchObject(owners);
+    expect(data.owners).to.deep.eq(owners);
   }
 }
 
@@ -843,12 +841,12 @@ export async function confirmAppInstanceInstallation(
   appInstance: AppInstanceJson,
 ) {
   const params = bigNumberifyJson(proposedParams) as ProtocolParams.Propose;
-  expect(appInstance.appDefinition).toEqual(params.appDefinition);
-  expect(appInstance.abiEncodings.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
-  expect(appInstance.abiEncodings.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
-  expect(appInstance.defaultTimeout).toEqual(params.defaultTimeout.toHexString());
-  expect(appInstance.stateTimeout).toEqual(params.stateTimeout.toHexString());
-  expect(appInstance.latestState).toEqual(params.initialState);
+  expect(appInstance.appDefinition).to.eq(params.appDefinition);
+  expect(appInstance.abiEncodings.stateEncoding).to.eq(params.abiEncodings.stateEncoding);
+  expect(appInstance.abiEncodings.actionEncoding).to.eq(params.abiEncodings.actionEncoding);
+  expect(appInstance.defaultTimeout).to.eq(params.defaultTimeout.toHexString());
+  expect(appInstance.stateTimeout).to.eq(params.stateTimeout.toHexString());
+  expect(appInstance.latestState).to.deep.eq(params.initialState);
 }
 
 export async function makeInstallCall(
@@ -925,16 +923,20 @@ export async function makeAndSendProposeCall(
  */
 export async function transferERC20Tokens(
   toAddress: string,
-  tokenAddress: string = DolphinCoin,
+  tokenAddress: string = "",
   contractABI: ContractABI = ERC20.abi as any,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
+  const { DolphinCoin } = getContractAddresses();
+
+  tokenAddress = tokenAddress === "" ? DolphinCoin : tokenAddress;
+
   const deployerAccount = global["wallet"];
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);
   const balanceBefore: BigNumber = await contract.balanceOf(toAddress);
   await contract.transfer(toAddress, amount);
   const balanceAfter: BigNumber = await contract.balanceOf(toAddress);
-  expect(balanceAfter.sub(balanceBefore)).toEqual(amount);
+  expect(balanceAfter.sub(balanceBefore)).to.eq(amount);
   return balanceAfter;
 }
 
@@ -944,6 +946,7 @@ export function getAppContext(
   senderAddress?: string, // needed for both types of transfer apps
   receiverAddress?: string, // needed for both types of transfer apps
 ): AppContext {
+  const { DepositApp, SimpleLinkedTransferApp, TicTacToeApp } = getContractAddresses();
   const checkForInitialState = () => {
     if (!initialState) {
       throw new Error(`Must have initial state to generate app context`);
@@ -1009,11 +1012,15 @@ export async function uninstallApp(
 ): Promise<string> {
   await Promise.all([
     node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress)),
-    new Promise((resolve) => {
-      counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
-        expect(msg.data.appIdentityHash).toBe(appIdentityHash);
-        resolve(appIdentityHash);
+    new Promise((resolve, reject) => {
+      counterparty.on(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
+        if (msg.data.appIdentityHash === appIdentityHash) {
+          resolve();
+        }
       });
+      delay(CF_METHOD_TIMEOUT).then(() =>
+        reject("Did not get counterparty uninstall event for too long"),
+      );
     }),
   ]);
   return appIdentityHash;

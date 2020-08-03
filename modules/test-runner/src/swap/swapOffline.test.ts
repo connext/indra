@@ -10,9 +10,11 @@ import { BigNumber, constants } from "ethers";
 
 import {
   APP_PROTOCOL_TOO_LONG,
+  CLIENT_INSTALL_FAILED,
   ClientTestMessagingInputOpts,
   createClientWithMessagingLimits,
   ETH_AMOUNT_SM,
+  ethProviderUrl,
   expect,
   fundChannel,
   RECEIVED,
@@ -23,8 +25,6 @@ import {
   TOKEN_AMOUNT,
   UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
-  env,
-  CLIENT_INSTALL_FAILED,
 } from "../util";
 import { addressBook } from "@connext/contracts";
 import { getRandomChannelSigner, delay } from "@connext/utils";
@@ -55,17 +55,17 @@ const fundChannelAndSwap = async (opts: {
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  const signer = providedSigner || getRandomChannelSigner(env.ethProviderUrl);
+  const signer = providedSigner || getRandomChannelSigner(ethProviderUrl);
   const client =
     providedClient || (await createClientWithMessagingLimits({ ...messagingConfig, signer }));
 
   const input = {
     amount: inputAmount,
-    assetId: tokenToEth ? client.config.contractAddresses.Token! : AddressZero,
+    assetId: tokenToEth ? client.config.contractAddresses[client.chainId].Token! : AddressZero,
   };
   const output = {
     amount: outputAmount,
-    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.Token!,
+    assetId: tokenToEth ? AddressZero : client.config.contractAddresses[client.chainId].Token!,
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
@@ -195,7 +195,7 @@ describe.skip("Swap offline", () => {
   });
 
   it("Bot A installs swap app successfully but then deletes store before uninstall", async () => {
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const signer = getRandomChannelSigner(ethProviderUrl);
     const providedClient = await createClientWithMessagingLimits({ signer });
     expect(providedClient.messaging).to.be.ok;
     // deposit eth into channel and swap for token
