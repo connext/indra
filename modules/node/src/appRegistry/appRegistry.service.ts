@@ -333,8 +333,23 @@ export class AppRegistryService implements OnModuleInit {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(
       appInstance.multisigAddress,
     );
-    if (channel.activeCollateralizations[latestState.assetId]) {
-      throw new Error(`Cannot uninstall deposit app with active collateralization`);
+    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
+      channel.multisigAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+        .appDefinitionAddress,
+    );
+    const signerAddr = await this.configService.getSignerAddress();
+    const ours = depositApps.find((app) => {
+      const installedState = app.latestState as DepositAppState;
+      return (
+        installedState.assetId === latestState.assetId &&
+        installedState.transfers[0].to === signerAddr
+      );
+    });
+    if (ours) {
+      throw new Error(
+        `Cannot uninstall deposit app with active collateralization. App: ${ours.identityHash}`,
+      );
     }
     return;
   };

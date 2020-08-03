@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, Collateralizations } from "@connext/types";
+import { CriticalStateChannelAddresses } from "@connext/types";
 import {
   Column,
   CreateDateColumn,
@@ -44,9 +44,6 @@ export class Channel {
 
   @Column("boolean", { default: false })
   available!: boolean;
-
-  @Column("json", { default: { [AddressZero]: false } })
-  activeCollateralizations!: Collateralizations;
 
   @OneToMany((type: any) => AppInstance, (appInstance: AppInstance) => appInstance.channel, {
     cascade: true,
