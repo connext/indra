@@ -23,9 +23,9 @@
     "p-waterfall": "2.1.0",
     "pg": "8.3.0",
     "pg-hstore": "2.3.3",
-    "sequelize": "6.3.3",
+    "sequelize": "6.3.4",
     "sqlite3": "5.0.0",
-    "uuid": "8.2.0"
+    "uuid": "8.3.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.4",

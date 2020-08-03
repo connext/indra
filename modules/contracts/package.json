@@ -32,7 +32,7 @@
   "dependencies": {
     "@connext/types": "7.0.2",
     "@connext/utils": "7.0.2",
-    "@nomiclabs/buidler": "1.3.8",
+    "@nomiclabs/buidler": "1.4.3",
     "@openzeppelin/contracts": "3.0.2",
     "ethers": "5.0.7",
     "ganache-cli": "6.9.1",

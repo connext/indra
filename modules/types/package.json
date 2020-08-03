@@ -18,8 +18,8 @@
   "dependencies": {
     "ethers": "5.0.7",
     "eventemitter3": "4.0.4",
-    "evt": "1.7.13",
-    "sequelize": "6.3.3"
+    "evt": "1.8.3",
+    "sequelize": "6.3.4"
   },
   "devDependencies": {
     "rollup": "2.23.0",
