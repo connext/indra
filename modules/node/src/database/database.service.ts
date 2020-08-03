@@ -67,6 +67,7 @@ import { removeWithUpdatedState1594324129179 } from "../../migrations/1594324129
 import { conditionalTxJson1594978485558 } from "../../migrations/1594978485558-conditional-tx-json";
 import { updateOnchain1594840136529 } from "../../migrations/1594840136529-update-onchain";
 import { removeAppCommitments1595210814094 } from "../../migrations/1595210814094-remove-app-commitments";
+import { addAppIdTx1596488084652 } from "../../migrations/1596488084652-add-app-id-tx";
 
 export const entities = [
   AppInstance,
@@ -133,6 +134,7 @@ export const migrations = [
   conditionalTxJson1594978485558,
   updateOnchain1594840136529,
   removeAppCommitments1595210814094,
+  addAppIdTx1596488084652,
 ];
 
 @Injectable()
