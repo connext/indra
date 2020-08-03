@@ -105,6 +105,7 @@ export const createCFChannelProvider = async ({
         },
       },
       { [network.chainId]: supportedTokenAddresses[network.chainId] },
+      node.getLatestSwapRate,
     ),
   );
 
