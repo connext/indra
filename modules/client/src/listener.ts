@@ -376,7 +376,7 @@ export class ConnextListener {
           meta,
           sender: meta?.sender,
           transferMeta: {
-            signerAddress: initialState?.consumerSigner,
+            signerAddress: initialState?.signerAddress,
             chainId: initialState?.chainId,
             verifyingContract: initialState?.verifyingContract,
             requestCID: initialState?.requestCID,
