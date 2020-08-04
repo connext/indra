@@ -11,6 +11,7 @@ export * from "./registry";
 export * from "./shared";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleSignedTransferApp";
+export * from "./GraphBatchedTransferApp";
 export * from "./GraphSignedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
 export * from "./WithdrawApp";

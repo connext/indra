@@ -13,7 +13,6 @@ import {
   getChainId,
   delay,
   stringify,
-  getRandomIdentifier,
 } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 

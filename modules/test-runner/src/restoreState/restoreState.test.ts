@@ -108,7 +108,7 @@ describe("Restore State", () => {
     clientA.off();
 
     // send the transfer
-    const sent = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
+    const sent = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 30_000);
     await senderClient.transfer({
       amount: transferAmount,
       assetId,
@@ -125,7 +125,7 @@ describe("Restore State", () => {
     );
 
     // bring clientA back online
-    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
+    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 30_000);
     clientA = await createClient(
       {
         signer: signerA,
