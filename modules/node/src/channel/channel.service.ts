@@ -162,7 +162,8 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        response = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        const depositRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        response = (depositRes || {}).tx;
       } else {
         this.log.debug(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,

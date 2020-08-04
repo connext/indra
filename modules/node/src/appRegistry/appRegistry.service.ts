@@ -121,7 +121,10 @@ export class AppRegistryService implements OnModuleInit {
             proposeInstallParams.responderDepositAssetId,
           );
           try {
-            await depositResponse.wait();
+            await this.depositService.handleActiveDeposit(
+              installerChannel,
+              depositResponse.appIdentityHash,
+            );
           } catch (e) {
             throw new Error(
               `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}. ${e.message}`,
