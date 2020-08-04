@@ -183,7 +183,7 @@ export class DepositService {
     appIdentityHash: string,
   ): Promise<string | undefined> {
     this.log.info(
-      `Collateralization in flight for user ${channel.userIdentifier} on ${channel.multisigAddress}, waiting`,
+      `Active deposit for user ${channel.userIdentifier} on ${channel.multisigAddress}, waiting`,
     );
     const ethProvider = this.configService.getEthProvider(channel.chainId);
     const startingBlock = await ethProvider.getBlockNumber();
@@ -218,6 +218,7 @@ export class DepositService {
     }
 
     // transaction is still pending, wait until it is broadcast
+    this.log.info(`Waiting for uninstallation of ${appIdentityHash}`);
     const result = await Promise.race([
       new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
