@@ -2,14 +2,11 @@
 import {
   ConditionalTransferTypes,
   EventNames,
-  NodeResponses,
   IConnextClient,
   PublicParams,
-  SignedTransferStatus,
   EventPayloads,
   PrivateKey,
   Address,
-  GraphReceipt,
   GRAPH_BATCHED_SWAP_CONVERSION,
 } from "@connext/types";
 import {
@@ -19,9 +16,10 @@ import {
   signGraphReceiptMessage,
   getChainId,
   signGraphConsumerMessage,
+  getRandomBytes32,
 } from "@connext/utils";
 
-import { providers, constants, utils } from "ethers";
+import { providers, constants, utils, BigNumber } from "ethers";
 
 import {
   AssetOptions,
@@ -36,15 +34,150 @@ import {
 const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
 
+const createBatchedTransfer = async (
+  senderClient: IConnextClient,
+  receiverClient: IConnextClient,
+  transfer: AssetOptions,
+  paymentId: string = getRandomBytes32(),
+): Promise<{ paymentId: string; chainId: number; verifyingContract: string; receipt: any }> => {
+  const chainId = senderClient.chainId;
+  const verifyingContract = getTestVerifyingContract();
+  const receipt = getTestGraphReceiptToSign();
+  const transferPromise = receiverClient.waitFor(
+    EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+    10_000,
+  );
+  await senderClient.conditionalTransfer({
+    amount: transfer.amount,
+    conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
+    paymentId,
+    consumerSigner: senderClient.signerAddress,
+    chainId,
+    verifyingContract,
+    subgraphDeploymentID: receipt.subgraphDeploymentID,
+    assetId: transfer.assetId,
+    recipient: receiverClient.publicIdentifier,
+    meta: { foo: "bar" },
+  } as PublicParams.GraphBatchedTransfer);
+  const installed = await transferPromise;
+
+  expect(installed).deep.contain({
+    amount: transfer.amount,
+    appIdentityHash: installed.appIdentityHash,
+    assetId: transfer.assetId,
+    type: ConditionalTransferTypes.GraphBatchedTransfer,
+    paymentId,
+    sender: senderClient.publicIdentifier,
+    transferMeta: {
+      consumerSigner: senderClient.signerAddress,
+      attestationSigner: receiverClient.signerAddress,
+      chainId,
+      verifyingContract,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
+      swapRate: One.mul(GRAPH_BATCHED_SWAP_CONVERSION),
+      requestCID: undefined,
+    },
+    meta: {
+      foo: "bar",
+      recipient: receiverClient.publicIdentifier,
+      sender: senderClient.publicIdentifier,
+      paymentId,
+      senderAssetId: transfer.assetId,
+    },
+  } as EventPayloads.GraphBatchedTransferCreated);
+
+  const {
+    [senderClient.signerAddress]: clientAPostTransferBal,
+  } = await senderClient.getFreeBalance(transfer.assetId);
+  expect(clientAPostTransferBal).to.eq(0);
+
+  return { paymentId, chainId, verifyingContract, receipt };
+};
+
+const resolveBatchedTransfer = async (
+  senderClient: IConnextClient,
+  receiverClient: IConnextClient,
+  transfer: AssetOptions,
+  totalPaid: BigNumber,
+  paymentId: string,
+  privateKeyConsumer: string,
+  privateKeyIndexer: string,
+) => {
+  const chainId = senderClient.chainId;
+  const verifyingContract = getTestVerifyingContract();
+  const receipt = getTestGraphReceiptToSign();
+  const attestationSignature = await signGraphReceiptMessage(
+    receipt,
+    senderClient.chainId,
+    verifyingContract,
+    privateKeyIndexer,
+  );
+
+  const consumerSignature = await signGraphConsumerMessage(
+    receipt,
+    chainId,
+    verifyingContract,
+    totalPaid,
+    paymentId,
+    privateKeyConsumer,
+  );
+
+  const unlockedPromise = senderClient.waitFor(
+    EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+    10_000,
+  );
+  const uninstalledPromise = senderClient.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+  await receiverClient.resolveCondition({
+    conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
+    totalPaid,
+    paymentId,
+    responseCID: receipt.responseCID,
+    requestCID: receipt.requestCID,
+    consumerSignature,
+    attestationSignature,
+  } as PublicParams.ResolveGraphBatchedTransfer);
+
+  const eventData = await unlockedPromise;
+  await uninstalledPromise;
+
+  expect(eventData).to.deep.contain({
+    amount: transfer.amount,
+    assetId: transfer.assetId,
+    type: ConditionalTransferTypes.GraphBatchedTransfer,
+    paymentId,
+    sender: senderClient.publicIdentifier,
+    transferMeta: {
+      totalPaid,
+      requestCID: receipt.requestCID,
+      responseCID: receipt.responseCID,
+      consumerSignature,
+      attestationSignature,
+    },
+    meta: {
+      foo: "bar",
+      recipient: receiverClient.publicIdentifier,
+      sender: senderClient.publicIdentifier,
+      paymentId,
+      senderAssetId: transfer.assetId,
+    },
+  } as EventPayloads.GraphBatchedTransferUnlocked);
+
+  const {
+    [senderClient.signerAddress]: senderClientPostReclaimBal,
+  } = await senderClient.getFreeBalance(transfer.assetId);
+  const {
+    [receiverClient.signerAddress]: receiverClientPostTransferBal,
+  } = await receiverClient.getFreeBalance(transfer.assetId);
+  expect(senderClientPostReclaimBal).to.eq(transfer.amount.sub(totalPaid));
+  expect(receiverClientPostTransferBal).to.eq(totalPaid);
+};
+
 describe("Graph Batched Transfers", () => {
   let privateKeyA: PrivateKey;
   let clientA: IConnextClient;
   let privateKeyB: PrivateKey;
   let clientB: IConnextClient;
   let tokenAddress: Address;
-  let receipt: GraphReceipt;
-  let chainId: number;
-  let verifyingContract: Address;
   let provider: providers.JsonRpcProvider;
   before(async () => {
     provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
@@ -67,9 +200,6 @@ describe("Graph Batched Transfers", () => {
     privateKeyB = getRandomPrivateKey();
     clientB = await createClient({ signer: privateKeyB, id: "B" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
-    receipt = getTestGraphReceiptToSign();
-    chainId = (await clientA.ethProvider.getNetwork()).chainId;
-    verifyingContract = getTestVerifyingContract();
   });
 
   afterEach(async () => {
@@ -80,198 +210,36 @@ describe("Graph Batched Transfers", () => {
   it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const paymentId = hexlify(randomBytes(32));
-    const transferPromise = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
-    await clientA.conditionalTransfer({
-      amount: transfer.amount,
-      conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
-      paymentId,
-      consumerSigner: clientA.signerAddress,
-      chainId,
-      verifyingContract,
-      subgraphDeploymentID: receipt.subgraphDeploymentID,
-      assetId: transfer.assetId,
-      recipient: clientB.publicIdentifier,
-      meta: { foo: "bar" },
-    } as PublicParams.GraphBatchedTransfer);
-    const installed = await transferPromise;
 
-    expect(installed).deep.contain({
-      amount: transfer.amount,
-      appIdentityHash: installed.appIdentityHash,
-      assetId: transfer.assetId,
-      type: ConditionalTransferTypes.GraphBatchedTransfer,
-      paymentId,
-      sender: clientA.publicIdentifier,
-      transferMeta: {
-        consumerSigner: clientA.signerAddress,
-        attestationSigner: clientB.signerAddress,
-        chainId,
-        verifyingContract,
-        subgraphDeploymentID: receipt.subgraphDeploymentID,
-        swapRate: One.mul(GRAPH_BATCHED_SWAP_CONVERSION),
-        requestCID: undefined,
-      },
-      meta: {
-        foo: "bar",
-        recipient: clientB.publicIdentifier,
-        sender: clientA.publicIdentifier,
-        paymentId,
-        senderAssetId: transfer.assetId,
-      },
-    } as EventPayloads.GraphBatchedTransferCreated);
-
-    const { [clientA.signerAddress]: clientAPostTransferBal } = await clientA.getFreeBalance(
-      transfer.assetId,
-    );
-    expect(clientAPostTransferBal).to.eq(0);
-
-    const attestationSignature = await signGraphReceiptMessage(
-      receipt,
-      chainId,
-      verifyingContract,
-      privateKeyB,
-    );
-
+    const { paymentId } = await createBatchedTransfer(clientA, clientB, transfer);
     const totalPaid = transfer.amount.div(3);
-    const consumerSignature = await signGraphConsumerMessage(
-      receipt,
-      chainId,
-      verifyingContract,
+    await resolveBatchedTransfer(
+      clientA,
+      clientB,
+      transfer,
       totalPaid,
       paymentId,
       privateKeyA,
+      privateKeyB,
     );
-
-    const unlockedPromise = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
-    const uninstalledPromise = clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
-    await clientB.resolveCondition({
-      conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
-      totalPaid,
-      paymentId,
-      responseCID: receipt.responseCID,
-      requestCID: receipt.requestCID,
-      consumerSignature,
-      attestationSignature,
-    } as PublicParams.ResolveGraphBatchedTransfer);
-
-    const eventData = await unlockedPromise;
-    await uninstalledPromise;
-
-    expect(eventData).to.deep.contain({
-      amount: transfer.amount,
-      assetId: transfer.assetId,
-      type: ConditionalTransferTypes.GraphBatchedTransfer,
-      paymentId,
-      sender: clientA.publicIdentifier,
-      transferMeta: {
-        totalPaid,
-        requestCID: receipt.requestCID,
-        responseCID: receipt.responseCID,
-        consumerSignature,
-        attestationSignature,
-      },
-      meta: {
-        foo: "bar",
-        recipient: clientB.publicIdentifier,
-        sender: clientA.publicIdentifier,
-        paymentId,
-        senderAssetId: transfer.assetId,
-      },
-    } as EventPayloads.GraphBatchedTransferUnlocked);
-
-    const { [clientA.signerAddress]: clientAPostReclaimBal } = await clientA.getFreeBalance(
-      transfer.assetId,
-    );
-    const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
-      transfer.assetId,
-    );
-    expect(clientAPostReclaimBal).to.eq(transfer.amount.sub(totalPaid));
-    expect(clientBPostTransferBal).to.eq(totalPaid);
   });
 
-  // it("happy case: clientA signed transfers tokens to clientB through node", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
-  //   const paymentId = hexlify(randomBytes(32));
+  it.only("happy case: clientA signed transfers tokens to clientB through node", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-  //   const promises = await Promise.all([
-  //     clientA.conditionalTransfer({
-  //       amount: transfer.amount,
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       signerAddress: clientB.signerAddress,
-  //       chainId,
-  //       verifyingContract,
-  //       requestCID: receipt.requestCID,
-  //       subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //       assetId: transfer.assetId,
-  //       recipient: clientB.publicIdentifier,
-  //       meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //     } as PublicParams.GraphTransfer),
-  //     new Promise(async (res) => {
-  //       clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-  //     }),
-  //   ]);
-
-  //   const [transferRes, installed] = promises;
-  //   expect(installed).deep.contain({
-  //     amount: transfer.amount,
-  //     appIdentityHash: transferRes.appIdentityHash,
-  //     assetId: transfer.assetId,
-  //     type: ConditionalTransferTypes.GraphTransfer,
-  //     paymentId,
-  //     transferMeta: {
-  //       consumerSigner: clientA.signerAddress,
-  //       attestationSigner: clientB.signerAddress,
-  //       chainId,
-  //       verifyingContract,
-  //       requestCID: receipt.requestCID,
-  //       subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //     },
-  //     meta: {
-  //       foo: "bar",
-  //       recipient: clientB.publicIdentifier,
-  //       sender: clientA.publicIdentifier,
-  //       paymentId,
-  //     },
-  //   } as Partial<EventPayloads.GraphTransferCreated>);
-
-  //   const {
-  //     [clientA.signerAddress]: clientAPostTransferBal,
-  //     [clientA.nodeSignerAddress]: nodePostTransferBal,
-  //   } = await clientA.getFreeBalance(transfer.assetId);
-  //   expect(clientAPostTransferBal).to.eq(0);
-
-  //   const signature = await signGraphReceiptMessage(
-  //     receipt,
-  //     chainId,
-  //     verifyingContract,
-  //     privateKeyB,
-  //   );
-
-  //   await new Promise(async (res) => {
-  //     clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
-  //       const {
-  //         [clientA.signerAddress]: clientAPostReclaimBal,
-  //         [clientA.nodeSignerAddress]: nodePostReclaimBal,
-  //       } = await clientA.getFreeBalance(transfer.assetId);
-  //       expect(clientAPostReclaimBal).to.eq(0);
-  //       expect(nodePostReclaimBal).to.eq(nodePostTransferBal.add(transfer.amount));
-  //       res();
-  //     });
-  //     await clientB.resolveCondition({
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       responseCID: receipt.responseCID,
-  //       signature,
-  //     } as PublicParams.ResolveGraphTransfer);
-  //     const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
-  //       transfer.assetId,
-  //     );
-  //     expect(clientBPostTransferBal).to.eq(transfer.amount);
-  //   });
-  // });
+    const { paymentId } = await createBatchedTransfer(clientA, clientB, transfer);
+    const totalPaid = transfer.amount.div(3);
+    await resolveBatchedTransfer(
+      clientA,
+      clientB,
+      transfer,
+      totalPaid,
+      paymentId,
+      privateKeyA,
+      privateKeyB,
+    );
+  });
 
   // it("gets a pending signed transfer by lock hash", async () => {
   //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
@@ -365,40 +333,71 @@ describe("Graph Batched Transfers", () => {
   //   } as NodeResponses.GetSignedTransfer);
   // });
 
-  // it("cannot resolve a signed transfer if signature is wrong", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
-  //   const paymentId = hexlify(randomBytes(32));
+  it.only("cannot resolve a signed transfer if attestation signature is wrong", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-  //   const receiverInstalled = clientB.waitFor(
-  //     EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-  //     10_000,
-  //   );
-  //   await clientA.conditionalTransfer({
-  //     amount: transfer.amount,
-  //     conditionType: ConditionalTransferTypes.GraphTransfer,
-  //     paymentId,
-  //     signerAddress: clientB.signerAddress,
-  //     chainId,
-  //     recipient: clientB.publicIdentifier,
-  //     verifyingContract,
-  //     requestCID: receipt.requestCID,
-  //     subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //     assetId: transfer.assetId,
-  //     meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //   } as PublicParams.GraphTransfer);
-  //   await receiverInstalled;
+    const { paymentId, receipt, chainId, verifyingContract } = await createBatchedTransfer(
+      clientA,
+      clientB,
+      transfer,
+    );
+    const totalPaid = transfer.amount.div(3);
 
-  //   const badSig = hexlify(randomBytes(65));
-  //   await expect(
-  //     clientB.resolveCondition({
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       responseCID: receipt.responseCID,
-  //       signature: badSig,
-  //     } as PublicParams.ResolveGraphTransfer),
-  //   ).to.eventually.be.rejectedWith(/invalid signature/);
-  // });
+    const consumerSignature = await signGraphConsumerMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      totalPaid,
+      paymentId,
+      privateKeyA,
+    );
+
+    const badSig = hexlify(randomBytes(65));
+    await expect(
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
+        totalPaid,
+        paymentId,
+        requestCID: receipt.requestCID,
+        responseCID: receipt.responseCID,
+        consumerSignature,
+        attestationSignature: badSig,
+      } as PublicParams.ResolveGraphBatchedTransfer),
+    ).to.eventually.be.rejectedWith(/invalid signature/);
+  });
+
+  it.only("cannot resolve a signed transfer if attestation signature is wrong", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    const { paymentId, receipt, chainId, verifyingContract } = await createBatchedTransfer(
+      clientA,
+      clientB,
+      transfer,
+    );
+    const totalPaid = transfer.amount.div(3);
+
+    const attestationSignature = await signGraphReceiptMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      privateKeyB,
+    );
+
+    const badSig = hexlify(randomBytes(65));
+    await expect(
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
+        totalPaid,
+        paymentId,
+        requestCID: receipt.requestCID,
+        responseCID: receipt.responseCID,
+        attestationSignature,
+        consumerSignature: badSig,
+      } as PublicParams.ResolveGraphBatchedTransfer),
+    ).to.eventually.be.rejectedWith(/invalid signature/);
+  });
 
   // it("if sender uninstalls, node should force uninstall receiver first", async () => {
   //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
