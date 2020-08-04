@@ -119,7 +119,7 @@ describe("Restore State", () => {
     );
 
     // bring clientA back online
-    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
+    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 25_000);
     clientA = await createClient(
       {
         signer: signerA,
