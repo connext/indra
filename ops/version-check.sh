@@ -4,7 +4,7 @@ set -e
 # Packages that we should never report as being out-of-date:
 # - We don't want contract addresses to change so no more solidity-related upgrades
 # - Newest react-scripts version breaks daicard, don't use it
-do_not_upgrade='solc @openzeppelin/contracts react-scripts'
+do_not_upgrade='solc @openzeppelin/contracts react-scripts @connext/'
 
 # Format string describing how each line looks
 format='{printf("| %-32s|%8s  ->  %-8s|\n", $1, $3, $4)}'

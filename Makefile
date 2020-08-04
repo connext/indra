@@ -17,7 +17,7 @@ backwards_compatible_version=$(shell cat package.json | grep '"backwardsCompatib
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo "`id -u`:`id -g`"; fi)
 
 # Pool of images to pull cached layers from during docker build steps
-image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi)
+image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_builder:latest,$(project)_database:latest,$(project)_ethprovider:latest,$(project)_node:latest,$(project)_proxy:latest"; else echo ""; fi)
 
 interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo ""; fi)
 
@@ -163,10 +163,10 @@ test-node: node
 	bash ops/test/node.sh
 
 test-tps: bot
-	bash ops/test/tps.sh 10 0 10
+	bash ops/test/tps.sh 5 0 10
 
 test-tps-prod:
-	bash ops/test/tps.sh 10 0 10
+	bash ops/test/tps.sh 5 0 10
 
 test-integration: test-runner
 	bash ops/test/integration.sh
