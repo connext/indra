@@ -131,7 +131,7 @@ jobs:
   deploy-staging:
     env:
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-cf, test-contracts, test-utils, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-utils, test-store, test-contracts, test-cf, test-watcher, test-node, test-ssh, test-integration, test-daicard]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -143,8 +143,8 @@ jobs:
           CMD: '
             git checkout --force staging;
             git reset --hard $GITHUB_SHA;
-            export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
             export INDRA_ENV="prod";
+            export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
             make restart-prod;
             docker container prune -f;
             docker image ls -q | xargs docker image rm || true;
