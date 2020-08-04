@@ -8,6 +8,8 @@ import {
   PrivateKey,
   Address,
   GRAPH_BATCHED_SWAP_CONVERSION,
+  GraphReceipt,
+  PublicResults,
 } from "@connext/types";
 import {
   getTestVerifyingContract,
@@ -39,7 +41,13 @@ const createBatchedTransfer = async (
   receiverClient: IConnextClient,
   transfer: AssetOptions,
   paymentId: string = getRandomBytes32(),
-): Promise<{ paymentId: string; chainId: number; verifyingContract: string; receipt: any }> => {
+): Promise<{
+  paymentId: string;
+  chainId: number;
+  verifyingContract: string;
+  receipt: GraphReceipt;
+  transferRes: PublicResults.GraphBatchedTransfer;
+}> => {
   const chainId = senderClient.chainId;
   const verifyingContract = getTestVerifyingContract();
   const receipt = getTestGraphReceiptToSign();
@@ -47,7 +55,7 @@ const createBatchedTransfer = async (
     EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
     10_000,
   );
-  await senderClient.conditionalTransfer({
+  const transferRes = await senderClient.conditionalTransfer({
     amount: transfer.amount,
     conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
     paymentId,
@@ -91,7 +99,7 @@ const createBatchedTransfer = async (
   } = await senderClient.getFreeBalance(transfer.assetId);
   expect(clientAPostTransferBal).to.eq(0);
 
-  return { paymentId, chainId, verifyingContract, receipt };
+  return { paymentId, chainId, verifyingContract, receipt, transferRes };
 };
 
 const resolveBatchedTransfer = async (
@@ -207,7 +215,7 @@ describe("Graph Batched Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -224,7 +232,7 @@ describe("Graph Batched Transfers", () => {
     );
   });
 
-  it.only("happy case: clientA signed transfers tokens to clientB through node", async () => {
+  it("happy case: clientA signed transfers tokens to clientB through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -333,7 +341,7 @@ describe("Graph Batched Transfers", () => {
   //   } as NodeResponses.GetSignedTransfer);
   // });
 
-  it.only("cannot resolve a signed transfer if attestation signature is wrong", async () => {
+  it("cannot resolve a signed transfer if attestation signature is wrong", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -367,7 +375,7 @@ describe("Graph Batched Transfers", () => {
     ).to.eventually.be.rejectedWith(/invalid signature/);
   });
 
-  it.only("cannot resolve a signed transfer if attestation signature is wrong", async () => {
+  it("cannot resolve a signed transfer if attestation signature is wrong", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -399,133 +407,110 @@ describe("Graph Batched Transfers", () => {
     ).to.eventually.be.rejectedWith(/invalid signature/);
   });
 
-  // it("if sender uninstalls, node should force uninstall receiver first", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
+  it("if sender uninstalls, node should force uninstall receiver first", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-  //   const paymentId = hexlify(randomBytes(32));
+    const receiverPromise = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
+    const { transferRes } = await createBatchedTransfer(clientA, clientB, transfer);
+    const receiverRes = (await receiverPromise) as EventPayloads.GraphBatchedTransferCreated;
 
-  //   const [transferRes, receiverRes] = await Promise.all([
-  //     clientA.conditionalTransfer({
-  //       amount: transfer.amount,
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       signerAddress: clientB.signerAddress,
-  //       chainId,
-  //       verifyingContract,
-  //       requestCID: receipt.requestCID,
-  //       subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //       assetId: transfer.assetId,
-  //       recipient: clientB.publicIdentifier,
-  //       meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //     } as PublicParams.GraphTransfer),
-  //     new Promise((res, rej) => {
-  //       clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-  //       clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
-  //     }),
-  //   ]);
+    clientA.uninstallApp(transferRes.appIdentityHash);
+    const winner = await Promise.race([
+      new Promise<EventPayloads.Uninstall>((res) => {
+        clientA.once(
+          EventNames.UNINSTALL_EVENT,
+          res,
+          (data) => data.appIdentityHash === (transferRes as any).appIdentityHash,
+        );
+      }),
+      new Promise<EventPayloads.Uninstall>((res) => {
+        clientB.once(EventNames.UNINSTALL_EVENT, res);
+      }),
+    ]);
+    expect(winner.appIdentityHash).to.be.eq(receiverRes.appIdentityHash);
+  });
 
-  //   clientA.uninstallApp((transferRes as any).appIdentityHash);
-  //   const winner = await Promise.race([
-  //     new Promise<EventPayloads.Uninstall>((res) => {
-  //       clientA.once(
-  //         EventNames.UNINSTALL_EVENT,
-  //         res,
-  //         (data) => data.appIdentityHash === (transferRes as any).appIdentityHash,
-  //       );
-  //     }),
-  //     new Promise<EventPayloads.Uninstall>((res) => {
-  //       clientB.once(EventNames.UNINSTALL_EVENT, res);
-  //     }),
-  //   ]);
-  //   expect(winner.appIdentityHash).to.be.eq(
-  //     (receiverRes as EventPayloads.SignedTransferCreated).appIdentityHash,
-  //   );
-  // });
+  it("sender cannot uninstall before receiver", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-  // it("sender cannot uninstall before receiver", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const { transferRes } = await createBatchedTransfer(clientA, clientB, transfer);
 
-  //   const paymentId = hexlify(randomBytes(32));
+    // disconnect so receiver cannot uninstall
+    clientB.messaging.disconnect();
+    clientB.off();
 
-  //   const [transferRes] = await Promise.all([
-  //     clientA.conditionalTransfer({
-  //       amount: transfer.amount,
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       signerAddress: clientB.signerAddress,
-  //       chainId,
-  //       verifyingContract,
-  //       requestCID: receipt.requestCID,
-  //       subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //       assetId: transfer.assetId,
-  //       recipient: clientB.publicIdentifier,
-  //       meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //     } as PublicParams.GraphTransfer),
-  //     new Promise((res, rej) => {
-  //       clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-  //       clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
-  //     }),
-  //   ]);
+    await expect(clientA.uninstallApp(transferRes.appIdentityHash)).to.eventually.be.rejected;
+  });
 
-  //   // disconnect so receiver cannot uninstall
-  //   clientB.messaging.disconnect();
-  //   clientB.off();
+  it.only("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-  //   await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
-  //     .rejected;
-  // });
+    const { paymentId, chainId, verifyingContract, receipt } = await createBatchedTransfer(
+      clientA,
+      clientB,
+      transfer,
+    );
 
-  // it("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const [transferRes] = await Promise.all([
+      clientA.conditionalTransfer({
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes.GraphTransfer,
+        paymentId,
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+        assetId: transfer.assetId,
+        recipient: clientB.publicIdentifier,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+      } as PublicParams.GraphTransfer),
+      new Promise((res, rej) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
+        clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
+      }),
+    ]);
 
-  //   const paymentId = hexlify(randomBytes(32));
-  //   const signature = await signGraphReceiptMessage(
-  //     receipt,
-  //     chainId,
-  //     verifyingContract,
-  //     privateKeyB,
-  //   );
+    const totalPaid = transfer.amount.div(3);
+    // disconnect so sender cannot unlock
+    clientA.messaging.disconnect();
 
-  //   const [transferRes] = await Promise.all([
-  //     clientA.conditionalTransfer({
-  //       amount: transfer.amount,
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       signerAddress: clientB.signerAddress,
-  //       chainId,
-  //       verifyingContract,
-  //       requestCID: receipt.requestCID,
-  //       subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //       assetId: transfer.assetId,
-  //       recipient: clientB.publicIdentifier,
-  //       meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //     } as PublicParams.GraphTransfer),
-  //     new Promise((res, rej) => {
-  //       clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-  //       clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
-  //     }),
-  //   ]);
+    const attestationSignature = await signGraphReceiptMessage(
+      receipt,
+      clientA.chainId,
+      verifyingContract,
+      privateKeyB,
+    );
 
-  //   // disconnect so sender cannot unlock
-  //   clientA.messaging.disconnect();
+    const consumerSignature = await signGraphConsumerMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      totalPaid,
+      paymentId,
+      privateKeyA,
+    );
 
-  //   await Promise.all([
-  //     new Promise((res) => {
-  //       clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
-  //     }),
-  //     clientB.resolveCondition({
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       responseCID: receipt.responseCID,
-  //       signature,
-  //     } as PublicParams.ResolveGraphTransfer),
-  //   ]);
+    await Promise.all([
+      new Promise((res) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
+      }),
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.GraphBatchedTransfer,
+        totalPaid,
+        paymentId,
+        responseCID: receipt.responseCID,
+        requestCID: receipt.requestCID,
+        consumerSignature,
+        attestationSignature,
+      } as PublicParams.ResolveGraphBatchedTransfer),
+    ]);
 
-  //   clientA.messaging.connect();
-  //   await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
-  //     .rejected;
-  // });
+    clientA.messaging.connect();
+    await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
+      .rejected;
+  });
 });
