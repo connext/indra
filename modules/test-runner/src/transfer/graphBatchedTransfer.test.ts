@@ -249,97 +249,7 @@ describe("Graph Batched Transfers", () => {
     );
   });
 
-  // it("gets a pending signed transfer by lock hash", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
-  //   const paymentId = hexlify(randomBytes(32));
-
-  //   await clientA.conditionalTransfer({
-  //     amount: transfer.amount,
-  //     conditionType: ConditionalTransferTypes.GraphTransfer,
-  //     paymentId,
-  //     signerAddress: clientB.signerAddress,
-  //     chainId,
-  //     verifyingContract,
-  //     requestCID: receipt.requestCID,
-  //     subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //     recipient: clientB.publicIdentifier,
-  //     assetId: transfer.assetId,
-  //     meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //   } as PublicParams.GraphTransfer);
-
-  //   const retrievedTransfer = await clientB.getGraphTransfer(paymentId);
-  //   expect(retrievedTransfer).to.deep.equal({
-  //     amount: transfer.amount.toString(),
-  //     assetId: transfer.assetId,
-  //     paymentId,
-  //     senderIdentifier: clientA.publicIdentifier,
-  //     receiverIdentifier: clientB.publicIdentifier,
-  //     status: SignedTransferStatus.PENDING,
-  //     meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
-  //   } as NodeResponses.GetSignedTransfer);
-  // });
-
-  // it("gets a completed signed transfer by lock hash", async () => {
-  //   const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-  //   await fundChannel(clientA, transfer.amount, transfer.assetId);
-  //   const paymentId = hexlify(randomBytes(32));
-
-  //   const receiverInstall = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
-  //   await clientA.conditionalTransfer({
-  //     amount: transfer.amount,
-  //     conditionType: ConditionalTransferTypes.GraphTransfer,
-  //     paymentId,
-  //     recipient: clientB.publicIdentifier,
-  //     signerAddress: clientB.signerAddress,
-  //     chainId,
-  //     verifyingContract,
-  //     requestCID: receipt.requestCID,
-  //     subgraphDeploymentID: receipt.subgraphDeploymentID,
-  //     assetId: transfer.assetId,
-  //     meta: { foo: "bar", sender: clientA.publicIdentifier },
-  //   } as PublicParams.GraphTransfer);
-  //   await receiverInstall;
-  //   // disconnect so that it cant be unlocked
-  //   await clientA.messaging.disconnect();
-
-  //   const signature = await signGraphReceiptMessage(
-  //     receipt,
-  //     chainId,
-  //     verifyingContract,
-  //     privateKeyB,
-  //   );
-
-  //   // wait for transfer to be picked up by receiver
-  //   await new Promise(async (resolve, reject) => {
-  //     clientB.once(
-  //       EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-  //       resolve,
-  //       (data) => !!data.paymentId && data.paymentId === paymentId,
-  //     );
-  //     clientB.once(
-  //       EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
-  //       reject,
-  //       (data) => !!data.paymentId && data.paymentId === paymentId,
-  //     );
-  //     await clientB.resolveCondition({
-  //       conditionType: ConditionalTransferTypes.GraphTransfer,
-  //       paymentId,
-  //       responseCID: receipt.responseCID,
-  //       signature,
-  //     });
-  //   });
-  //   const retrievedTransfer = await clientB.getGraphTransfer(paymentId);
-  //   expect(retrievedTransfer).to.deep.equal({
-  //     amount: transfer.amount.toString(),
-  //     assetId: transfer.assetId,
-  //     paymentId,
-  //     senderIdentifier: clientA.publicIdentifier,
-  //     receiverIdentifier: clientB.publicIdentifier,
-  //     status: SignedTransferStatus.COMPLETED,
-  //     meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
-  //   } as NodeResponses.GetSignedTransfer);
-  // });
+  // TODO: figure out getters
 
   it("cannot resolve a signed transfer if attestation signature is wrong", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
@@ -444,35 +354,17 @@ describe("Graph Batched Transfers", () => {
     await expect(clientA.uninstallApp(transferRes.appIdentityHash)).to.eventually.be.rejected;
   });
 
-  it.only("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
+  it("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-    const { paymentId, chainId, verifyingContract, receipt } = await createBatchedTransfer(
-      clientA,
-      clientB,
-      transfer,
-    );
-
-    const [transferRes] = await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount,
-        conditionType: ConditionalTransferTypes.GraphTransfer,
-        paymentId,
-        signerAddress: clientB.signerAddress,
-        chainId,
-        verifyingContract,
-        requestCID: receipt.requestCID,
-        subgraphDeploymentID: receipt.subgraphDeploymentID,
-        assetId: transfer.assetId,
-        recipient: clientB.publicIdentifier,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-      } as PublicParams.GraphTransfer),
-      new Promise((res, rej) => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-        clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
-      }),
-    ]);
+    const {
+      paymentId,
+      chainId,
+      verifyingContract,
+      receipt,
+      transferRes,
+    } = await createBatchedTransfer(clientA, clientB, transfer);
 
     const totalPaid = transfer.amount.div(3);
     // disconnect so sender cannot unlock
@@ -510,7 +402,6 @@ describe("Graph Batched Transfers", () => {
     ]);
 
     clientA.messaging.connect();
-    await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
-      .rejected;
+    await expect(clientA.uninstallApp(transferRes.appIdentityHash)).to.eventually.be.rejected;
   });
 });
