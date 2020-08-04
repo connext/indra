@@ -20,7 +20,7 @@ const DOMAIN_NAME = "Graph Protocol";
 const DOMAIN_VERSION = "0";
 const DOMAIN_SALT = "0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2";
 
-export const hashGraphReceiptData = (receipt: GraphReceipt) =>
+export const hashGraphReceiptData = (receipt: GraphReceipt): string =>
   hashStruct(
     GRAPH_RECEIPT_TYPE_HASH,
     ["bytes32", "bytes32", "bytes32"],
@@ -31,7 +31,7 @@ export const hashGraphConsumerData = (
   receipt: GraphReceipt,
   totalPaid: BigNumber,
   paymentId: string,
-) =>
+): string =>
   hashStruct(
     GRAPH_CONSUMER_TYPE_HASH,
     ["bytes32", "bytes32", "uint256"],
@@ -59,7 +59,7 @@ export const signGraphReceiptMessage = async (
   chainId: number,
   verifyingContract: Address,
   privateKey: PrivateKey,
-) =>
+): Promise<string> =>
   hexlify(
     await sign(
       bufferify(privateKey),
@@ -108,7 +108,7 @@ export const signGraphConsumerMessage = async (
   totalPaid: BigNumber,
   paymentId: string,
   privateKey: PrivateKey,
-) =>
+): Promise<string> =>
   hexlify(
     await sign(
       bufferify(privateKey),
@@ -119,9 +119,9 @@ export const signGraphConsumerMessage = async (
     ),
   );
 
-export const getTestVerifyingContract = () => "0x1d85568eEAbad713fBB5293B45ea066e552A90De";
+export const getTestVerifyingContract = (): string => "0x1d85568eEAbad713fBB5293B45ea066e552A90De";
 
-export const getTestGraphReceiptToSign = () => ({
+export const getTestGraphReceiptToSign = (): GraphReceipt => ({
   requestCID: "0xd902c18a1b3590a3d2a8ae4439db376764fda153ca077e339d0427bf776bd463",
   responseCID: "0xbe0b5ae5f598fdf631133571d59ef16b443b2fe02e35ca2cb807158069009db9",
   subgraphDeploymentID: hexlify(
@@ -129,7 +129,7 @@ export const getTestGraphReceiptToSign = () => ({
   ),
 });
 
-export const getTestGraphDomainSeparator = () => ({
+export const getTestGraphDomainSeparator = (): GraphReceipt => ({
   requestCID: "0xd902c18a1b3590a3d2a8ae4439db376764fda153ca077e339d0427bf776bd463",
   responseCID: "0xbe0b5ae5f598fdf631133571d59ef16b443b2fe02e35ca2cb807158069009db9",
   subgraphDeploymentID: hexlify(
