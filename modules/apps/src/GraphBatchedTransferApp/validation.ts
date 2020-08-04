@@ -1,6 +1,5 @@
-import { BigNumber } from "ethers";
-import { ProtocolParams, Address } from "@connext/types";
-import { calculateExchangeWad } from "@connext/utils";
+import { BigNumber, utils } from "ethers";
+import { ProtocolParams, Address, GraphBatchedTransferAppState } from "@connext/types";
 
 import { validateSignedTransferApp } from "../SimpleSignedTransferApp";
 
@@ -13,36 +12,29 @@ export const validateGraphBatchedTransferApp = async (
   // basic validation
   validateSignedTransferApp(params);
   // swap rate validation
-  const { responderDeposit, initiatorDeposit, meta, initiatorDepositAssetId } = params;
+  const { meta, initiatorDepositAssetId, initialState } = params;
 
-  if (meta?.senderAssetId === initiatorDepositAssetId) {
+  let ourRate: string;
+  if (!meta?.senderAssetId || meta?.senderAssetId === initiatorDepositAssetId) {
     // no swap detected
-    return;
+    ourRate = "1";
+  } else {
+    ourRate = await getSwapRate(meta?.senderAssetId, initiatorDepositAssetId);
   }
 
-  // TODO: will need to fix this eventually
-  const initiatorDecimals = 18;
-  const responderDecimals = 18;
-
-  const ourRate = await getSwapRate(meta?.senderAssetId, initiatorDepositAssetId);
-
-  const calculatedResponderDeposit = calculateExchangeWad(
-    initiatorDeposit,
-    initiatorDecimals,
-    ourRate,
-    responderDecimals,
-  );
+  const expectedRate = utils.parseUnits(ourRate, 18);
+  const givenRate = (initialState as GraphBatchedTransferAppState).swapRate;
 
   // make sure calculated within allowed amount
-  const calculatedToActualDiscrepancy = calculatedResponderDeposit.sub(responderDeposit).abs();
+  const calculatedToActualDiscrepancy = expectedRate.sub(givenRate).abs();
   // i.e. (x * (100 - 5)) / 100 = 0.95 * x
-  const allowedDiscrepancy = calculatedResponderDeposit
+  const allowedDiscrepancy = expectedRate
     .mul(BigNumber.from(100).sub(ALLOWED_DISCREPANCY_PCT))
     .div(100);
 
   if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
     throw new Error(
-      `Responder deposit (${responderDeposit.toString()}) is greater than our expected deposit (${calculatedResponderDeposit.toString()}) based on our swap rate ${ourRate} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${calculatedToActualDiscrepancy.toString()})`,
+      `Given rate ${givenRate.toString()} is out of range of our expected rate (${expectedRate.toString()})} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${calculatedToActualDiscrepancy.toString()})`,
     );
   }
 };

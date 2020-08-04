@@ -19,6 +19,8 @@ import {
   DOMAIN_VERSION,
   DOMAIN_SALT,
   GRAPH_BATCHED_SWAP_CONVERSION,
+  GraphSignedTransferAppState,
+  CreatedGraphSignedTransferMeta,
 } from "@connext/types";
 import {
   toBN,
@@ -45,6 +47,7 @@ export class CreateTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) };
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
+    submittedMeta.senderAssetId = assetId;
 
     const baseInitialState: GenericConditionalTransferAppState = {
       coinTransfers: [
@@ -66,7 +69,8 @@ export class CreateTransferController extends AbstractController {
       | SimpleLinkedTransferAppState
       | HashLockTransferAppState
       | SimpleSignedTransferAppState
-      | GraphBatchedTransferAppState;
+      | GraphBatchedTransferAppState
+      | GraphSignedTransferAppState;
 
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
@@ -124,12 +128,9 @@ export class CreateTransferController extends AbstractController {
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
+          signerAddress,
           paymentId,
         } = params as PublicParams.GraphTransfer;
-
-        const consumerSigner = this.connext.signerAddress;
-        const attestationSigner = getSignerAddressFromPublicIdentifier(recipient);
-        const swapRate = BigNumber.from(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
 
         initialState = {
           ...baseInitialState,
@@ -138,20 +139,16 @@ export class CreateTransferController extends AbstractController {
           requestCID,
           subgraphDeploymentID,
           paymentId,
-          attestationSigner, // indexer
-          consumerSigner,
-          swapRate,
-        } as GraphBatchedTransferAppState;
+          signerAddress,
+        } as GraphSignedTransferAppState;
 
         transferMeta = {
-          attestationSigner,
-          consumerSigner,
+          signerAddress,
           chainId,
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
-          swapRate,
-        } as CreatedGraphBatchedTransferMeta;
+        } as CreatedGraphSignedTransferMeta;
 
         submittedMeta.paymentId = paymentId;
 
@@ -159,13 +156,14 @@ export class CreateTransferController extends AbstractController {
       }
       case ConditionalTransferTypes.GraphBatchedTransfer: {
         const {
+          consumerSigner,
           chainId,
           verifyingContract,
           subgraphDeploymentID,
           paymentId,
         } = params as PublicParams.GraphBatchedTransfer;
 
-        const consumerSigner = this.connext.signerAddress;
+        // indexer
         const attestationSigner = getSignerAddressFromPublicIdentifier(recipient);
         const swapRate = BigNumber.from(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
 

@@ -177,6 +177,7 @@ type GraphBatchedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphBatchedTransfer;
   amount: BigNumber;
   assetId: Address;
+  consumerSigner: Address;
   paymentId: Bytes32;
   chainId: number;
   verifyingContract: Address;

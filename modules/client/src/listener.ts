@@ -38,6 +38,9 @@ import {
   ConditionalTransferAppNames,
   GraphBatchedTransferAppName,
   CreatedGraphSignedTransferMeta,
+  UnlockedGraphSignedTransferMeta,
+  GraphBatchedTransferAppState,
+  GraphBatchedTransferAppAction,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -563,6 +566,32 @@ export class ConnextListener {
         } as EventPayloads.HashLockTransferUnlocked);
         break;
       }
+      case GraphBatchedTransferAppName: {
+        const transferState = state as GraphBatchedTransferAppState;
+        const transferAction = action as GraphBatchedTransferAppAction;
+
+        // use total amount for transfer amount
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).add(
+          toBN(transferState.coinTransfers[1].amount),
+        );
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+          type: ConditionalTransferTypes.GraphBatchedTransfer,
+          amount: transferAmount,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
+          paymentId: transferState.paymentId,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
+          meta: appInstance.meta,
+          transferMeta: {
+            consumerSignature: transferAction?.consumerSignature,
+            attestationSignature: transferAction?.attestationSignature,
+            responseCID: transferAction?.responseCID,
+            requestCID: transferAction?.requestCID,
+            totalPaid: transferAction?.totalPaid,
+          } as UnlockedGraphBatchedTransferMeta,
+        } as EventPayloads.GraphBatchedTransferUnlocked);
+        break;
+      }
       case GraphSignedTransferAppName: {
         const transferState = state as GraphSignedTransferAppState;
         const transferAction = action as GraphSignedTransferAppAction;
@@ -580,7 +609,7 @@ export class ConnextListener {
           transferMeta: {
             signature: transferAction?.signature,
             responseCID: transferAction?.responseCID,
-          } as UnlockedGraphBatchedTransferMeta,
+          } as UnlockedGraphSignedTransferMeta,
         } as EventPayloads.GraphTransferUnlocked);
         break;
       }

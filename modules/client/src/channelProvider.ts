@@ -94,6 +94,8 @@ export const createCFChannelProvider = async ({
     );
   }
 
+  const getLatestSwapRate = (from: string, to: string) => node.getLatestSwapRate(from, to);
+
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
@@ -105,7 +107,7 @@ export const createCFChannelProvider = async ({
         },
       },
       { [network.chainId]: supportedTokenAddresses[network.chainId] },
-      node.getLatestSwapRate,
+      getLatestSwapRate,
     ),
   );
 

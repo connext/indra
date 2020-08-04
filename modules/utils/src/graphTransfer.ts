@@ -1,4 +1,4 @@
-import { PrivateKey, GraphReceipt, Address, SignatureString, HexString } from "@connext/types";
+import { PrivateKey, GraphReceipt, Address, SignatureString } from "@connext/types";
 import { utils, BigNumber } from "ethers";
 import { sign, recover } from "eccrypto-js";
 import * as bs58 from "bs58";
@@ -13,7 +13,7 @@ export const GRAPH_RECEIPT_TYPE_HASH = hashString(
 );
 
 export const GRAPH_CONSUMER_TYPE_HASH = hashString(
-  "Consumer(bytes32 appIdentityHash,bytes32 requestCID,uint256 totalPaid)",
+  "Consumer(bytes32 paymentId,bytes32 requestCID,uint256 totalPaid)",
 );
 
 const DOMAIN_NAME = "Graph Protocol";
@@ -30,12 +30,12 @@ export const hashGraphReceiptData = (receipt: GraphReceipt) =>
 export const hashGraphConsumerData = (
   receipt: GraphReceipt,
   totalPaid: BigNumber,
-  appIdentityHash: string,
+  paymentId: string,
 ) =>
   hashStruct(
     GRAPH_CONSUMER_TYPE_HASH,
     ["bytes32", "bytes32", "uint256"],
-    [appIdentityHash, receipt.requestCID, totalPaid],
+    [paymentId, receipt.requestCID, totalPaid],
   );
 
 export const hashGraphReceiptMessage = (
@@ -88,7 +88,7 @@ export const hashGraphConsumerMessage = (
   verifyingContract: string,
   receipt: GraphReceipt,
   totalPaid: BigNumber,
-  appIdentityHash: string,
+  paymentId: string,
 ): string =>
   hashTypedMessage(
     hashDomainSeparator({
@@ -98,7 +98,7 @@ export const hashGraphConsumerMessage = (
       verifyingContract,
       version: DOMAIN_VERSION,
     }),
-    hashGraphConsumerData(receipt, totalPaid, appIdentityHash),
+    hashGraphConsumerData(receipt, totalPaid, paymentId),
   );
 
 export const signGraphConsumerMessage = async (
@@ -106,14 +106,14 @@ export const signGraphConsumerMessage = async (
   chainId: number,
   verifyingContract: Address,
   totalPaid: BigNumber,
-  appIdentityHash: string,
+  paymentId: string,
   privateKey: PrivateKey,
 ) =>
   hexlify(
     await sign(
       bufferify(privateKey),
       bufferify(
-        hashGraphConsumerMessage(chainId, verifyingContract, receipt, totalPaid, appIdentityHash),
+        hashGraphConsumerMessage(chainId, verifyingContract, receipt, totalPaid, paymentId),
       ),
       true,
     ),

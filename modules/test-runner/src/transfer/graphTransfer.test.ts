@@ -75,7 +75,7 @@ describe("Graph Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
@@ -103,8 +103,7 @@ describe("Graph Signed Transfers", () => {
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: {
-        consumerSigner: clientA.signerAddress,
-        attestationSigner: clientB.signerAddress,
+        signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
         requestCID: receipt.requestCID,
@@ -205,8 +204,7 @@ describe("Graph Signed Transfers", () => {
       type: ConditionalTransferTypes.GraphTransfer,
       paymentId,
       transferMeta: {
-        consumerSigner: clientA.signerAddress,
-        attestationSigner: clientB.signerAddress,
+        signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
         requestCID: receipt.requestCID,

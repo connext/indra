@@ -124,8 +124,11 @@ export type UnlockedHashLockTransferMeta = {
 };
 
 export type UnlockedGraphBatchedTransferMeta = {
+  requestCID: Bytes32;
   responseCID: Bytes32;
-  signature: SignatureString;
+  totalPaid: BigNumber;
+  attestationSignature: SignatureString;
+  consumerSignature: SignatureString;
 };
 
 export type UnlockedGraphSignedTransferMeta = {

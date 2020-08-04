@@ -18,6 +18,7 @@ import {
   SimpleLinkedTransferAppAction,
   ConditionalTransferTypes,
   GraphBatchedTransferAppAction,
+  GraphBatchedTransferAppState,
 } from "@connext/types";
 import {
   stringify,
@@ -27,7 +28,7 @@ import {
 } from "@connext/utils";
 import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
-import { constants } from "ethers";
+import { constants, utils } from "ethers";
 import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
@@ -45,6 +46,7 @@ import { ConfigService } from "../config/config.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 
 const { Zero, HashZero } = constants;
+const { parseUnits } = utils;
 
 export const getCancelAction = (
   transferType: ConditionalTransferTypes,
@@ -290,23 +292,24 @@ export class TransferService {
     // inflight swap
     const receiverAssetId = meta.receiverAssetId ? meta.receiverAssetId : senderAssetId;
     let receiverAmount = senderAmount;
+    let swapRate = "1";
     if (receiverAssetId !== senderAssetId || senderChainId !== receiverChainId) {
       this.log.warn(
         `Detected an inflight swap from ${senderAssetId} on ${senderChainId} to ${receiverAssetId} on ${receiverChainId}!`,
       );
-      const currentRate = await this.swapRateService.getOrFetchRate(
+      swapRate = await this.swapRateService.getOrFetchRate(
         senderAssetId,
         receiverAssetId,
         senderChainId,
         receiverChainId,
       );
-      this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
+      this.log.warn(`Using swap rate ${swapRate} for inflight swap`);
       const senderDecimals = 18;
       const receiverDecimals = 18;
       receiverAmount = calculateExchangeWad(
         senderAmount,
         senderDecimals,
-        currentRate,
+        swapRate,
         receiverDecimals,
       );
     }
@@ -388,6 +391,10 @@ export class TransferService {
       (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
         TIMEOUT_BUFFER,
       );
+    }
+
+    if ((initialState as GraphBatchedTransferAppState).swapRate) {
+      (initialState as GraphBatchedTransferAppState).swapRate = parseUnits(swapRate, 18);
     }
 
     const {
