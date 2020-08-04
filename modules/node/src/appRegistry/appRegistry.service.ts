@@ -193,6 +193,7 @@ export class AppRegistryService implements OnModuleInit {
     const defaultValidation = await generateValidationMiddleware(
       networkContexts,
       this.configService.getSupportedTokens(),
+      () => Promise.resolve("1"), // incoming proposals to the node should always have a swap rate of 1, will need to address for multihop
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {

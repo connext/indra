@@ -20,6 +20,7 @@ import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
 import { commonAppProposalValidation } from "./shared/validation";
 import { AppRegistry } from "./registry";
 import { proposeGraphSignedTransferMiddleware } from "./GraphSignedTransferApp";
+import { proposeGraphBatchedTransferMiddleware } from "./GraphBatchedTransferApp";
 
 const getNameFromAddress = (contractAddress: ContractAddresses, appDefinition: Address) => {
   const [name] =
@@ -50,6 +51,7 @@ export const sharedProposalMiddleware = (
 export const generateValidationMiddleware = async (
   networkContexts: NetworkContexts,
   supportedTokenAddresses: { [chainId: number]: Address[] },
+  getSwapRate: (fromTokenAddress: Address, toTokenAddress: Address) => Promise<string>, // for graph batched app
 ): Promise<ValidationMiddleware> => {
   const validationMiddleware: ValidationMiddleware = async (
     protocol: ProtocolName,
@@ -61,6 +63,7 @@ export const generateValidationMiddleware = async (
           networkContexts,
           middlewareContext as ProposeMiddlewareContext,
           supportedTokenAddresses,
+          getSwapRate,
         );
         break;
       }
@@ -104,6 +107,7 @@ const proposeMiddleware = async (
   networkContexts: NetworkContexts,
   middlewareContext: ProposeMiddlewareContext,
   supportedTokenAddresses: { [chainId: number]: Address[] },
+  getSwapRate: (fromTokenAddress: Address, toTokenAddress: Address) => Promise<string>,
 ) => {
   const { proposal, stateChannel } = middlewareContext;
   const { contractAddresses, provider } = networkContexts[stateChannel.chainId];
@@ -113,6 +117,10 @@ const proposeMiddleware = async (
   switch (appDef) {
     case contractAddresses.DepositApp: {
       await proposeDepositMiddleware(middlewareContext, provider);
+      break;
+    }
+    case contractAddresses.GraphBatchedTransferApp: {
+      await proposeGraphBatchedTransferMiddleware(middlewareContext, getSwapRate);
       break;
     }
     case contractAddresses.GraphSignedTransferApp: {

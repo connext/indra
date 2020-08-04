@@ -15,9 +15,12 @@ import {
   SimpleSignedTransferAppName,
   DepositAppName,
   SimpleTwoPartySwapAppName,
+  GraphBatchedTransferAppName,
   GraphSignedTransferAppName,
   GraphSignedTransferAppAction,
   GraphSignedTransferAppState,
+  GraphBatchedTransferAppAction,
+  GraphBatchedTransferAppState,
 } from "./apps";
 import { enumify } from "../utils";
 import { CoinTransfer } from "./funding";
@@ -39,6 +42,7 @@ export const AppNames = {
   [DepositAppName]: DepositAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
+  [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
@@ -50,6 +54,7 @@ export type AppName = keyof typeof AppNames;
 interface AppActionMap {
   [DepositAppName]: {}; // no action
   [HashLockTransferAppName]: HashLockTransferAppAction;
+  [GraphBatchedTransferAppName]: GraphBatchedTransferAppAction;
   [GraphSignedTransferAppName]: GraphSignedTransferAppAction;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppAction;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
@@ -64,6 +69,7 @@ export type AppActions = {
 interface AppStateMap {
   [DepositAppName]: DepositAppState;
   [HashLockTransferAppName]: HashLockTransferAppState;
+  [GraphBatchedTransferAppName]: GraphBatchedTransferAppState;
   [GraphSignedTransferAppName]: GraphSignedTransferAppState;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppState;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
@@ -77,6 +83,7 @@ export type AppStates = {
 
 export type AppAction =
   | HashLockTransferAppAction
+  | GraphBatchedTransferAppAction
   | GraphSignedTransferAppAction
   | SimpleLinkedTransferAppAction
   | SimpleSignedTransferAppAction
@@ -85,6 +92,7 @@ export type AppAction =
 export type AppState =
   | DepositAppState
   | HashLockTransferAppState
+  | GraphBatchedTransferAppState
   | GraphSignedTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState
@@ -93,6 +101,7 @@ export type AppState =
   | GenericConditionalTransferAppState;
 
 export const SupportedApplicationNames = enumify({
+  [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
@@ -108,6 +117,7 @@ export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof t
 // This array is used to determine whether or not it is safe to run some app's
 // computeOutcome or computeStateTransition in a local evm vs needing to make an eth_call
 export const PureActionApps = [
+  GraphBatchedTransferAppName,
   GraphSignedTransferAppName,
   SimpleSignedTransferAppName,
   SimpleLinkedTransferAppName,

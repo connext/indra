@@ -29,7 +29,6 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
-  env,
 } from "../util";
 
 const { AddressZero } = constants;
@@ -98,6 +97,7 @@ describe("Graph Signed Transfers", () => {
 
     expect(installed).deep.contain({
       amount: transfer.amount,
+      appIdentityHash: installed.appIdentityHash,
       assetId: transfer.assetId,
       type: ConditionalTransferTypes.GraphTransfer,
       paymentId,
@@ -114,6 +114,7 @@ describe("Graph Signed Transfers", () => {
         recipient: clientB.publicIdentifier,
         sender: clientA.publicIdentifier,
         paymentId,
+        senderAssetId: transfer.assetId,
       },
     } as EventPayloads.GraphTransferCreated);
 
@@ -156,6 +157,7 @@ describe("Graph Signed Transfers", () => {
         foo: "bar",
         recipient: clientB.publicIdentifier,
         sender: clientA.publicIdentifier,
+        senderAssetId: transfer.assetId,
         paymentId,
       },
     } as EventPayloads.GraphTransferUnlocked);
@@ -213,6 +215,7 @@ describe("Graph Signed Transfers", () => {
         foo: "bar",
         recipient: clientB.publicIdentifier,
         sender: clientA.publicIdentifier,
+        senderAssetId: transfer.assetId,
         paymentId,
       },
     } as Partial<EventPayloads.GraphTransferCreated>);
@@ -280,7 +283,12 @@ describe("Graph Signed Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.PENDING,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
+      meta: {
+        foo: "bar",
+        sender: clientA.publicIdentifier,
+        paymentId,
+        senderAssetId: transfer.assetId,
+      },
     } as NodeResponses.GetSignedTransfer);
   });
 
@@ -341,7 +349,12 @@ describe("Graph Signed Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
+      meta: {
+        foo: "bar",
+        sender: clientA.publicIdentifier,
+        paymentId,
+        senderAssetId: transfer.assetId,
+      },
     } as NodeResponses.GetSignedTransfer);
   });
 

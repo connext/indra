@@ -16,6 +16,10 @@ export const expect = chai.use(solidity).expect;
 
 export const provider = buidler.provider;
 
+export const mkAddress = (prefix: string = "0xa") : string => {
+  return prefix.padEnd(42, "0");
+}
+
 export const mineBlocks = async (n: number = 1) => {
   for (let i = 0; i < n; i++) {
     await provider.send("evm_mine", []);
