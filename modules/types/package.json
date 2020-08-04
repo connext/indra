@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "7.0.2",
+  "version": "7.0.3",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -16,13 +16,13 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "ethers": "5.0.5",
+    "ethers": "5.0.7",
     "eventemitter3": "4.0.4",
-    "evt": "1.7.13",
-    "sequelize": "6.3.3"
+    "evt": "1.8.3",
+    "sequelize": "6.3.4"
   },
   "devDependencies": {
-    "rollup": "2.21.0",
+    "rollup": "2.23.0",
     "rollup-plugin-typescript2": "0.27.1",
     "typescript": "3.9.7"
   }
