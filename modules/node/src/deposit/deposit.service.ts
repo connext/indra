@@ -207,7 +207,7 @@ export class DepositService {
       // the deposit tx has either failed or succeeded, regardless
       // the deposit app should not exist at this point.
       // uninstall and rescind deposit rights, then return string
-      this.log.error(
+      this.log.info(
         `Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}, calling uninstall`,
       );
       await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
