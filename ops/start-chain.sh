@@ -6,32 +6,39 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
-release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
+
+# make sure a network for this project has been created
+docker swarm init 2> /dev/null || true
+docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 chain_id="${1:-1337}"
 
-mode="${INDRA_CHAIN_MODE:-local}"
+mode="${INDRA_CHAIN_MODE:-dev}"
 port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
 logLevel="${INDRA_CHAIN_LOG_LEVEL:0}"
 
-ethprovider_host="${project}_testnet_$tag"
+ethprovider_host="testnet_$tag"
 
 if [[ -n `docker container ls | grep ${ethprovider_host}` ]]
-then
-  echo "A container called $ethprovider_host already exists"
-  exit
+then echo "A container called $ethprovider_host already exists" && exit
 fi
 
 chain_data="$root/.chaindata/$chain_id"
 mkdir -p $chain_data
 
-if [[ "$mode" == "release" ]]
-then image="${registry}/${project}_ethprovider:$release"
-elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$mode" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+  image="${project}_ethprovider:$version"
+
 else
   image="${project}_builder"
   arg="modules/contracts/ops/entry.sh"
@@ -47,6 +54,7 @@ docker run $opts \
   --env "MNEMONIC=$mnemonic" \
   --mount "type=bind,source=$chain_data,target=/data" \
   --name "$ethprovider_host" \
+  --network "$project" \
   --publish "$port:8545" \
   --rm \
   --tmpfs "/tmpfs" \

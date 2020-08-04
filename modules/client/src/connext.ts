@@ -321,8 +321,9 @@ export class ConnextClient implements IConnextClient {
   public saveWithdrawCommitmentToStore = (
     params: PublicParams.Withdraw,
     signatures: string[],
+    withdrawTx?: string,
   ): Promise<void> => {
-    return this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
+    return this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures, withdrawTx);
   };
 
   public resolveCondition = async (
@@ -370,125 +371,33 @@ export class ConnextClient implements IConnextClient {
   // this function should be called when the user knows a withdrawal should
   // be submitted. if there is no withdrawal expected, this promise will last
   // for the duration of the timeout
-  public watchForUserWithdrawal = async (): Promise<providers.TransactionResponse[]> => {
-    // poll for withdrawal tx submitted to multisig matching tx data
-    const blocksAhead = 16;
-    const blocksBehind = 8;
-    const transactions: providers.TransactionResponse[] = [];
-
+  public watchForUserWithdrawal = async (): Promise<providers.TransactionReceipt[]> => {
     const startingBlock = await this.ethProvider.getBlockNumber();
+
+    // TODO: update comment
     // If this method is called immediately after installing the withdrawal app, the monitor
     // object might not be in the store yet. We should still wait for at least 1 withdrawal
-    const withdrawalsToFind = (await this.getUserWithdrawals()).length || 1;
-
+    const withdrawalsToFind = await this.getUserWithdrawals();
     this.log.info(
-      `Watching for ${withdrawalsToFind} withdrawal${
-        withdrawalsToFind === 1 ? "s" : ""
-      } starting at block ${startingBlock}`,
+      `Watching for ${withdrawalsToFind.length} withdrawal starting at block ${startingBlock}`,
     );
-
-    const getTransactionResponse = async (
-      tx: MinimalTransaction,
-      inBlock: number,
-    ): Promise<providers.TransactionResponse | undefined> => {
-      // get the transaction hash that we should be looking for from the contract method
-      const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
-      if (txsTo === 0) {
-        return undefined;
-      }
-      const block = await this.ethProvider.getBlock(inBlock);
-      const { transactions } = block;
-      if (transactions.length === 0) {
-        return undefined;
-      }
-      for (const transactionHash of transactions) {
-        const transaction = await this.ethProvider.getTransaction(transactionHash);
-        if (
-          transaction &&
-          transaction.to === tx.to &&
-          BigNumber.from(transaction.value).eq(tx.value) &&
-          transaction.data === tx.data
-        ) {
-          return transaction;
-        }
-      }
-      return undefined;
-    };
-
-    const checkForUserWithdrawals = async (
-      inBlock: number,
-    ): Promise<[WithdrawalMonitorObject, providers.TransactionResponse][]> => {
-      const pendingTxs = await this.getUserWithdrawals();
-      this.log.info(`Checking block ${inBlock} for withdrawals`);
-      if (pendingTxs.length === 0) {
-        this.log.debug("No transaction found in store.");
-        return [];
-      }
-      const responses = [];
-      for (const val of pendingTxs) {
-        responses.push([val, await getTransactionResponse(val.tx, inBlock)]);
-      }
-      return responses;
-    };
-
-    return new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
-        // First, start listener & process the next n blocks. If no withdrawal found, reject.
-        this.ethProvider.on(
-          "block",
-          async (blockNumber: number): Promise<void> => {
-            // in the `WithdrawalController` the user does not store the
-            // commitment until `takeAction` happens, so this may be 0
-            // meaning the withdrawal has not been saved to the store yet
-            (await checkForUserWithdrawals(blockNumber)).forEach(async ([storedValue, tx]) => {
-              if (tx) {
-                // && !transactions.some(t => t.hash === tx.hash)) {
-                this.log.info(`Found new tx at block ${tx.blockNumber} for withdrawal: ${tx.hash}`);
-                transactions.push(tx);
-                await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-                  withdrawalObject: storedValue,
-                  remove: true,
-                });
-              }
-            });
-            if (blockNumber - startingBlock > blocksAhead) {
-              this.ethProvider.removeAllListeners("block");
-              return reject(`More than ${blocksAhead} have passed`);
-            }
-          },
-        );
-
-        // Second, look for withdrawals in the previous n blocks
-        for (let i = 0; i < blocksBehind; i++) {
-          // eslint-disable-next-line no-loop-func
-          (await checkForUserWithdrawals(startingBlock - i)).forEach(async ([storedValue, tx]) => {
-            if (tx) {
-              // && !transactions.some(t => t.hash === tx.hash)) {
-              this.log.info(`Found new tx at block ${tx.blockNumber} for withdrawal: ${tx.hash}`);
-              transactions.push(tx);
-              await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-                withdrawalObject: storedValue,
-                remove: true,
-              });
-            }
+    const receipts = await Promise.all(
+      withdrawalsToFind.map(async (storedValue) => {
+        let receipt = await this.ethProvider.getTransactionReceipt(storedValue.withdrawalTx);
+        if (receipt) {
+          // tx was mined
+          await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+            withdrawalObject: storedValue,
+            remove: true,
           });
+          return receipt;
         }
-
-        // Third, wait until the previous two steps have found all the withdrawals
-        while (true) {
-          const withdrawals = await this.getUserWithdrawals();
-          if (transactions.length > 0 && withdrawals.length < 1) {
-            this.log.info(
-              `Found ${transactions.length} transactions, done looking for withdrawals`,
-            );
-            this.ethProvider.removeAllListeners("block");
-            return resolve(transactions);
-          } else {
-            await delay(500);
-          }
-        }
-      },
+        const tx = await this.ethProvider.getTransaction(storedValue.withdrawalTx);
+        receipt = await tx.wait();
+        return receipt;
+      }),
     );
+    return receipts;
   };
 
   ////////////////////////////////////////

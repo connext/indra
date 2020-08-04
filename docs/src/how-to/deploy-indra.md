@@ -1,4 +1,4 @@
-# Indra Node
+# Deploy Indra Node
 
 ## Launch Indra Locally
 

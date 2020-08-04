@@ -12,7 +12,7 @@ import {
   WithdrawAppState,
   DefaultApp,
   CF_METHOD_TIMEOUT,
-  EventPayloads,
+  GenericMessage,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -46,12 +46,12 @@ export class WithdrawalController extends AbstractController {
     }
 
     const { assetId, recipient } = params;
-    let transaction: providers.TransactionResponse | undefined;
 
     this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
 
     let withdrawCommitment: WithdrawCommitment;
     let withdrawerSignatureOnWithdrawCommitment: string;
+    let transaction: providers.TransactionResponse | undefined;
     try {
       this.log.debug(`Creating withdraw commitment`);
       withdrawCommitment = await this.createWithdrawCommitment(params);
@@ -76,32 +76,52 @@ export class WithdrawalController extends AbstractController {
         withdrawerSignatureOnWithdrawCommitment,
       });
 
-      this.log.debug(`Watching chain for user withdrawal`);
-      const raceRes = (await Promise.race([
+      this.log.info(`Waiting for node to provide withdrawl tx hash`);
+      const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${withdrawAppId}.uninstall`;
+
+      const uninstallEvent: any = await Promise.race([
         this.listener.waitFor(
-          EventNames.UPDATE_STATE_FAILED_EVENT,
+          EventNames.UNINSTALL_EVENT,
           CF_METHOD_TIMEOUT * 3,
-          (msg) => msg.params.appIdentityHash === withdrawAppId,
+          (data) => data.uninstalledApp.identityHash === withdrawAppId,
         ),
-        new Promise(async (resolve, reject) => {
-          try {
-            const [tx] = await this.connext.watchForUserWithdrawal();
-            return resolve(tx);
-          } catch (e) {
-            return reject(new Error(e));
-          }
-        }),
-      ])) as EventPayloads.UpdateStateFailed | providers.TransactionResponse;
-      if ((raceRes as EventPayloads.UpdateStateFailed)?.error) {
-        throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
+        new Promise((resolve) =>
+          this.connext.node.messaging.subscribe(subject, (msg: GenericMessage) =>
+            resolve(msg.data),
+          ),
+        ),
+      ]);
+
+      // TODO: if no transaction, we should probably send it ourselves?
+      if (!uninstallEvent.protocolMeta?.withdrawTx) {
+        throw new Error(
+          `Cannot find withdrawal tx in uninstall event data: ${stringify(uninstallEvent)}`,
+        );
       }
-      transaction = raceRes as providers.TransactionResponse;
-      this.log.debug(`Transaction details: ${stringify(transaction)}`);
+      transaction = await this.connext.ethProvider.getTransaction(
+        uninstallEvent.protocolMeta?.withdrawTx,
+      );
+      if (!transaction) {
+        // wait an extra block
+        transaction = await new Promise((resolve) => {
+          this.connext.ethProvider.on("block", async () => {
+            const tx = await this.connext.ethProvider.getTransaction(
+              uninstallEvent.protocolMeta?.withdrawTx,
+            );
+            return resolve(tx);
+          });
+        });
+        if (!transaction) {
+          throw new Error(`Cannot find withdrawal tx: ${uninstallEvent.protocolMeta?.withdrawTx}`);
+        }
+      }
+      this.log.info(`Data from withdrawal app uninstall: ${stringify(uninstallEvent, true, 0)}`);
 
-      this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
-
-      this.log.debug(`Removing withdraw commitment`);
-      await this.removeWithdrawCommitmentFromStore(transaction);
+      transaction.wait().then(async (receipt) => {
+        this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction: receipt });
+        this.log.debug(`Removing withdraw commitment`);
+        await this.removeWithdrawCommitmentFromStore(transaction);
+      });
     } catch (e) {
       this.connext.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         params,
@@ -216,13 +236,14 @@ export class WithdrawalController extends AbstractController {
   public async saveWithdrawCommitmentToStore(
     params: PublicParams.Withdraw,
     signatures: string[],
+    withdrawTx: any,
   ): Promise<void> {
     // set the withdrawal tx in the store
     const commitment = await this.createWithdrawCommitment(params);
     await commitment.addSignatures(signatures[0], signatures[1]);
     const minTx: MinimalTransaction = await commitment.getSignedTransaction();
     await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-      withdrawalObject: { tx: minTx, retry: 0 },
+      withdrawalObject: { tx: minTx, retry: 0, withdrawTx },
     });
     return;
   }

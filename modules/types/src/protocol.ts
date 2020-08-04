@@ -1,5 +1,13 @@
 import { AppABIEncodings, AppInstanceJson } from "./app";
-import { Address, BigNumber, Bytes32, AssetId, PublicIdentifier, SolidityValueType } from "./basic";
+import {
+  Address,
+  BigNumber,
+  Bytes32,
+  AssetId,
+  PublicIdentifier,
+  SolidityValueType,
+  HexString,
+} from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
@@ -8,6 +16,7 @@ type InstallProtocolParams = {
   responderIdentifier: PublicIdentifier; // protocol-specific
   proposal: AppInstanceJson;
   multisigAddress: Address;
+  protocolMeta?: any;
 };
 
 type ProposeProtocolParams = {
@@ -24,7 +33,8 @@ type ProposeProtocolParams = {
   stateTimeout: BigNumber; // optional in api, but should be defined in protocol
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
-  meta?: Object;
+  meta?: any;
+  protocolMeta?: any;
 };
 
 type SetupProtocolParams = {
@@ -32,12 +42,19 @@ type SetupProtocolParams = {
   responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   chainId: number;
+  protocolMeta?: any;
 };
 
+// NOTE: should only provide the appIdentityHash if the protocol
+// also provides it in the params. These include:
+// - takeAction
+// - uninstall
 type SyncProtocolParams = {
   initiatorIdentifier: PublicIdentifier;
   responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
+  appIdentityHash: HexString | undefined;
+  protocolMeta?: any;
 };
 
 type TakeActionProtocolParams = {
@@ -47,6 +64,7 @@ type TakeActionProtocolParams = {
   appIdentityHash: Address;
   action: SolidityValueType;
   stateTimeout: BigNumber;
+  protocolMeta?: any;
 };
 
 type UninstallProtocolParams = {
@@ -57,6 +75,7 @@ type UninstallProtocolParams = {
   blockNumberToUseIfNecessary?: number;
   action?: SolidityValueType;
   stateTimeout?: BigNumber;
+  protocolMeta?: any;
 };
 
 ////////////////////////////////////////

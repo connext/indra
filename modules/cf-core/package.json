@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "7.0.0",
+  "version": "7.0.3",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -14,36 +14,36 @@
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b .",
     "build:ts": "node_modules/.bin/tsc -b .",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "exec ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts",
-    "watch": "ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts"
+    "test": "exec ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 --require src/testing/global-hooks.ts 'src/**/**/*.spec.ts'",
+    "watch": "ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 --require src/testing/global-hooks.ts 'src/**/**/*.spec.ts'"
   },
   "dependencies": {
     "@connext/contracts": "3.4.1",
     "@connext/pure-evm-wasm": "0.1.4",
-    "@connext/types": "7.0.0",
-    "@connext/utils": "7.0.0",
+    "@connext/types": "7.0.3",
+    "@connext/utils": "7.0.3",
     "@openzeppelin/contracts": "3.0.2",
     "async-mutex": "0.2.4",
-    "ethers": "5.0.5",
+    "ethers": "5.0.7",
     "eventemitter3": "4.0.4",
     "memoizee": "0.4.14",
-    "p-queue": "6.5.0",
-    "uuid": "8.2.0"
+    "p-queue": "6.6.0",
+    "uuid": "8.3.0"
   },
   "devDependencies": {
-    "@babel/core": "7.10.5",
-    "@connext/store": "7.0.0",
+    "@babel/core": "7.11.0",
+    "@connext/store": "7.0.3",
     "@ethereum-waffle/chai": "3.0.2",
-    "@types/chai": "4.2.11",
+    "@types/chai": "4.2.12",
     "@types/chai-as-promised": "7.1.3",
     "@types/chai-subset": "1.3.3",
     "@types/loglevel": "1.6.3",
-    "@types/mocha": "8.0.0",
-    "@types/node": "14.0.23",
+    "@types/mocha": "8.0.1",
+    "@types/node": "14.0.27",
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
     "chai-subset": "1.6.0",
-    "mocha": "8.0.1",
+    "mocha": "8.1.0",
     "ts-mocha": "7.0.0",
     "typescript": "3.9.7"
   }

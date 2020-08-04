@@ -7,18 +7,13 @@ on:
       - staging
 
 jobs:
-  test-cf:
+
+  test-utils:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: .npm
-          key: npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-
-      - run: make cf-core
-      - run: make test-cf
+      - run: make utils
+      - run: make test-utils
 
   test-store:
     runs-on: ubuntu-latest
@@ -27,16 +22,24 @@ jobs:
       - run: make store
       - run: make test-store
 
+  test-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make contracts
+      - run: make test-contracts
+
+  test-cf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make cf-core
+      - run: make test-cf
+
   test-watcher:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: .npm
-          key: npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-
       - run: make watcher
       - run: make test-watcher
 
@@ -44,57 +47,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: .npm
-          key: npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-
       - run: make node
       - run: make test-node
-
-  test-contracts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: .npm
-          key: npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-
-      - run: make contracts
-      - run: make test-contracts
-
-  test-utils:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: .npm
-          key: npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-
-      - run: make utils
-      - run: make test-utils
 
   test-integration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: .npm
-          key: npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-
       - run: make pull-latest
-      - run: make
-      - run: make start-headless
+      - run: make indra && make test-runner
       - run: make build-report
-      - run: sleep 15 && make dls
+      - run: make start
+      - run: make dls
       - run: make test-integration
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy

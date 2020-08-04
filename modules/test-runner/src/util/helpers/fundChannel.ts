@@ -8,7 +8,7 @@ import {
 import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
 import { BigNumber } from "ethers";
 
-import { env, expect } from "../";
+import { env, ethProvider, expect } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
@@ -27,20 +27,30 @@ export const fundChannel = async (
       log.info(`Got deposit confirmed event, helper wrapper is returning`);
       return resolve();
     });
+    let syncFailed = false;
+    client.once(EventNames.SYNC_FAILED_EVENT, (msg) => {
+      syncFailed = true;
+    });
     // register failure listeners
     client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: EventPayloads.DepositFailed) => {
       return reject(new Error(msg.error));
     });
-    client.once(
-      EventNames.PROPOSE_INSTALL_FAILED_EVENT,
-      async (msg: EventPayloads.ProposeFailed) => {
-        return reject(new Error(msg.error));
-      },
-    );
-    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+    client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg: EventPayloads.ProposeFailed) => {
+      if (!syncFailed) {
+        return;
+      }
       return reject(new Error(msg.error));
     });
-    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+    client.on(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+      if (!syncFailed) {
+        return;
+      }
+      return reject(new Error(msg.error));
+    });
+    client.on(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+      if (!syncFailed) {
+        return;
+      }
       return reject(new Error(msg.error));
     });
 
@@ -69,8 +79,12 @@ export const requestCollateral = async (
   log.debug(`client.requestCollateral() called`);
   const start = Date.now();
   if (!enforce) {
-    await client.requestCollateral(assetId);
+    // TODO: rm 'as any' once type returned by requestCollateral is fixed
+    const tx = await client.requestCollateral(assetId) as any;
     log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+    await ethProvider.waitForTransaction(tx.hash);
+    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+    log.info(`collateralization finished for real in ${Date.now() - start}`);
     return;
   }
   return new Promise(async (resolve, reject) => {
@@ -90,7 +104,10 @@ export const requestCollateral = async (
             // otherwise resolve
             return res();
           });
-          await client.requestCollateral(assetId);
+          // TODO: rm 'as any' once type returned by requestCollateral is fixed
+          const tx = await client.requestCollateral(assetId) as any;
+          await ethProvider.waitForTransaction(tx.hash);
+          await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
         }),
       ]);
       log.info(`client.requestCollateral() returned in ${Date.now() - start}`);

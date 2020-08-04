@@ -1,26 +1,55 @@
 #!/usr/bin/env bash
-set -e
 
-root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
-project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+target=$1 # one of: indra, daicard, all
+shift
 
-docker stack rm $project 2> /dev/null || true
+function stop_stack {
+  stack_name=$1
+  docker stack rm $stack_name
+  echo "Waiting for the $stack_name stack to shutdown.."
+  while [[ -n "`docker container ls -q --filter label=com.docker.stack.namespace=$stack_name`" ]]
+  do sleep 3 # wait until there are no more containers in this stack
+  done
+  while [[ -n "`docker network ls -q --filter label=com.docker.stack.namespace=$stack_name`" ]]
+  do sleep 3 # wait until the stack's network has been removed
+  done
+  echo "Goodnight $stack_name!"
+}
 
-# Only stop the core indra stack unless an arg "all" is provided in which case stop everything
-if [[ "$1" == "all" ]]
-then docker container ls -f name=${project}_* -q | xargs docker container stop 2> /dev/null || true
+stack_name="`docker stack ls --format '{{.Name}}' | grep "$target"`"
+if [[ -n "$stack_name" ]]
+then
+  stop_stack $stack_name
+  exit
 fi
 
-echo -n "Waiting for the $project stack to shutdown."
+service_id="`docker service ls --format '{{.ID}} {{.Name}}' |\
+  grep "_$target" |\
+  head -n 1 |\
+  cut -d " " -f 1
+`"
 
-# wait until there are no more containers in this stack
-while [[ -n "`docker container ls --quiet --filter label=com.docker.stack.namespace=$project`" ]]
-do echo -n '.' && sleep 3
-done
+# If a service matches, restart it instead of stopping
+if [[ -n "$service_id" ]]
+then
+  docker service scale $service_id=0
+  docker service scale $service_id=1
+  exit
+fi
 
-# wait until the stack's network has been removed
-while [[ -n "`docker network ls --quiet --filter label=com.docker.stack.namespace=$project`" ]]
-do echo -n '.' && sleep 3
-done
+container_ids="`docker container ls --filter 'status=running' --format '{{.ID}} {{.Names}}' |\
+  cut -d "." -f 1 |\
+  grep "$target" |\
+  sort |\
+  cut -d " " -f 1
+`"
 
-echo ' Goodnight!'
+if [[ -n "$container_ids" ]]
+then
+  for container_id in $container_ids
+  do
+    echo "Stopping container $container_id"
+    docker container stop $container_id > /dev/null
+  done
+else echo "No stack, service or running container names match: $target"
+fi

@@ -1,7 +1,12 @@
 import { EntityRepository, Repository } from "typeorm";
 
 import { Withdraw } from "./withdraw.entity";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import {
+  OnchainTransaction,
+  TransactionReason,
+  TransactionStatus,
+} from "../onchainTransactions/onchainTransaction.entity";
+import { providers } from "ethers";
 
 @EntityRepository(Withdraw)
 export class WithdrawRepository extends Repository<Withdraw> {
@@ -22,10 +27,13 @@ export class WithdrawRepository extends Repository<Withdraw> {
     return this.save(withdraw);
   }
 
-  async addOnchainTransaction(
+  async addUserOnchainTransaction(
     withdraw: Withdraw,
     onchainTransaction: OnchainTransaction,
   ): Promise<Withdraw> {
+    if (withdraw.onchainTransaction?.hash === onchainTransaction.hash) {
+      return withdraw;
+    }
     withdraw.onchainTransaction = onchainTransaction;
     return this.save(withdraw);
   }

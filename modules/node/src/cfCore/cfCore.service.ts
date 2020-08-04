@@ -358,11 +358,13 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
     action?: AppAction,
+    protocolMeta?: any,
   ): Promise<MethodResults.Uninstall> {
     const parameters = {
       appIdentityHash,
       multisigAddress,
       action,
+      protocolMeta,
     } as MethodParams.Uninstall;
     this.logCfCoreMethodStart(MethodNames.chan_uninstall, parameters);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
@@ -372,6 +374,12 @@ export class CFCoreService {
     });
 
     this.logCfCoreMethodResult(MethodNames.chan_uninstall, uninstallResponse.result.result);
+    // TODO: this is only here for channelProvider, fix this eventually
+    const uninstallSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.uninstall`;
+    await this.messagingService.publish(uninstallSubject, {
+      ...uninstallResponse.result.result,
+      protocolMeta,
+    });
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
 

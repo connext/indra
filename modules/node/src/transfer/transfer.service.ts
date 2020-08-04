@@ -41,6 +41,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 
 import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
+import { CFCoreStore } from "../cfCore/cfCore.store";
 
 const { Zero, HashZero } = constants;
 
@@ -83,6 +84,7 @@ export class TransferService {
   constructor(
     private readonly log: LoggerService,
     private readonly cfCoreService: CFCoreService,
+    private readonly cfCoreStore: CFCoreStore,
     private readonly channelService: ChannelService,
     private readonly depositService: DepositService,
     private readonly swapRateService: SwapRateService,
@@ -102,30 +104,27 @@ export class TransferService {
     }
   }
 
-  async pruneExpiredApps(channel: Channel): Promise<void> {
-    for (const chainId of this.configService.getSupportedChains()) {
-      this.log.info(
-        `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
-      );
-      const current = await this.configService.getEthProvider(chainId).getBlockNumber();
-      const expiredApps = channel.appInstances.filter((app) => {
-        return (
-          app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current)
-        );
-      });
-      this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${chainId}`);
-      for (const app of expiredApps) {
-        try {
-          // Uninstall all expired apps without taking action
-          await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
-        } catch (e) {
-          this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
-        }
+  async pruneExpiredApps(_channel: Channel): Promise<void> {
+    const channel = await this.cfCoreStore.getStateChannel(_channel.multisigAddress);
+    this.log.info(
+      `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
+    );
+    const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
+    const expiredApps = channel.appInstances.filter(([, app]) => {
+      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
+    });
+    this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
+    for (const [, app] of expiredApps) {
+      try {
+        // Uninstall all expired apps without taking action
+        await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+      } catch (e) {
+        this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
       }
-      this.log.info(
-        `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
-      );
     }
+    this.log.info(
+      `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
+    );
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
@@ -340,15 +339,19 @@ export class TransferService {
         freeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
+      const depositResponse = await this.depositService.deposit(
         receiverChannel,
         deposit,
         receiverAssetId,
       );
-      if (!depositReceipt) {
-        throw new Error(
-          `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}`,
-        );
+      if (depositResponse) {
+        try {
+          await depositResponse.wait();
+        } catch (e) {
+          throw new Error(
+            `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${e.message}`,
+          );
+        }
       }
     }
 

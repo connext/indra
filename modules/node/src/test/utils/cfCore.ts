@@ -12,6 +12,7 @@ import {
   StoredAppChallenge,
   StoredAppChallengeStatus,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+  StateSchemaVersion,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -76,7 +77,7 @@ export const createStateChannelJSON = (
     monotonicNumProposedApps: 0,
     multisigAddress: getRandomAddress(),
     proposedAppInstances: [],
-    schemaVersion: 1,
+    schemaVersion: StateSchemaVersion,
     userIdentifiers,
     ...overrides,
   };

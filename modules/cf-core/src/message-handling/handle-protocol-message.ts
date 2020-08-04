@@ -42,15 +42,21 @@ export async function handleReceivedProtocolMessage(
 
   let postProtocolStateChannel: StateChannel;
   let appInstance: AppInstance | undefined;
+  let protocolMeta: any;
   const json = await store.getStateChannel(params!.multisigAddress);
   try {
-    const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
+    const {
+      channel,
+      appContext,
+      protocolMeta: _protocolMeta,
+    } = await protocolRunner.runProtocolWithMessage(
       router,
       msgBn,
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
+    protocolMeta = _protocolMeta;
   } catch (e) {
     log.warn(
       `Caught error running ${protocol} protocol, aborting. Will be retried after syncing. ${
@@ -74,6 +80,7 @@ export async function handleReceivedProtocolMessage(
     params,
     postProtocolStateChannel,
     appInstance,
+    protocolMeta,
   );
 
   if (!outgoingEventData) {
@@ -91,6 +98,7 @@ function getOutgoingEventDataFromProtocol(
   params: ProtocolParam,
   postProtocolStateChannel: StateChannel,
   appContext?: AppInstance,
+  protocolMeta?: any,
 ): ProtocolEventMessage<any> | undefined {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorIdentifier };
@@ -104,6 +112,7 @@ function getOutgoingEventDataFromProtocol(
         data: {
           params,
           appInstanceId: app.identityHash,
+          protocolMeta,
         },
       } as ProtocolEventMessage<typeof EventNames.PROPOSE_INSTALL_EVENT>;
     }
@@ -114,6 +123,7 @@ function getOutgoingEventDataFromProtocol(
         data: {
           appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
           appInstance: appContext?.toJson(),
+          protocolMeta,
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
@@ -124,7 +134,10 @@ function getOutgoingEventDataFromProtocol(
       return {
         ...baseEvent,
         type: EventNames.UNINSTALL_EVENT,
-        data: getUninstallEventData(params as ProtocolParams.Uninstall, appContext),
+        data: {
+          ...getUninstallEventData(params as ProtocolParams.Uninstall, appContext),
+          protocolMeta,
+        },
       } as ProtocolEventMessage<typeof EventNames.UNINSTALL_EVENT>;
     }
     case ProtocolNames.setup: {
@@ -136,6 +149,7 @@ function getOutgoingEventDataFromProtocol(
             params as ProtocolParams.Setup,
             postProtocolStateChannel.multisigOwners,
           ),
+          protocolMeta,
         },
       } as ProtocolEventMessage<typeof EventNames.CREATE_CHANNEL_EVENT>;
     }
@@ -143,19 +157,22 @@ function getOutgoingEventDataFromProtocol(
       return {
         ...baseEvent,
         type: EventNames.SYNC,
-        data: { syncedChannel: postProtocolStateChannel.toJson() },
+        data: { syncedChannel: postProtocolStateChannel.toJson(), protocolMeta },
       } as ProtocolEventMessage<typeof EventNames.SYNC>;
     }
     case ProtocolNames.takeAction: {
       return {
         ...baseEvent,
         type: EventNames.UPDATE_STATE_EVENT,
-        data: getStateUpdateEventData(
-          params as ProtocolParams.TakeAction,
-          postProtocolStateChannel.getAppInstance(
-            (params as ProtocolParams.TakeAction).appIdentityHash,
-          ).state,
-        ),
+        data: {
+          ...getStateUpdateEventData(
+            params as ProtocolParams.TakeAction,
+            postProtocolStateChannel.getAppInstance(
+              (params as ProtocolParams.TakeAction).appIdentityHash,
+            ).state,
+          ),
+          protocolMeta,
+        },
       } as ProtocolEventMessage<typeof EventNames.UPDATE_STATE_EVENT>;
     }
     default:

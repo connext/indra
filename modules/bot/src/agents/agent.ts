@@ -46,7 +46,10 @@ export class Agent {
     this.client.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (eData) => {
       const eventData = eData as EventPayloads.GraphTransferCreated;
       // ignore transfers from self
-      if (eventData.sender === this.client.publicIdentifier) {
+      if (
+        eventData.sender === this.client.publicIdentifier ||
+        eData.type !== ConditionalTransferTypes.GraphTransfer
+      ) {
         return;
       }
 
@@ -162,6 +165,11 @@ export class Agent {
     });
   }
 
+  async requestCollateral(assetId: string = AddressZero) {
+    // Perform deposit
+    await this.client.requestCollateral(assetId);
+  }
+
   async depositIfNeeded(
     minimumBalance: BigNumber,
     depositAmount: BigNumber,
@@ -178,7 +186,7 @@ export class Agent {
         this.client.signerAddress
       ].toString()} < ${minimumBalance.toString()}, depositing...`,
     );
-    await this.deposit(depositAmount);
+    await this.deposit(depositAmount, assetId);
     const balanceAfterDeposit = await this.client.getFreeBalance(assetId);
     this.log.info(
       `Finished depositing. Agent balance: ${balanceAfterDeposit[this.client.signerAddress]}`,
@@ -192,6 +200,7 @@ export class Agent {
     assetId: Address = AddressZero,
     id: string = getRandomBytes32(),
     type: ConditionalTransferTypes = ConditionalTransferTypes.GraphTransfer,
+    timeout: number = 10_000,
   ) {
     const params = await this.getTransferParameters(
       receiverIdentifier,
@@ -219,7 +228,6 @@ export class Agent {
         reject,
       };
 
-      const timeout = 10_000;
       delay(timeout).then(() => {
         if (this.payments[id]) {
           delete this.payments[id];
@@ -256,6 +264,7 @@ export class Agent {
       amount,
       assetId,
       recipient: receiverIdentifier,
+      paymentId: id,
     };
     switch (type) {
       case ConditionalTransferTypes.GraphTransfer: {
@@ -264,13 +273,18 @@ export class Agent {
         const verifyingContract = getTestVerifyingContract();
         return {
           ...baseParams,
-          paymentId: id,
           signerAddress,
           chainId,
           verifyingContract,
           requestCID: receipt.requestCID,
           subgraphDeploymentID: receipt.subgraphDeploymentID,
         };
+      }
+      case ConditionalTransferTypes.LinkedTransfer: {
+        return {
+          ...baseParams,
+          preImage: getRandomBytes32(),
+        } as PublicParams.LinkedTransfer;
       }
       default: {
         throw new Error("Unrecognized payment type");
