@@ -14,6 +14,7 @@ import * as DolphinCoin from "../artifacts/DolphinCoin.json";
 import * as Echo from "../artifacts/Echo.json";
 import * as ERC20 from "../artifacts/ERC20.json";
 import * as GraphSignedTransferApp from "../artifacts/GraphSignedTransferApp.json";
+import * as GraphBatchedTransferApp from "../artifacts/GraphBatchedTransferApp.json";
 import * as HashLockTransferApp from "../artifacts/HashLockTransferApp.json";
 import * as HighRollerApp from "../artifacts/HighRollerApp.json";
 import * as IdentityApp from "../artifacts/IdentityApp.json";
@@ -60,6 +61,7 @@ export const artifacts: Artifacts = {
   Echo,
   ERC20,
   GraphSignedTransferApp,
+  GraphBatchedTransferApp,
   HashLockTransferApp,
   HighRollerApp,
   IdentityApp,
@@ -94,6 +96,7 @@ export {
   Echo,
   ERC20,
   GraphSignedTransferApp,
+  GraphBatchedTransferApp,
   HashLockTransferApp,
   HighRollerApp,
   IdentityApp,

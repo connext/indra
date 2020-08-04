@@ -19,14 +19,10 @@ import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
 import { GraphSignedTransferApp } from "../../artifacts";
 
-import { expect, provider } from "../utils";
+import { expect, provider, mkAddress } from "../utils";
 
 const { HashZero, Zero } = constants;
 const { defaultAbiCoder } = utils;
-
-function mkAddress(prefix: string = "0xa"): string {
-  return prefix.padEnd(42, "0");
-}
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];

@@ -24,6 +24,7 @@ import {
   isBN,
   stringify,
   toBN,
+  keyify
 } from "@connext/utils";
 import { BigNumber, Contract, constants, utils, providers } from "ethers";
 
@@ -366,30 +367,6 @@ export class AppInstance {
       );
       computedNextState = this.decodeAppState(encoded);
     }
-
-    // ethers returns an array of [ <each value by index>, <each value by key> ]
-    // so we need to recursively clean this response before returning
-    const keyify = (templateObj: any, dataObj: any, key?: string): Promise<any> => {
-      const template = key ? templateObj[key] : templateObj;
-      const data = key ? dataObj[key] : dataObj;
-      let output;
-      if (isBN(template) || typeof template !== "object") {
-        output = data;
-      } else if (typeof template === "object" && typeof template.length === "number") {
-        output = [];
-        for (const index in template) {
-          output.push(keyify(template, data, index));
-        }
-      } else if (typeof template === "object" && typeof template.length !== "number") {
-        output = {};
-        for (const subkey in template) {
-          output[subkey] = keyify(template, data, subkey);
-        }
-      } else {
-        throw new Error(`Couldn't keyify, unrecogized key/value: ${key}/${data}`);
-      }
-      return output;
-    };
 
     const keyified = keyify(this.state, computedNextState);
     return bigNumberifyJson(keyified);

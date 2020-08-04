@@ -11,6 +11,8 @@ import * as DepositApp from "./build/DepositApp.json";
 import * as DolphinCoin from "./build/DolphinCoin.json";
 import * as ERC20 from "./build/ERC20.json";
 import * as HashLockTransferApp from "./build/HashLockTransferApp.json";
+import * as GraphSignedTransferApp from "./build/GraphSignedTransferApp.json";
+import * as GraphBatchedTransferApp from "./build/GraphBatchedTransferApp.json";
 import * as IdentityApp from "./build/IdentityApp.json";
 import * as MinimumViableMultisig from "./build/MinimumViableMultisig.json";
 import * as MultiAssetMultiPartyCoinTransferInterpreter from "./build/MultiAssetMultiPartyCoinTransferInterpreter.json";
@@ -35,6 +37,8 @@ export {
   DepositApp,
   DolphinCoin,
   ERC20,
+  GraphSignedTransferApp,
+  GraphBatchedTransferApp,
   HashLockTransferApp,
   IdentityApp,
   MinimumViableMultisig,
