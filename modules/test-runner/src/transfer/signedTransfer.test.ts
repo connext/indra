@@ -139,7 +139,7 @@ describe("Signed Transfers", () => {
         recipient: receiver.publicIdentifier,
         sender: sender.publicIdentifier,
         paymentId: receipt.paymentId,
-        senderAssetId: transfer.assetId,
+        senderAssetId: transfer.assetId || AddressZero,
       },
     } as EventPayloads.SignedTransferUnlocked);
   };
