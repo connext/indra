@@ -13,7 +13,7 @@ export const GRAPH_RECEIPT_TYPE_HASH = hashString(
 );
 
 export const GRAPH_CONSUMER_TYPE_HASH = hashString(
-  "Consumer(bytes32 paymentId,bytes32 requestCID,uint256 totalPaid)",
+  "ConsumerBatchPayment(bytes32 paymentId,bytes32 requestCID,uint256 totalPaid)",
 );
 
 const DOMAIN_NAME = "Graph Protocol";

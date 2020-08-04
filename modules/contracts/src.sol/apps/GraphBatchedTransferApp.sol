@@ -45,7 +45,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
         "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)"
     );
     bytes32 private constant CONSUMER_TYPE_HASH = keccak256(
-        "Consumer(bytes32 paymentId,bytes32 requestCID,uint256 totalPaid)"
+        "ConsumerBatchPayment(bytes32 paymentId,bytes32 requestCID,uint256 totalPaid)"
     );
 
     uint256 constant SWAP_CONVERSION = 10**18;
@@ -70,12 +70,12 @@ contract GraphBatchedTransferApp is CounterfactualApp {
         // Handle payment
         require(
             state.attestationSigner == recoverAttestationSigner(action, state),
-            "Incorrect signer recovered from signature"
+            "Incorrect signer recovered from attestation signature"
         );
 
         require(
             state.consumerSigner == recoverConsumerSigner(action, state),
-            "Incorrect signer recovered from signature"
+            "Incorrect signer recovered from consumer signature"
         );
 
         // to return a clean error
