@@ -31,7 +31,7 @@ fi
 INDRA_LOG_LEVEL="${LOG_LEVEL:-$INDRA_LOG_LEVEL}";
 
 ########################################
-## Docker registry & version config
+## Docker registry & image version config
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
 if [[ "$INDRA_ENV" == "prod" ]]

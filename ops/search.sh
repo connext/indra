@@ -7,7 +7,7 @@ if [[ -z "$target" ]]
 then echo "One arg required: bash ops/search.sh <target>" && exit 1
 fi
 
-grep "$@" --exclude=*.swp --exclude=*.pdf --exclude-dir=snapshots --color=auto -r "$target" \
+grep "$@" --exclude=*.swp --exclude=*.pdf --color=auto -r "$target" \
   Makefile \
   .github/workflows/* \
   ops \
