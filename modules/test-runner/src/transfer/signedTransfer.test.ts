@@ -46,10 +46,7 @@ describe("Signed Transfers", () => {
   let provider: providers.JsonRpcProvider;
 
   before(async () => {
-    provider = new providers.JsonRpcProvider(
-      ethProviderUrl,
-      await getChainId(ethProviderUrl),
-    );
+    provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block
@@ -101,6 +98,7 @@ describe("Signed Transfers", () => {
         recipient: receiver.publicIdentifier,
         sender: sender.publicIdentifier,
         paymentId: receipt.paymentId,
+        senderAssetId: transfer.assetId,
       },
     } as EventPayloads.SignedTransferCreated);
     return [transferRes.appIdentityHash, (installed as any).appIdentityHash];
@@ -141,6 +139,7 @@ describe("Signed Transfers", () => {
         recipient: receiver.publicIdentifier,
         sender: sender.publicIdentifier,
         paymentId: receipt.paymentId,
+        senderAssetId: transfer.assetId,
       },
     } as EventPayloads.SignedTransferUnlocked);
   };
@@ -241,7 +240,12 @@ describe("Signed Transfers", () => {
       paymentId: receipt.paymentId,
       senderIdentifier: clientA.publicIdentifier,
       status: SignedTransferStatus.PENDING,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId: receipt.paymentId },
+      meta: {
+        foo: "bar",
+        sender: clientA.publicIdentifier,
+        paymentId: receipt.paymentId,
+        senderAssetId: transfer.assetId,
+      },
     } as NodeResponses.GetSignedTransfer);
   });
 
@@ -291,7 +295,12 @@ describe("Signed Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId: receipt.paymentId },
+      meta: {
+        foo: "bar",
+        sender: clientA.publicIdentifier,
+        paymentId: receipt.paymentId,
+        senderAssetId: transfer.assetId,
+      },
     } as NodeResponses.GetSignedTransfer);
   });
 
