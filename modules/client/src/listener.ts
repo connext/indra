@@ -31,11 +31,16 @@ import {
   ProtocolParams,
   AppInstanceJson,
   GraphSignedTransferAppName,
-  CreatedGraphSignedTransferMeta,
+  CreatedGraphBatchedTransferMeta,
   GraphSignedTransferAppState,
   GraphSignedTransferAppAction,
-  UnlockedGraphSignedTransferMeta,
+  UnlockedGraphBatchedTransferMeta,
   ConditionalTransferAppNames,
+  GraphBatchedTransferAppName,
+  CreatedGraphSignedTransferMeta,
+  UnlockedGraphSignedTransferMeta,
+  GraphBatchedTransferAppState,
+  GraphBatchedTransferAppAction,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -383,6 +388,32 @@ export class ConnextListener {
         } as EventPayloads.GraphTransferCreated);
         break;
       }
+      case GraphBatchedTransferAppName: {
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as GraphSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta?.sender,
+          transferMeta: {
+            consumerSigner: initialState?.consumerSigner,
+            attestationSigner: initialState?.attestationSigner,
+            swapRate: initialState?.swapRate,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
+            requestCID: initialState?.requestCID,
+            subgraphDeploymentID: initialState?.subgraphDeploymentID,
+          } as CreatedGraphBatchedTransferMeta,
+          type: ConditionalTransferTypes.GraphBatchedTransfer,
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
+        } as EventPayloads.GraphBatchedTransferCreated);
+        break;
+      }
       case SimpleSignedTransferAppName: {
         const initialState =
           appInstance && bigNumberifyJson(appInstance.latestState as SimpleSignedTransferAppState);
@@ -533,6 +564,32 @@ export class ConnextListener {
             lockHash: transferState.lockHash,
           } as UnlockedHashLockTransferMeta,
         } as EventPayloads.HashLockTransferUnlocked);
+        break;
+      }
+      case GraphBatchedTransferAppName: {
+        const transferState = state as GraphBatchedTransferAppState;
+        const transferAction = action as GraphBatchedTransferAppAction;
+
+        // use total amount for transfer amount
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).add(
+          toBN(transferState.coinTransfers[1].amount),
+        );
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+          type: ConditionalTransferTypes.GraphBatchedTransfer,
+          amount: transferAmount,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
+          paymentId: transferState.paymentId,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
+          meta: appInstance.meta,
+          transferMeta: {
+            consumerSignature: transferAction?.consumerSignature,
+            attestationSignature: transferAction?.attestationSignature,
+            responseCID: transferAction?.responseCID,
+            requestCID: transferAction?.requestCID,
+            totalPaid: transferAction?.totalPaid,
+          } as UnlockedGraphBatchedTransferMeta,
+        } as EventPayloads.GraphBatchedTransferUnlocked);
         break;
       }
       case GraphSignedTransferAppName: {

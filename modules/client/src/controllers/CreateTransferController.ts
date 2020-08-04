@@ -12,15 +12,23 @@ import {
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppState,
   HashLockTransferAppState,
-  GraphSignedTransferAppState,
-  CreatedGraphSignedTransferMeta,
+  GraphBatchedTransferAppState,
+  CreatedGraphBatchedTransferMeta,
   EIP712Domain,
   DOMAIN_NAME,
   DOMAIN_VERSION,
   DOMAIN_SALT,
+  GRAPH_BATCHED_SWAP_CONVERSION,
+  GraphSignedTransferAppState,
+  CreatedGraphSignedTransferMeta,
 } from "@connext/types";
-import { toBN, stringify, hashDomainSeparator } from "@connext/utils";
-import { constants, utils } from "ethers";
+import {
+  toBN,
+  stringify,
+  hashDomainSeparator,
+  getSignerAddressFromPublicIdentifier,
+} from "@connext/utils";
+import { constants, utils, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -39,6 +47,7 @@ export class CreateTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) };
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
+    submittedMeta.senderAssetId = assetId;
 
     const baseInitialState: GenericConditionalTransferAppState = {
       coinTransfers: [
@@ -60,6 +69,7 @@ export class CreateTransferController extends AbstractController {
       | SimpleLinkedTransferAppState
       | HashLockTransferAppState
       | SimpleSignedTransferAppState
+      | GraphBatchedTransferAppState
       | GraphSignedTransferAppState;
 
     switch (conditionType) {
@@ -90,7 +100,9 @@ export class CreateTransferController extends AbstractController {
         // convert to block height
         const currentBlock = await this.connext.ethProvider.getBlockNumber();
         const expiry = toBN(timelock).add(currentBlock);
-        this.log.info(`HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`);
+        this.log.info(
+          `HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`,
+        );
         initialState = {
           ...baseInitialState,
           lockHash,
@@ -112,22 +124,22 @@ export class CreateTransferController extends AbstractController {
       }
       case ConditionalTransferTypes.GraphTransfer: {
         const {
-          signerAddress,
           chainId,
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
+          signerAddress,
           paymentId,
         } = params as PublicParams.GraphTransfer;
 
         initialState = {
           ...baseInitialState,
-          signerAddress,
           chainId,
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
           paymentId,
+          signerAddress,
         } as GraphSignedTransferAppState;
 
         transferMeta = {
@@ -137,6 +149,43 @@ export class CreateTransferController extends AbstractController {
           requestCID,
           subgraphDeploymentID,
         } as CreatedGraphSignedTransferMeta;
+
+        submittedMeta.paymentId = paymentId;
+
+        break;
+      }
+      case ConditionalTransferTypes.GraphBatchedTransfer: {
+        const {
+          consumerSigner,
+          chainId,
+          verifyingContract,
+          subgraphDeploymentID,
+          paymentId,
+        } = params as PublicParams.GraphBatchedTransfer;
+
+        // indexer
+        const attestationSigner = getSignerAddressFromPublicIdentifier(recipient);
+        const swapRate = BigNumber.from(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
+
+        initialState = {
+          ...baseInitialState,
+          chainId,
+          verifyingContract,
+          subgraphDeploymentID,
+          paymentId,
+          attestationSigner, // indexer
+          consumerSigner,
+          swapRate,
+        } as GraphBatchedTransferAppState;
+
+        transferMeta = {
+          attestationSigner,
+          consumerSigner,
+          chainId,
+          verifyingContract,
+          subgraphDeploymentID,
+          swapRate,
+        } as CreatedGraphBatchedTransferMeta;
 
         submittedMeta.paymentId = paymentId;
 

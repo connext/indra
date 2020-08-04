@@ -42,6 +42,7 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   IdentityApp: Address;
   MultiAssetMultiPartyCoinTransferInterpreter: Address;
   GraphSignedTransferApp?: Address;
+  GraphBatchedTransferApp?: Address;
   SimpleLinkedTransferApp?: Address;
   SimpleSignedTransferApp?: Address;
   SimpleTwoPartySwapApp?: Address;
