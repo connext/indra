@@ -62,13 +62,15 @@ describe("Deposits", () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it.only("happy case: client should deposit ETH", async () => {
     const expected = {
       node: Zero.toString(),
       client: ONE,
       assetId: AddressZero,
     };
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    expect(response.depositTx).to.be.ok;
+    await response.depositConfirmation();
     await assertOnchainBalance(client, expected);
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);

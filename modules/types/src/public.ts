@@ -12,10 +12,15 @@ type DepositParameters = {
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
 };
 
-type DepositResponse = {
+type FreeBalanceResponse = {
   freeBalance: {
     [s: string]: BigNumber;
   };
+};
+
+type DepositResponse = {
+  depositTx: string;
+  depositConfirmation: () => Promise<FreeBalanceResponse>;
 };
 
 type CheckDepositRightsParameters = {

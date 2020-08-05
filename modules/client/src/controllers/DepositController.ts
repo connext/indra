@@ -85,7 +85,7 @@ export class DepositController extends AbstractController {
     );
     return {
       depositTx,
-      depositConfirmation,
+      depositConfirmation: () => depositConfirmation,
     };
   };
 
