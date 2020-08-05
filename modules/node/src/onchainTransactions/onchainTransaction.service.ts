@@ -1,7 +1,7 @@
 import { MinimalTransaction } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { providers } from "ethers";
+import { providers, BigNumber } from "ethers";
 import PriorityQueue from "p-queue";
 
 import { Channel } from "../channel/channel.entity";
@@ -11,6 +11,7 @@ import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 
+const MIN_GAS_LIMIT = BigNumber.from(500_000);
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
@@ -96,17 +97,25 @@ export class OnchainTransactionService implements OnModuleInit {
         const chainNonce = await wallet.getTransactionCount();
         const memoryNonce = await this.nonces.get(channel.chainId);
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
-        const req = await wallet.populateTransaction({ ...transaction, nonce });
-        tx = await wallet.sendTransaction(req);
+        const populatedTx = await wallet.populateTransaction({ ...transaction, nonce });
+        tx = await wallet.sendTransaction({
+          ...populatedTx,
+          gasLimit: BigNumber.from(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
+            ? MIN_GAS_LIMIT
+            : populatedTx.gasLimit,
+        });
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
         // add fields from tx response
         await this.onchainTransactionRepository.addResponse(tx, reason, channel);
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
+        const start = Date.now();
         tx.wait().then(async (receipt) => {
           this.log.info(
-            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${channel.chainId}: ${receipt.transactionHash}`,
+            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${
+              channel.chainId
+            }: ${receipt.transactionHash} in ${Date.now() - start}ms`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
         });
