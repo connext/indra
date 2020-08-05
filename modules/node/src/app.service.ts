@@ -18,18 +18,32 @@ export class AppService {
     private readonly log: LoggerService,
     @Inject(MessagingProviderId) private readonly messaging: MessagingService,
   ) {
-    this.log.setContext("SwapRateService");
-    collectDefaultMetrics();
+    this.log.setContext("AppService");
+    try {
+      collectDefaultMetrics();
+    } catch (e) {
+      this.log.warn(e.message);
+    }
+
     const chainProviders = this.configService.getIndraChainProviders();
-    Object.keys(chainProviders).forEach((chainId) =>
-      this.chainGauges.set(
-        parseInt(chainId),
-        new Gauge({
-          name: `chain_balance_${chainId}`,
-          help: `chain_balance_${chainId}`,
-        }),
-      ),
-    );
+    Object.keys(chainProviders).forEach((chainId) => {
+      try {
+        this.chainGauges.set(
+          parseInt(chainId, 10),
+          new Gauge({
+            name: `chain_balance_${chainId}`,
+            help: `chain_balance_${chainId}`,
+          }),
+        );
+      } catch (e) {
+        if (e.message.includes(`${chainId} has already been registered`)) {
+          this.log.warn(e.message);
+        } else {
+          throw e;
+        }
+      }
+
+    });
   }
 
   @Interval(30_000)
