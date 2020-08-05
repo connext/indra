@@ -13,10 +13,11 @@ import { OnchainTransaction, TransactionReason } from "./onchainTransaction.enti
 import { ChannelRepository } from "../channel/channel.repository";
 
 const BAD_NONCE = "the tx doesn't have the correct nonce";
+const INVALID_NONCE = "Invalid nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
 export const MAX_RETRIES = 5;
-export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT];
+export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT, INVALID_NONCE];
 
 @Injectable()
 export class OnchainTransactionService implements OnModuleInit {
