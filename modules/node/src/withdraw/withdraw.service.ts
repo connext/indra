@@ -9,7 +9,7 @@ import {
   WithdrawAppState,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify, appIdentityToHash } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, utils, providers } from "ethers";
 
@@ -109,6 +109,9 @@ export class WithdrawService {
       appInstance.identityHash,
     );
 
+    if (!txRes) {
+      throw new Error(`Unable to submit withdraw transaction to chain.`);
+    }
     await this.cfCoreService.uninstallApp(
       appInstance.identityHash,
       appInstance.multisigAddress,
