@@ -195,7 +195,9 @@ export class SwapRateService implements OnModuleInit {
     const oldRateBn = parseEther(oldRate || "0");
     const newRateBn = parseEther(newRate);
     if (!oldRateBn.eq(newRateBn)) {
-      this.log.info(`Got swap rate at block ${blockNumber}: ${newRate}`);
+      this.log.info(
+        `Got swap rate at block ${blockNumber} for ${from} to ${to} on chain ${chainId}: ${newRate}`,
+      );
       this.broadcastRate(from, to, chainId); // Only broadcast the rate if it's changed
     }
     return newRate;
@@ -228,7 +230,7 @@ export class SwapRateService implements OnModuleInit {
         if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
           setInterval(async () => {
             const blockNumber = await provider.getBlockNumber();
-            this.log.info(
+            this.log.debug(
               `Querying chain listener for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
             );
             this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, chainId, blockNumber);

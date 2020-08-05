@@ -144,13 +144,11 @@ database_image="${project}_database:$version";
 pull_if_unavailable "$database_image"
 
 snapshots_dir="$root/.db-snapshots"
-
 mkdir -p $snapshots_dir
-
-db_volume="database_${INDRA_ENV}"
 
 if [[ "$INDRA_ENV" == "prod" ]]
 then
+  db_volume="database"
   db_secret="${project}_database"
   new_secret $db_secret
 else
@@ -373,6 +371,7 @@ services:
       AWS_ACCESS_KEY_ID: '$INDRA_AWS_ACCESS_KEY_ID'
       AWS_SECRET_ACCESS_KEY: '$INDRA_AWS_SECRET_ACCESS_KEY'
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
+      INDRA_ENV: '$INDRA_ENV'
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
