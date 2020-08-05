@@ -1,5 +1,5 @@
 import { MinimalTransaction } from "@connext/types";
-import { stringify } from "@connext/utils";
+import { getGasPrice, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers, BigNumber } from "ethers";
 import PriorityQueue from "p-queue";
@@ -103,6 +103,7 @@ export class OnchainTransactionService implements OnModuleInit {
           gasLimit: BigNumber.from(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
             ? MIN_GAS_LIMIT
             : populatedTx.gasLimit,
+          gasPrice: getGasPrice(wallet.provider, channel.chainId),
         });
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);

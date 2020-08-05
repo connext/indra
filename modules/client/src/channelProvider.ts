@@ -30,6 +30,7 @@ import {
 import {
   deBigNumberifyJson,
   getPublicKeyFromPublicIdentifier,
+  getGasPrice,
   stringify,
   toBN,
 } from "@connext/utils";
@@ -244,16 +245,18 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       throw new Error(`Cannot make deposit without channel created - missing multisigAddress`);
     }
     let hash;
+    const gasPrice = getGasPrice(this.signer.provider);
     if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({
         to: recipient,
         value: toBN(params.amount),
+        gasPrice,
       });
       hash = tx.hash;
       await tx.wait();
     } else {
       const erc20 = new Contract(params.assetId, ERC20.abi, this.signer);
-      const tx = await erc20.transfer(recipient, toBN(params.amount));
+      const tx = await erc20.transfer(recipient, toBN(params.amount), { gasPrice });
       hash = tx.hash;
       await tx.wait();
     }

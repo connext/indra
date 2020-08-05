@@ -1,5 +1,5 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { delay, getGasPrice, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Contract, Signer, utils, constants, providers } from "ethers";
 
 import {
@@ -137,7 +137,7 @@ export class DeployStateDepositController extends MethodController {
             solidityKeccak256(["uint256", "uint256"], [preProtocolStateChannel.chainId, 0]),
             {
               gasLimit: CREATE_PROXY_AND_SETUP_GAS,
-              gasPrice: provider.getGasPrice(),
+              gasPrice: getGasPrice(provider),
               nonce,
             },
           );
