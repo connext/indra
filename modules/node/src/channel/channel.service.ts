@@ -4,6 +4,8 @@ import {
   NodeResponses,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
+  DepositAppName,
+  DepositAppState,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
@@ -68,7 +70,6 @@ export class ChannelService {
       ? undefined
       : {
           available: channel.available,
-          activeCollateralizations: channel.activeCollateralizations,
           multisigAddress: channel.multisigAddress,
           nodeIdentifier: channel.nodeIdentifier,
           userIdentifier: channel.userIdentifier,
@@ -111,12 +112,21 @@ export class ChannelService {
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
     );
     const normalizedAssetId = getAddress(assetId);
-    if (
-      channel.activeCollateralizations[assetId] &&
-      rebalanceType === RebalanceType.COLLATERALIZE
-    ) {
+    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
+      multisigAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+        .appDefinitionAddress,
+    );
+    const signerAddr = await this.configService.getSignerAddress();
+    const ours = depositApps.find((app) => {
+      const latestState = app.latestState as DepositAppState;
+      return (
+        latestState.assetId === normalizedAssetId && latestState.transfers[0].to === signerAddr
+      );
+    });
+    if (ours && rebalanceType === RebalanceType.COLLATERALIZE) {
       this.log.warn(
-        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId} on chain ${channel.chainId}, doing nothing`,
+        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId} on chain ${channel.chainId}, doing nothing. App: ${ours.identityHash}`,
       );
       return undefined;
     }
@@ -152,7 +162,8 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        response = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        const depositRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        response = (depositRes || {}).tx;
       } else {
         this.log.debug(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,

@@ -40,7 +40,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
-    log.info(`[${loggerId}] Initiation started: ${stringify(params, true, 0)}`);
+    log.info(`[${loggerId}] Initiation started: ${stringify(params, false, 0)}`);
 
     const {
       multisigAddress,
@@ -79,7 +79,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${loggerId}] Received responder's m2: ${stringify((m2 as any).data.customData, true, 0)}`,
+      `[${loggerId}] Received responder's m2: ${stringify((m2 as any).data.customData, false, 0)}`,
     );
     substart = Date.now();
 
@@ -110,7 +110,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error(
         `Need to sync from counterparty with ${
           syncType.type
-        }, but did not receive any commitments in m2: ${stringify(m2, true, 0)}`,
+        }, but did not receive any commitments in m2: ${stringify(m2, false, 0)}`,
       );
     }
 
@@ -239,7 +239,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${loggerId}] Received responder's m4: ${stringify((m2 as any).data.customData, true, 0)}`,
+      `[${loggerId}] Received responder's m4: ${stringify((m2 as any).data.customData, false, 0)}`,
     );
     substart = Date.now();
 
@@ -277,7 +277,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    log.debug(`[${loggerId}] Response started with m1: ${stringify(customData, true, 0)}`);
+    log.debug(`[${loggerId}] Response started with m1: ${stringify(customData, false, 0)}`);
     const {
       initiatorIdentifier,
       responderIdentifier,
@@ -308,7 +308,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${loggerId}] Received initiator's m3: ${stringify((m3 as any).data.customData, true, 0)}`,
+      `[${loggerId}] Received initiator's m3: ${stringify((m3 as any).data.customData, false, 0)}`,
     );
     substart = Date.now();
 

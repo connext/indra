@@ -22,6 +22,7 @@ import { ConfigService } from "../config/config.service";
 import {
   OnchainTransaction,
   TransactionReason,
+  TransactionStatus,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
@@ -43,7 +44,7 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     assetId: string,
-  ): Promise<providers.TransactionResponse | undefined> {
+  ): Promise<{ tx: providers.TransactionResponse; appIdentityHash: string } | undefined> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
@@ -67,23 +68,23 @@ export class DepositService {
       );
     }
 
-    // don't allow deposit if an active deposit is in process
-    if (channel.activeCollateralizations[assetId]) {
+    // Check if the node has a deposit in progress
+    if (
+      depositApp &&
+      depositApp.latestState.transfers[0].to ===
+        getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)
+    ) {
       this.log.warn(
-        `Collateral request is in flight for ${assetId} on chain ${channel.chainId}, waiting for transaction`,
+        `Collateral request is in flight for ${assetId} on chain ${channel.chainId}, waiting for uninstallation of ${depositApp.identityHash}`,
       );
       const preDeposit = await this.cfCoreService.getFreeBalance(
         channel.userIdentifier,
         channel.multisigAddress,
       );
-      const waited = await this.waitForActiveDeposits(
-        channel.userIdentifier,
-        channel.multisigAddress,
-        assetId,
-      );
-      if (!waited) {
+      const uninstalledApp = await this.handleActiveDeposit(channel, depositApp.identityHash);
+      if (!uninstalledApp) {
         throw new Error(
-          `Attempted to wait for ongoing transaction on chain ${channel.chainId}, but it took longer than 5 blocks, retry later.`,
+          `Attempted to wait for ongoing transaction on chain ${channel.chainId}, but it took longer than 5 blocks, retry later. For deposit app: ${depositApp.identityHash} `,
         );
       }
       const postDeposit = await this.cfCoreService.getFreeBalance(
@@ -104,6 +105,7 @@ export class DepositService {
         return undefined;
       }
     }
+
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let appIdentityHash: Bytes32;
@@ -119,31 +121,17 @@ export class DepositService {
           `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );
       }
-      this.log.info(
-        `Releasing in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
-      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
-      this.log.info(
-        `Released in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
     };
 
     try {
       this.log.info(
         `Requesting deposit rights before depositing on chain ${channel.chainId} for ${channel.multisigAddress}`,
       );
-      this.log.info(
-        `Setting in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
-      await this.channelRepository.setInflightCollateralization(channel, assetId, true);
-      this.log.info(
-        `Set in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
       appIdentityHash = await this.requestDepositRights(channel, assetId);
       this.log.info(
         `Requested deposit rights, sending deposit to chain on chain ${channel.chainId} for ${channel.multisigAddress}`,
       );
-      response = await this.sendDepositToChain(channel, amount, assetId);
+      response = await this.sendDepositToChain(channel, amount, assetId, appIdentityHash);
       this.log.info(
         `Deposit transaction broadcast on chain ${channel.chainId} for ${channel.multisigAddress}: ${response.hash}`,
       );
@@ -161,7 +149,7 @@ export class DepositService {
       .wait()
       .then(async () => await cleanUpDepositRights())
       .catch(async (e) => await cleanUpDepositRights());
-    return response;
+    return { tx: response, appIdentityHash };
   }
 
   async requestDepositRights(
@@ -190,54 +178,62 @@ export class DepositService {
     return tx;
   }
 
-  private async waitForActiveDeposits(
-    userId: string,
-    multisigAddress: string,
-    assetId: string,
-  ): Promise<string[] | undefined> {
-    this.log.info(`Collateralization in flight for user ${userId} on ${multisigAddress}, waiting`);
-    const ethProvider = this.configService.getEthProvider(
-      await this.channelRepository.getChainIdByMultisigAddress(multisigAddress),
+  async handleActiveDeposit(
+    channel: Channel,
+    appIdentityHash: string,
+  ): Promise<string | undefined> {
+    this.log.info(
+      `Active deposit for user ${channel.userIdentifier} on ${channel.multisigAddress}, waiting`,
     );
-    const signerAddr = await this.configService.getSignerAddress();
+    const ethProvider = this.configService.getEthProvider(channel.chainId);
     const startingBlock = await ethProvider.getBlockNumber();
     const BLOCKS_TO_WAIT = 5;
 
-    // get all deposit appIds
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
-      multisigAddress,
-      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
-        .appDefinitionAddress,
-    );
-    const ourDepositAppIds = depositApps
-      .filter((app) => {
-        const latestState = app.latestState as DepositAppState;
-        return latestState.assetId === assetId && latestState.transfers[0].to === signerAddr;
-      })
-      .map((app) => app.identityHash);
+    // Get the transaction associated with the deposit
+    const transaction = await this.onchainTransactionService.findByAppId(appIdentityHash);
+    if (!transaction) {
+      // TODO: is there a better way of handling this case?
+      throw new Error(
+        `Deposit app installed in channel and no transaction found associated with it. AppId: ${appIdentityHash}`,
+      );
+    }
 
-    const resolvedDepositAppIds: string[] = [];
-    const depositIdPromises = ourDepositAppIds.map((appId) => {
-      return new Promise((resolve, reject) => {
+    // Hit in cases where client was offline for uninstallation of collateral
+    const block = await ethProvider.getBlockNumber();
+    if (
+      transaction.status !== TransactionStatus.PENDING &&
+      Math.abs(transaction.blockNumber - block) > 1 // don't uninstall if tx was *just* mined
+    ) {
+      // the deposit tx has either failed or succeeded, regardless
+      // the deposit app should not exist at this point.
+      // uninstall and rescind deposit rights, then return string
+      this.log.info(
+        `Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}, calling uninstall`,
+      );
+      await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+      this.log.info(
+        `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
+      return appIdentityHash;
+    }
+
+    // transaction is still pending, wait until it is broadcast
+    this.log.info(`Waiting for uninstallation of ${appIdentityHash}`);
+    const result = await Promise.race([
+      new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
           EventNames.UNINSTALL_EVENT,
           (data) => {
-            resolvedDepositAppIds.push(data.appIdentityHash);
             return resolve(data.appIdentityHash);
           },
-          (data) => data.appIdentityHash === appId,
+          (data) => data.appIdentityHash === appIdentityHash,
         );
         this.cfCoreService.emitter.attachOnce(
           EventNames.UNINSTALL_FAILED_EVENT,
           (data) => reject(data.error),
-          (data) => data.params.appIdentityHash === appId,
+          (data) => data.params.appIdentityHash === appIdentityHash,
         );
-      });
-    });
-
-    const result = await Promise.race([
-      Promise.all(depositIdPromises),
+      }),
       new Promise((resolve) => {
         // only wait for 5 blocks
         ethProvider.on("block", async (blockNumber: number) => {
@@ -251,20 +247,17 @@ export class DepositService {
 
     if (!result) {
       this.log.warn(
-        `Only resolved ${resolvedDepositAppIds.length}/${
-          ourDepositAppIds.length
-        } expected deposits, but it has been more than 5 blocks. Returning. Resolved: ${stringify(
-          resolvedDepositAppIds,
-        )}, all: ${stringify(ourDepositAppIds)}`,
+        `Waited 5 blocks for uninstall of ${appIdentityHash} without success.  Waiting for tx: ${transaction.hash}`,
       );
     }
-    return result as string[] | undefined;
+    return result as string | undefined;
   }
 
   private async sendDepositToChain(
     channel: Channel,
     amount: BigNumber,
     tokenAddress: Address,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     // derive the proper minimal transaction for the
     // onchain transaction service
@@ -292,7 +285,7 @@ export class DepositService {
         channel.multisigAddress
       } for amount ${amount.toString()}: ${stringify(tx)}`,
     );
-    return this.onchainTransactionService.sendDeposit(channel, tx);
+    return this.onchainTransactionService.sendDeposit(channel, tx, appIdentityHash);
   }
 
   private async proposeDepositInstall(

@@ -90,6 +90,9 @@ export class OnchainTransaction {
 
   @Column("jsonb", { nullable: true })
   errors!: { [k: number]: string };
+
+  @Column("text", { nullable: true })
+  appIdentityHash!: string;
 }
 
 @ViewEntity({

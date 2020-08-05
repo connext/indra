@@ -3,8 +3,6 @@ import { enumify } from "./utils";
 import { MinimalTransaction } from "./commitments";
 import { StateChannelJSON } from "./state";
 
-export type Collateralizations = { [assetId: string]: boolean };
-
 export type RebalanceProfile = {
   assetId: Address;
   collateralizeThreshold: BigNumber;
