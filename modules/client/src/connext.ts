@@ -413,14 +413,14 @@ export class ConnextClient implements IConnextClient {
       if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node: ${stringify(toRestore)}`);
+      this.log.info(`Found state to restore from node: ${stringify(toRestore, false, 0)}`);
       await this.channelProvider.send(ChannelMethods.chan_setStateChannel, {
         state: channel,
         setupCommitment,
         setStateCommitments,
         conditionalCommitments,
       });
-      this.log.info(`Restored channel: ${stringify(await this.getStateChannel())}`);
+      this.log.info(`Restored channel: ${stringify(await this.getStateChannel(), false, 0)}`);
     }
     await this.restart();
   };
@@ -635,6 +635,7 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     let installedTransfers: NodeResponses.GetPendingAsyncTransfers;
     const appInstances = await this.getAppInstances();
+    // handle existing installed payment applications
     for (const app of appInstances) {
       if (app.meta?.recipient === this.publicIdentifier && app.meta?.encryptedPreImage) {
         this.log.info(`Found transfer to unlock: ${app.meta.paymentId}`);
@@ -697,6 +698,7 @@ export class ConnextClient implements IConnextClient {
    * - installed linked transfer: leave installed for the hub to uninstall
    */
   public cleanupRegistryApps = async (): Promise<void> => {
+    this.log.info(`cleanupRegistryApps starting`);
     const swapAppRegistryInfo = this.appRegistry.find(
       (app: DefaultApp) => app.name === SimpleTwoPartySwapAppName,
     );
@@ -730,13 +732,14 @@ export class ConnextClient implements IConnextClient {
 
     // handle any existing apps
     await this.handleInstalledDepositApps();
+    this.log.info(`cleanupRegistryApps complete`);
   };
 
   /**
    * Removes all proposals of a give app definition type
    */
   private removeHangingProposalsByDefinition = async (appDefinitions: string[]): Promise<void> => {
-    this.log.info(`removeHangingProposalsByDefinition starting...: ${appDefinitions}`);
+    this.log.info(`removeHangingProposalsByDefinition starting: ${appDefinitions}`);
     // first get all proposed apps
     const { appInstances: proposed } = await this.getProposedAppInstances();
 
@@ -783,7 +786,7 @@ export class ConnextClient implements IConnextClient {
    * Removes all apps with a `true` `finalized` property in their `latestState`
    */
   private uninstallFinalizedApps = async (): Promise<void> => {
-    this.log.info(`uninstallFinalizedApps starting...`);
+    this.log.info(`uninstallFinalizedApps starting`);
     const finalizedApps = (await this.getAppInstances()).filter(
       (app: AppInstanceJson) => app.latestState.finalized === true,
     );
@@ -805,7 +808,7 @@ export class ConnextClient implements IConnextClient {
    * Removes all apps with a `true` `finalized` property in their `latestState`
    */
   private uninstallExpiredApps = async (): Promise<void> => {
-    this.log.info(`uninstallExpiredApps starting...`);
+    this.log.info(`uninstallExpiredApps starting`);
     const blockHeight = await this.ethProvider.getBlockNumber();
     const expiredApps = (await this.getAppInstances()).filter(
       (app: AppInstanceJson) => app.latestState.expiry && app.latestState.expiry >= blockHeight,
@@ -825,6 +828,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private handleInstalledDepositApps = async () => {
+    this.log.info(`handleInstalledDepositApps starting`);
     const assetIds = this.config.supportedTokenAddresses[this.chainId];
     for (const assetId of assetIds) {
       const { appIdentityHash } = await this.checkDepositRights({ assetId });
@@ -890,6 +894,7 @@ export class ConnextClient implements IConnextClient {
         },
       );
     }
+    this.log.info(`handleInstalledDepositApps complete`);
   };
 
   private appNotInstalled = async (appIdentityHash: string): Promise<string | undefined> => {
