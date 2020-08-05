@@ -8,6 +8,7 @@ export * from "./currency";
 export * from "./delay";
 export * from "./eip712";
 export * from "./env";
+export * from "./ethProvider";
 export * from "./fs";
 export * from "./graphTransfer";
 export * from "./hexStrings";

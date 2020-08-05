@@ -1,10 +1,10 @@
 import { Address, DecString } from "@connext/types";
+import { getEthProvider } from "@connext/utils";
 import * as tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 import { Contract, Wallet, constants, utils } from "ethers";
 import { Argv } from "yargs";
 
 import { cliOpts } from "../constants";
-import { getProvider } from "../utils";
 
 const { AddressZero, EtherSymbol } = constants;
 const { formatEther, parseEther } = utils;
@@ -67,7 +67,7 @@ export const fundCommand = {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     await fund(
-      Wallet.fromMnemonic(argv.fromMnemonic).connect(getProvider(argv.ethProvider)),
+      Wallet.fromMnemonic(argv.fromMnemonic).connect(getEthProvider(argv.ethProvider)),
       argv.toAddress,
       argv.amount,
       argv.tokenAddress,

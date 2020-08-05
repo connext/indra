@@ -1,7 +1,5 @@
 import { Options } from "yargs";
 
-export const classicProviders = ["https://www.ethercluster.com/etc"];
-
 export const defaults = {
   mnemonic: "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
   providerUrl: "http://localhost:8545",

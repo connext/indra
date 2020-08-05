@@ -11,7 +11,7 @@ import {
   NetworkContexts,
   JsonRpcProvider,
 } from "@connext/types";
-import { ChannelSigner } from "@connext/utils";
+import { ChannelSigner, getEthProvider } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, Contract, providers, constants, utils, BigNumber } from "ethers";
 
@@ -44,7 +44,7 @@ export class ConfigService implements OnModuleInit {
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
     const urls = this.getProviderUrls();
     this.getSupportedChains().forEach((chainId, idx) => {
-      const provider = new providers.JsonRpcProvider(urls[idx], chainId);
+      const provider = getEthProvider(urls[idx], chainId);
       this.providers.set(chainId, provider);
       this.signers.set(chainId, new ChannelSigner(this.getPrivateKey(), provider));
       this.log.info(`Registered new provider at url ${urls[idx]} & signer for chain ${chainId}`);
@@ -61,7 +61,7 @@ export class ConfigService implements OnModuleInit {
 
   getSigner(chainId: number): IChannelSigner {
     const providers = this.getIndraChainProviders();
-    const provider = new JsonRpcProvider(providers[chainId], chainId === 61 ? "classic" : chainId);
+    const provider = getEthProvider(providers[chainId], chainId );
     const signer = new ChannelSigner(this.getPrivateKey(), provider);
     return signer;
   }

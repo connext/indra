@@ -1,5 +1,5 @@
-import { abrv, ChannelSigner, ColorfulLogger, getRandomPrivateKey } from "@connext/utils";
-import { constants, providers, utils, Wallet, Contract, BigNumber } from "ethers";
+import { abrv, ChannelSigner, ColorfulLogger, getEthProvider, getRandomPrivateKey } from "@connext/utils";
+import { constants, utils, Wallet, Contract, BigNumber } from "ethers";
 import { Argv } from "yargs";
 
 import { env } from "./env";
@@ -40,10 +40,7 @@ export const command = {
       });
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const ethProvider = new providers.JsonRpcProvider(
-      env.ethProviderUrl,
-      argv.chainId === 61 ? "classic" : argv.chainId,
-    );
+    const ethProvider = getEthProvider(env.ethProviderUrl, argv.chainId); 
     const sugarDaddy = Wallet.fromMnemonic(argv.funderMnemonic).connect(ethProvider);
     const assetId = getAddress(argv.tokenAddress);
     const startEthBalance = await sugarDaddy.getBalance();

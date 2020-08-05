@@ -1,3 +1,4 @@
+import { getEthProvider } from "@connext/utils";
 import { Wallet, constants, providers, utils } from "ethers";
 
 import { Argv } from "yargs";
@@ -5,7 +6,6 @@ import { Argv } from "yargs";
 import { getAddressBook } from "../address-book";
 import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
-import { getProvider } from "../utils";
 
 const { EtherSymbol, Zero } = constants;
 const { formatEther } = utils;
@@ -85,7 +85,7 @@ export const migrateCommand = {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     await migrate(
-      Wallet.fromMnemonic(argv.mnemonic).connect(getProvider(argv.ethProvider)),
+      Wallet.fromMnemonic(argv.mnemonic).connect(getEthProvider(argv.ethProvider)),
       argv.addressBook,
     );
   },

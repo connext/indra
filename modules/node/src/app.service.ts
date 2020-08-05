@@ -1,11 +1,13 @@
+import { MessagingService } from "@connext/messaging";
+import { getEthProvider } from "@connext/utils";
 import { Injectable, Inject } from "@nestjs/common";
+import { Interval } from "@nestjs/schedule";
+import { utils } from "ethers";
+import { collectDefaultMetrics, Gauge } from "prom-client";
+
 import { ConfigService } from "./config/config.service";
 import { MessagingProviderId } from "./constants";
-import { MessagingService } from "@connext/messaging";
 import { LoggerService } from "./logger/logger.service";
-import { Interval } from "@nestjs/schedule";
-import { collectDefaultMetrics, Gauge } from "prom-client";
-import { providers, utils } from "ethers";
 
 @Injectable()
 export class AppService {
@@ -34,12 +36,8 @@ export class AppService {
   async getChainBalances(): Promise<void> {
     for (const [chainId, gauge] of this.chainGauges.entries()) {
       const chainProviders = this.configService.getIndraChainProviders();
-      const ethProvider = new providers.JsonRpcProvider(
-        chainProviders[chainId],
-        chainId === 61 ? "classic" : chainId,
-      );
+      const ethProvider = getEthProvider(chainProviders[chainId], chainId);
       const balance = await ethProvider.getBalance(this.configService.getSignerAddress());
-
       gauge.set(parseFloat(utils.formatEther(balance)));
     }
   }
