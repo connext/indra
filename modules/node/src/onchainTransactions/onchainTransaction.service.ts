@@ -1,4 +1,4 @@
-import { MinimalTransaction } from "@connext/types";
+import { MinimalTransaction, TransactionReceipt, StateChannelJSON } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers } from "ethers";
@@ -10,12 +10,14 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
+import { ChannelRepository } from "../channel/channel.repository";
 
 const BAD_NONCE = "the tx doesn't have the correct nonce";
+const INVALID_NONCE = "Invalid nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
 export const MAX_RETRIES = 5;
-export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT];
+export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT, INVALID_NONCE];
 
 @Injectable()
 export class OnchainTransactionService implements OnModuleInit {
@@ -25,6 +27,7 @@ export class OnchainTransactionService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
@@ -34,13 +37,23 @@ export class OnchainTransactionService implements OnModuleInit {
     });
   }
 
+  async findByAppId(appIdentityHash: string): Promise<OnchainTransaction | undefined> {
+    return this.onchainTransactionRepository.findByAppId(appIdentityHash);
+  }
+
   async sendUserWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     return new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
-        this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel)
+        this.sendTransaction(
+          transaction,
+          TransactionReason.USER_WITHDRAWAL,
+          channel,
+          appIdentityHash,
+        )
           .then((result) => resolve(result))
           .catch((error) => reject(error.message));
       });
@@ -50,10 +63,16 @@ export class OnchainTransactionService implements OnModuleInit {
   async sendWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     return new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
-        this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel)
+        this.sendTransaction(
+          transaction,
+          TransactionReason.NODE_WITHDRAWAL,
+          channel,
+          appIdentityHash,
+        )
           .then((result) => resolve(result))
           .catch((error) => reject(error.message));
       });
@@ -63,10 +82,16 @@ export class OnchainTransactionService implements OnModuleInit {
   async sendDeposit(
     channel: Channel,
     transaction: MinimalTransaction,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     return new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
-        this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel)
+        this.sendTransaction(
+          transaction,
+          TransactionReason.COLLATERALIZATION,
+          channel,
+          appIdentityHash,
+        )
           .then((result) => resolve(result))
           .catch((error) => reject(error.message));
       });
@@ -77,10 +102,34 @@ export class OnchainTransactionService implements OnModuleInit {
     return this.onchainTransactionRepository.findByHash(hash);
   }
 
+  async sendMultisigDeployment(
+    transaction: MinimalTransaction,
+    json: StateChannelJSON,
+  ): Promise<TransactionReceipt> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel));
+    const tx = await this.onchainTransactionRepository.findLatestTransactionToChannel(
+      channel.multisigAddress,
+      TransactionReason.MULTISIG_DEPLOY,
+    );
+    return {
+      to: tx.to,
+      from: tx.from,
+      gasUsed: tx.gasUsed,
+      logsBloom: tx.logsBloom,
+      blockHash: tx.blockHash,
+      transactionHash: tx.hash,
+      blockNumber: tx.blockNumber,
+    } as TransactionReceipt;
+  }
+
   private async sendTransaction(
     transaction: MinimalTransaction,
     reason: TransactionReason,
     channel: Channel,
+    appIdentityHash?: string,
   ): Promise<providers.TransactionResponse> {
     const wallet = this.configService.getSigner(channel.chainId);
     this.log.info(
@@ -102,7 +151,7 @@ export class OnchainTransactionService implements OnModuleInit {
           throw new Error(NO_TX_HASH);
         }
         // add fields from tx response
-        await this.onchainTransactionRepository.addResponse(tx, reason, channel);
+        await this.onchainTransactionRepository.addResponse(tx, reason, channel, appIdentityHash);
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
         tx.wait().then(async (receipt) => {
           this.log.info(

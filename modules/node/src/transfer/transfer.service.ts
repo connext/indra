@@ -361,7 +361,12 @@ export class TransferService {
       );
       if (depositResponse) {
         try {
-          await depositResponse.wait();
+          // OK to use channel without getting fresh data bc this only
+          // uses it for logging info
+          await this.depositService.handleActiveDeposit(
+            receiverChannel,
+            depositResponse.appIdentityHash,
+          );
         } catch (e) {
           throw new Error(
             `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${e.message}`,

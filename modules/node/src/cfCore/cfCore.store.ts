@@ -198,13 +198,6 @@ export class CFCoreStore implements IStoreService {
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     channel.chainId = chainId;
-    const tokens = this.configService.getSupportedTokens();
-    const activeCollateralizations = {};
-    (tokens[chainId] || []).forEach((token) => {
-      activeCollateralizations[token] = false;
-    });
-    channel.activeCollateralizations = activeCollateralizations;
-
     const {
       identityHash,
       abiEncodings: { stateEncoding, actionEncoding },

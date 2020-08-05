@@ -106,8 +106,12 @@ export class WithdrawService {
     const txRes = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
+      appInstance.identityHash,
     );
 
+    if (!txRes) {
+      throw new Error(`Unable to submit withdraw transaction to chain.`);
+    }
     await this.cfCoreService.uninstallApp(
       appInstance.identityHash,
       appInstance.multisigAddress,
@@ -137,6 +141,7 @@ export class WithdrawService {
   async submitWithdrawToChain(
     multisigAddress: string,
     tx: MinimalTransaction,
+    appIdentityHash: string,
   ): Promise<providers.TransactionResponse> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -156,7 +161,11 @@ export class WithdrawService {
     }
 
     this.log.info(`Sending withdrawal to chain`);
-    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
+    const txRes = await this.onchainTransactionService.sendUserWithdrawal(
+      channel,
+      tx,
+      appIdentityHash,
+    );
     this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
     return txRes;
   }

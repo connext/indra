@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, Collateralizations } from "@connext/types";
+import { CriticalStateChannelAddresses } from "@connext/types";
 import {
   Column,
   CreateDateColumn,
@@ -10,7 +10,6 @@ import {
   UpdateDateColumn,
   PrimaryColumn,
 } from "typeorm";
-import { constants } from "ethers";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
@@ -18,8 +17,6 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
-
-const { AddressZero } = constants;
 
 @Entity()
 export class Channel {
@@ -44,9 +41,6 @@ export class Channel {
 
   @Column("boolean", { default: false })
   available!: boolean;
-
-  @Column("json", { default: { [AddressZero]: false } })
-  activeCollateralizations!: Collateralizations;
 
   @OneToMany((type: any) => AppInstance, (appInstance: AppInstance) => appInstance.channel, {
     cascade: true,

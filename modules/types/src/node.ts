@@ -8,7 +8,7 @@ import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
-import { Collateralizations, RebalanceProfile } from "./misc";
+import { RebalanceProfile } from "./misc";
 import { ContractAddresses } from "./contracts";
 
 type GetRebalanceProfileResponse = RebalanceProfile;
@@ -64,7 +64,6 @@ type GetChannelResponse = {
   userIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
-  activeCollateralizations: Collateralizations;
 };
 
 // returns the transaction hash of the multisig deployment
