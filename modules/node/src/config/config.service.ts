@@ -177,29 +177,31 @@ export class ConfigService implements OnModuleInit {
   getAllowedSwaps(chainId: number): AllowedSwap[] {
     const supportedTokens = this.getSupportedTokens();
     if (!supportedTokens[chainId]) {
-      this.log.warn(`There are no supportd tokens for chain ${chainId}`);
+      this.log.warn(`There are no supported tokens for chain ${chainId}`);
       return [];
     }
     const priceOracleType =
       chainId.toString() === "1" ? PriceOracleTypes.UNISWAP : PriceOracleTypes.HARDCODED;
     const allowedSwaps: AllowedSwap[] = [];
     // allow token <> eth swaps per chain
-    supportedTokens[chainId].forEach((token) => {
-      allowedSwaps.push({
-        from: token,
-        to: AddressZero,
-        priceOracleType,
-        fromChainId: chainId,
-        toChainId: chainId,
+    supportedTokens[chainId]
+      .filter((token) => token !== AddressZero)
+      .forEach((token) => {
+        allowedSwaps.push({
+          from: token,
+          to: AddressZero,
+          priceOracleType,
+          fromChainId: chainId,
+          toChainId: chainId,
+        });
+        allowedSwaps.push({
+          from: AddressZero,
+          to: token,
+          priceOracleType,
+          fromChainId: chainId,
+          toChainId: chainId,
+        });
       });
-      allowedSwaps.push({
-        from: AddressZero,
-        to: token,
-        priceOracleType,
-        fromChainId: chainId,
-        toChainId: chainId,
-      });
-    });
     return allowedSwaps;
   }
 
