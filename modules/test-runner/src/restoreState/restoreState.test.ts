@@ -1,5 +1,5 @@
 import { getLocalStore } from "@connext/store";
-import { IConnextClient, IChannelSigner, EventNames } from "@connext/types";
+import { IConnextClient, IChannelSigner, EventNames, CF_METHOD_TIMEOUT } from "@connext/types";
 import { getRandomChannelSigner, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
@@ -93,6 +93,7 @@ describe("Restore State", () => {
     const assetId = tokenAddress;
     const recipient = clientA.publicIdentifier;
     expect(recipient).to.be.eq(signerA.publicIdentifier);
+    const preTransfer = await clientA.getFreeBalance(assetId);
     const senderClient = await createClient();
     await fundChannel(senderClient, TOKEN_AMOUNT, assetId);
 
@@ -108,10 +109,12 @@ describe("Restore State", () => {
       assetId,
       recipient,
     });
-    await sent;
+    const createRes = await sent;
 
     // delay so that the node -> receiver proposal times out
-    await delay(30_000);
+    // wait out for the entire lock service
+    const timer = CF_METHOD_TIMEOUT + 1500;
+    await delay(timer * 2);
 
     const freeBalanceSender = await senderClient.getFreeBalance(assetId);
     expect(freeBalanceSender[senderClient.signerAddress]).to.be.eq(
@@ -119,7 +122,19 @@ describe("Restore State", () => {
     );
 
     // bring clientA back online
-    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 30_000);
+    const unlocked = new Promise((resolve, reject) => {
+      senderClient.once(
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        resolve,
+        (msg) => msg.paymentId === createRes.paymentId,
+      );
+      senderClient.once(
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
+        (msg) => reject(msg.error),
+        (msg) => msg.paymentId === createRes.paymentId,
+      );
+      delay(10_000).then(() => reject(`No events thrown in 10s`));
+    });
     clientA = await createClient(
       {
         signer: signerA,
@@ -127,11 +142,14 @@ describe("Restore State", () => {
       },
       false,
     );
+
     expect(clientA.signerAddress).to.be.eq(signerA.address);
     expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
     await unlocked;
 
     const freeBalanceA = await clientA.getFreeBalance(assetId);
-    expect(freeBalanceA[clientA.signerAddress]).to.be.eq(transferAmount);
+    expect(freeBalanceA[clientA.signerAddress]).to.be.eq(
+      preTransfer[clientA.signerAddress].add(transferAmount),
+    );
   });
 });
