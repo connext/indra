@@ -230,7 +230,7 @@ export class SwapRateService implements OnModuleInit {
         if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
           setInterval(async () => {
             const blockNumber = await provider.getBlockNumber();
-            this.log.info(
+            this.log.debug(
               `Querying chain listener for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
             );
             this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, chainId, blockNumber);
