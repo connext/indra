@@ -47,43 +47,46 @@ export class DepositController extends AbstractController {
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
     let ret: PublicResults.RescindDepositRights;
-    let transactionHash: string;
-    try {
-      this.log.debug(`Starting deposit`);
-      transactionHash = await this.connext.channelProvider.walletDeposit({
-        amount: amount.toString(),
-        assetId: tokenAddress,
-      });
-      this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
-        amount: amount,
-        assetId: tokenAddress,
-        appIdentityHash,
-        hash: transactionHash,
-      });
-      this.log.info(`Sent deposit transaction to chain: ${transactionHash}`);
-      const tx = await this.ethProvider.getTransaction(transactionHash);
-      await tx.wait();
-    } catch (e) {
-      this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
-        amount: amount,
-        assetId: tokenAddress,
-        error: e.stack || e.message,
-      } as EventPayloads.DepositFailed);
-      throw new Error(e.stack || e.message);
-    } finally {
-      ret = await this.rescindDepositRights({ appIdentityHash, assetId });
-    }
-
-    if (transactionHash) {
-      this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
-        hash: transactionHash,
-        amount: amount,
-        assetId: tokenAddress,
-      } as EventPayloads.DepositConfirmed);
-    }
-
-    this.log.info(`deposit complete for assetId ${assetId}: ${JSON.stringify(ret)}`);
-    return ret;
+    const depositTx = await this.connext.channelProvider.walletDeposit({
+      amount: amount.toString(),
+      assetId: tokenAddress,
+    });
+    const depositConfirmation: Promise<PublicResults.RescindDepositRights> = new Promise(
+      async (resolve, reject) => {
+        try {
+          this.log.debug(`Starting deposit`);
+          this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
+            amount: amount,
+            assetId: tokenAddress,
+            appIdentityHash,
+            hash: depositTx,
+          });
+          this.log.info(`Sent deposit transaction to chain: ${depositTx}`);
+          const tx = await this.ethProvider.getTransaction(depositTx);
+          await tx.wait();
+          const res = await this.rescindDepositRights({ appIdentityHash, assetId });
+          this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
+            hash: depositTx,
+            amount: amount,
+            assetId: tokenAddress,
+          } as EventPayloads.DepositConfirmed);
+          this.log.info(`deposit complete for assetId ${assetId}: ${JSON.stringify(ret)}`);
+          resolve(res);
+        } catch (e) {
+          this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
+            amount: amount,
+            assetId: tokenAddress,
+            error: e.stack || e.message,
+          } as EventPayloads.DepositFailed);
+          ret = await this.rescindDepositRights({ appIdentityHash, assetId });
+          reject(new Error(e.stack || e.message));
+        }
+      },
+    );
+    return {
+      depositTx,
+      depositConfirmation,
+    };
   };
 
   public requestDepositRights = async (
