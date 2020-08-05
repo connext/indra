@@ -65,13 +65,13 @@ done
 log "Good morning, Postgres!"
 
 # Is this a fresh database? Should we restore data from a snapshot?
-if [[ "$isFresh" == "true" && -f "$backup_file" ]]
+if [[ "$isFresh" == "true" && -f "$backup_file" && "$INDRA_ENV" == "prod" ]]
 then 
   log "Fresh postgres db started w backup present, we'll restore: $backup_file"
   psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
   log "Done restoring db snapshot"
 else
-  log "Not restoring: Database exists ($isFresh) or no snapshots found ($backup_file)"
+  log "Not restoring: Database exists ($isFresh) or no snapshots found ($backup_file) or not in prod-mode ($INDRA_ENV)"
 fi
 
 # Create a readonly user
