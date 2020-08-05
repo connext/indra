@@ -536,6 +536,10 @@ export class CFCore {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
+  removeAllListeners() {
+    this.rpcRouter.unsubscribeAll();
+  }
+
   /**
    * This is the entrypoint to listening for messages from other CFCores.
    * Delegates setting up a listener to CFCore's outgoing EventEmitter.

@@ -457,6 +457,7 @@ export class ConnextClient implements IConnextClient {
 
   public off = () => {
     this.listener.detach();
+    this.channelProvider.removeAllListeners();
   };
 
   public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {

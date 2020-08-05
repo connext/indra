@@ -242,6 +242,7 @@ export class ConnextListener {
 
   public detach(): void {
     this.typedEmitter.detach();
+    this.channelProvider.removeAllListeners();
   }
 
   public register = async (): Promise<void> => {

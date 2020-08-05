@@ -142,6 +142,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this.connection;
   };
 
+  public removeAllListeners = (): any => {
+    this.connection.removeAllListeners();
+    return this.connection;
+  };
+
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
   public isSigner() {

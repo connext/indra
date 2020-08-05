@@ -52,6 +52,10 @@ export class RpcRouter {
     this.requestHandler.outgoing.once(event, callback);
   }
 
+  unsubscribeAll() {
+    this.requestHandler.outgoing.removeAllListeners();
+  }
+
   async unsubscribe(event: string, callback?: AsyncCallback) {
     this.requestHandler.outgoing.off(event, callback);
   }
