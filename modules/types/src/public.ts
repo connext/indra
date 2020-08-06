@@ -297,9 +297,6 @@ type WithdrawResponse = {
 // transfer
 
 type TransferParameters = MethodParams.Deposit & {
-  conditionType?:
-    | typeof ConditionalTransferTypes.LinkedTransfer
-    | typeof ConditionalTransferTypes.OnlineLinkedTransfer;
   recipient: PublicIdentifier;
   meta?: any;
   paymentId?: Bytes32;

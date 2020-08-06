@@ -19,6 +19,12 @@ export const getTransferTypeFromAppName = (
   name: SupportedApplicationNames,
 ): TransferType | undefined => {
   if ([
+    SupportedApplicationNames.SimpleLinkedTransferApp,
+    SupportedApplicationNames.SimpleSignedTransferApp,
+  ].includes(name)) {
+    return "AllowOffline";
+  }
+  if ([
     SupportedApplicationNames.GraphBatchedTransferApp,
     SupportedApplicationNames.GraphSignedTransferApp,
     SupportedApplicationNames.HashLockTransferApp,
@@ -26,13 +32,6 @@ export const getTransferTypeFromAppName = (
   ].includes(name)) {
     return "RequireOnline";
   }
-  if ([
-    SupportedApplicationNames.SimpleLinkedTransferApp,
-    SupportedApplicationNames.SimpleSignedTransferApp,
-  ].includes(name)) {
-    return "AllowOffline";
-  }
-
   return undefined;
 };
 
