@@ -67,7 +67,8 @@ export class NodeApiClient implements INodeApiClient {
 
     // If no messagingUrl given, attempt to derive one from the nodeUrl
     const nodeHost = nodeUrl.replace(/^.*:\/\//, "").replace(/\/.*/, "");
-    const messagingUrl = opts.messagingUrl ||
+    const messagingUrl =
+      opts.messagingUrl ||
       (isNode()
         ? `nats://${nodeHost.replace(/:[0-9]+$/, "")}:4222`
         : nodeUrl.startsWith("https://")
@@ -283,25 +284,13 @@ export class NodeApiClient implements INodeApiClient {
     );
   }
 
-  public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
-    // DONT added extended timeout to prevent client application from being
-    // held up longer than necessary if node is collateralizing. The endpoint
-    // will return after an onchain tx is submitted and mined in cases where
-    // a rebalancing occurs
-    try {
-      return this.send(
-        `${this.userIdentifier}.${this.nodeIdentifier}.${this.chainId}.channel.request-collateral`,
-        {
-          assetId,
-        },
-      );
-    } catch (e) {
-      // TODO: node should return once deposit starts
-      if (e.message.startsWith("Request timed out")) {
-        return;
-      }
-      throw e;
-    }
+  public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral> {
+    return this.send(
+      `${this.userIdentifier}.${this.nodeIdentifier}.${this.chainId}.channel.request-collateral`,
+      {
+        assetId,
+      },
+    );
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
