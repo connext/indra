@@ -51,8 +51,11 @@ export const fundChannel = async (
       log.debug(`client.deposit() called`);
       const start = Date.now();
       const response = await client.deposit({ amount: amount.toString(), assetId });
-      expect(response.txHash).to.be.ok;
-      await response.completed();
+
+      // TODO: remove this check once backwards compatibility is not needed
+      if (response.completed) {
+        await response.completed();
+      }
       const freeBalance = await client.getFreeBalance(tokenAddress);
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.signerAddress].add(amount);
