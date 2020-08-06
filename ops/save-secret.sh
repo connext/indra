@@ -4,7 +4,7 @@ set -e
 secret_name="${1:-indra_mnemonic}";
 secret_value="$2"
 
-if [[ -n "`docker secret ls | grep "$secret_name"`" ]]
+if [[ -n "`docker secret ls | grep "$secret_name$"`" ]]
 then echo "A secret called $secret_name already exists, skipping secret setup"
 else
 
