@@ -1,5 +1,6 @@
 import {
   OutcomeType,
+  OnlineLinkedTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppActionEncoding,
   SimpleLinkedTransferAppStateEncoding,
@@ -16,6 +17,11 @@ export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
   name: SimpleLinkedTransferAppName,
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   stateEncoding: SimpleLinkedTransferAppStateEncoding,
+};
+
+export const OnlineLinkedTransferAppRegistryInfo: AppRegistryInfo = {
+  ...SimpleLinkedTransferAppRegistryInfo,
+  name: OnlineLinkedTransferAppName,
 };
 
 // timeout default values
