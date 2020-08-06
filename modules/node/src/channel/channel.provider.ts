@@ -66,7 +66,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     userPublicIdentifier: string,
     chainId: number,
     data: { assetId?: string },
-  ): Promise<providers.TransactionResponse | undefined> {
+  ): Promise<NodeResponses.RequestCollateral> {
     // do not allow clients to specify an amount to collateralize with
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       userPublicIdentifier,
@@ -78,7 +78,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
-      return response;
+      return {
+        transaction: response.transaction,
+        depositAppIdentityHash: response.depositAppIdentityHash,
+      };
     } catch (e) {
       this.log.warn(`Failed to collateralize: ${e.message}`);
       return undefined;

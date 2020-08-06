@@ -3,6 +3,7 @@ import { providers, BigNumberish } from "ethers";
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureString } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
+import { NodeResponses } from "./node";
 
 ////////////////////////////////////////
 // deposit
@@ -12,7 +13,7 @@ type DepositParameters = {
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
 };
 
-type FreeBalanceResponse = {
+export type FreeBalanceResponse = {
   freeBalance: {
     [s: string]: BigNumber;
   };
@@ -30,6 +31,12 @@ type CheckDepositRightsParameters = {
 type CheckDepositRightsResponse = {
   appIdentityHash: Bytes32;
 };
+
+type RequestCollateralResponse =
+  | (NodeResponses.RequestCollateral & {
+      completed: () => Promise<FreeBalanceResponse>;
+    })
+  | undefined;
 
 type RequestDepositRightsParameters = Omit<MethodParams.RequestDepositRights, "multisigAddress">;
 type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
@@ -355,6 +362,7 @@ export namespace PublicResults {
   export type CheckDepositRights = CheckDepositRightsResponse;
   export type ConditionalTransfer = ConditionalTransferResponse;
   export type Deposit = DepositResponse;
+  export type RequestCollateral = RequestCollateralResponse;
   export type RequestDepositRights = RequestDepositRightsResponse;
   export type RescindDepositRights = RescindDepositRightsResponse;
   export type ResolveCondition = ResolveConditionResponse;
@@ -378,6 +386,7 @@ export type PublicResult =
   | DepositResponse
   | HashLockTransferResponse
   | LinkedTransferResponse
+  | RequestCollateralResponse
   | RequestDepositRightsResponse
   | RescindDepositRightsResponse
   | ResolveConditionResponse

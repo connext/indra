@@ -106,7 +106,14 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<providers.TransactionResponse | undefined> {
+  ): Promise<
+    | {
+        transaction: providers.TransactionResponse;
+        depositAppIdentityHash?: string;
+        rebalanceType: RebalanceType;
+      }
+    | undefined
+  > {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
@@ -154,7 +161,9 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let response: providers.TransactionResponse | undefined = undefined;
+    let depositRes:
+      | { tx: providers.TransactionResponse; appIdentityHash: string }
+      | undefined = undefined;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -162,16 +171,13 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        const depositRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
-        response = (depositRes || {}).tx;
+        depositRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
       } else {
-        this.log.debug(
+        this.log.info(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
         );
       }
-    }
-
-    if (rebalanceType === RebalanceType.RECLAIM) {
+    } else if (rebalanceType === RebalanceType.RECLAIM) {
       // If free balance is too high, reclaim down to lower bound
       if (nodeFreeBalance.gt(reclaimThreshold) && reclaimThreshold.gt(0)) {
         this.log.info(
@@ -188,7 +194,13 @@ export class ChannelService {
     this.log.info(
       `Rebalance finished for ${channel.userIdentifier} on chain ${channel.chainId}, assetId: ${assetId}`,
     );
-    return response;
+    return (
+      depositRes && {
+        transaction: depositRes.tx,
+        depositAppIdentityHash: depositRes.appIdentityHash,
+        rebalanceType,
+      }
+    );
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(
