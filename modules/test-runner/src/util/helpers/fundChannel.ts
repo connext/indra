@@ -19,14 +19,6 @@ export const fundChannel = async (
   const tokenAddress = getAddressFromAssetId(assetId);
   const prevFreeBalance = await client.getFreeBalance(tokenAddress);
   await new Promise(async (resolve, reject) => {
-    client.once(EventNames.DEPOSIT_CONFIRMED_EVENT, async () => {
-      const freeBalance = await client.getFreeBalance(tokenAddress);
-      // verify free balance increased as expected
-      const expected = prevFreeBalance[client.signerAddress].add(amount);
-      expect(freeBalance[client.signerAddress]).to.equal(expected);
-      log.info(`Got deposit confirmed event, helper wrapper is returning`);
-      return resolve();
-    });
     let syncFailed = false;
     client.once(EventNames.SYNC_FAILED_EVENT, (msg) => {
       syncFailed = true;
@@ -58,8 +50,16 @@ export const fundChannel = async (
       // FYI this function returns after fundChannel has returned (at resolve above)
       log.debug(`client.deposit() called`);
       const start = Date.now();
-      await client.deposit({ amount: amount.toString(), assetId });
+      const response = await client.deposit({ amount: amount.toString(), assetId });
+      expect(response.txHash).to.be.ok;
+      await response.completed();
+      const freeBalance = await client.getFreeBalance(tokenAddress);
+      // verify free balance increased as expected
+      const expected = prevFreeBalance[client.signerAddress].add(amount);
+      expect(freeBalance[client.signerAddress]).to.equal(expected);
+      log.info(`Got deposit confirmed event, helper wrapper is returning`);
       log.info(`client.deposit() returned in ${Date.now() - start}`);
+      return resolve();
     } catch (e) {
       return reject(new Error(e.stack || e.message));
     }
@@ -80,7 +80,7 @@ export const requestCollateral = async (
   const start = Date.now();
   if (!enforce) {
     // TODO: rm 'as any' once type returned by requestCollateral is fixed
-    const tx = await client.requestCollateral(assetId) as any;
+    const tx = (await client.requestCollateral(assetId)) as any;
     log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
     await ethProvider.waitForTransaction(tx.hash);
     await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
@@ -105,7 +105,7 @@ export const requestCollateral = async (
             return res();
           });
           // TODO: rm 'as any' once type returned by requestCollateral is fixed
-          const tx = await client.requestCollateral(assetId) as any;
+          const tx = (await client.requestCollateral(assetId)) as any;
           await ethProvider.waitForTransaction(tx.hash);
           await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
         }),
