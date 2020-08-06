@@ -6,8 +6,7 @@
   "license": "MIT",
   "main": "dist/main.js",
   "scripts": {
-    "build": "rm -rf ./dist/* && tsc -p tsconfig.json",
-    "build-bundle": "webpack --config ops/webpack.config.js",
+    "build": "rm -rf ./dist/* && webpack --config ops/webpack.config.js",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "migration:generate": "typeorm migration:generate -d migrations -n ",

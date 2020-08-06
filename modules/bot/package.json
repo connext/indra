@@ -4,8 +4,7 @@
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "rm -rf dist && tsc --project tsconfig.json",
-    "build-bundle": "webpack --config ops/webpack.config.js",
+    "build": "rm -rf dist && webpack --config ops/webpack.config.js",
     "start": "node --inspect=0.0.0.0:9229 dist/src/index.js",
     "start:registry": "node dist/src/registry.js"
   },

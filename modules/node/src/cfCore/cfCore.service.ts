@@ -469,10 +469,6 @@ export class CFCoreService {
     return this.appRegistryMap.get(appDefinition);
   }
 
-  public getAppInfoByDefinition(addr: Address): DefaultApp {
-    return this.appRegistryMap.get(addr);
-  }
-
   public getAppInfoByNameAndChain(name: SupportedApplicationNames, chainId: number): DefaultApp {
     return this.appRegistryMap.get(`${name}:${chainId}`);
   }

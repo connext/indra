@@ -72,6 +72,7 @@ export class CreateTransferController extends AbstractController {
       | GraphBatchedTransferAppState
       | GraphSignedTransferAppState;
 
+    // Set transferMeta & initialState according to conditionType
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer:
       case ConditionalTransferTypes.OnlineLinkedTransfer: {

@@ -35,7 +35,7 @@ describe("Restore State", () => {
     const nats = getNatsClient();
     signerA = getRandomChannelSigner(ethProviderUrl);
     store = getLocalStore();
-    clientA = await createClient({ signer: signerA, store });
+    clientA = await createClient({ signer: signerA, store, id: "A" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
 
@@ -106,7 +106,7 @@ describe("Restore State", () => {
     const recipient = clientA.publicIdentifier;
     expect(recipient).to.be.eq(signerA.publicIdentifier);
     const preTransfer = await clientA.getFreeBalance(assetId);
-    const senderClient = await createClient();
+    const senderClient = await createClient({ id: "S" });
     await fundChannel(senderClient, TOKEN_AMOUNT, assetId);
 
     // first clear the client store and take client offline
