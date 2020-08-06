@@ -95,6 +95,7 @@ describe("Happy path", () => {
       amount: parseEther("0.03"),
     });
     log.info(`depositRes: ${stringify(depositRes)}`);
+    await depositRes.completed();
     const transferRes = await clientA.transfer({
       amount: parseEther("0.02"),
       assetId: AddressZero,
