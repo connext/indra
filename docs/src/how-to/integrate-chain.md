@@ -23,7 +23,7 @@ Once the account is properly funded with the chains native asset, run the follow
 ```bash
 > git checkout -b "add-your-chain" # checkout a new branch
 > make all # build all images
-> bash ops/deploy.sh <CHAIN_PROVIDER_URL> # deploy local artifacts
+> bash ops/deploy-contracts.sh <CHAIN_PROVIDER_URL> # deploy local artifacts
 ```
 
 and follow the on screen prompts.
