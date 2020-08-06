@@ -1,5 +1,5 @@
 import { ProposeMiddlewareContext, Address } from "@connext/types";
-import { validateGraphBatchedTransferApp } from ".";
+import { validateGraphBatchedTransferApp } from "./validation";
 
 export const proposeGraphBatchedTransferMiddleware = (
   cxt: ProposeMiddlewareContext,

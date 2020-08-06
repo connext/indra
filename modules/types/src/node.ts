@@ -1,3 +1,5 @@
+import { providers } from "ethers";
+
 import { Address, BigNumber, Bytes32, DecString, Network, PublicIdentifier } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
@@ -72,7 +74,9 @@ type CreateChannelResponse = {
   transactionHash: Bytes32;
 };
 
-type RequestCollateralResponse = MethodResults.Deposit | undefined;
+type RequestCollateralResponse =
+  | { transaction: providers.TransactionResponse; depositAppIdentityHash: string }
+  | undefined;
 
 // returned by the node when client calls channel.restore
 type ChannelRestoreResponse = {

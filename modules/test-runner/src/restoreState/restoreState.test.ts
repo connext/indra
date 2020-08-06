@@ -58,9 +58,9 @@ describe("Restore State", () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
 
-    // TODO: rm 'as any' once type returned by requestCollateral is fixed
-    const tx = (await clientA.requestCollateral(tokenAddress)) as any;
-    await ethProvider.waitForTransaction(tx.hash);
+    const response = await clientA.requestCollateral(tokenAddress);
+    expect(response).to.be.ok;
+    await ethProvider.waitForTransaction(response!.transaction.hash);
     await clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
 
     // Wait for the node to uninstall the deposit app & persist too

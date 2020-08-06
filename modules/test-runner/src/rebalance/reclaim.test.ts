@@ -8,7 +8,6 @@ import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
-import { reject } from "lodash";
 
 const { AddressZero, One, Two } = constants;
 
@@ -75,12 +74,13 @@ describe("Reclaim", () => {
           res();
         }
       });
-      await clientA.transfer({
+      const t = await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
         paymentId,
       });
+      console.log("t: ", t);
     });
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);

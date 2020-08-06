@@ -1,13 +1,7 @@
-import { IConnextClient, EventNames } from "@connext/types";
+import { IConnextClient } from "@connext/types";
 import { constants } from "ethers";
 
-import {
-  createClient,
-  ETH_AMOUNT_MD,
-  ethProvider,
-  expect,
-  TOKEN_AMOUNT,
-} from "../util";
+import { createClient, ETH_AMOUNT_MD, expect, TOKEN_AMOUNT } from "../util";
 
 const { AddressZero, Zero } = constants;
 
@@ -26,24 +20,26 @@ describe("Collateral", () => {
     await client.messaging.disconnect();
   });
 
-  // TODO: rm 'as any' once type returned by requestCollateral is fixed
-
   it("happy case: node should collateralize ETH", async () => {
-    const tx = await client.requestCollateral(AddressZero) as any;
-    expect(tx).to.be.ok;
-    await ethProvider.waitForTransaction(tx.hash);
-    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
-    const freeBalance = await client.getFreeBalance(AddressZero);
+    const response = (await client.requestCollateral(AddressZero))!;
+    expect(response).to.be.ok;
+    expect(response.completed).to.be.ok;
+    expect(response.transaction).to.be.ok;
+    expect(response.transaction.hash).to.be.ok;
+    expect(response.depositAppIdentityHash).to.be.ok;
+    const { freeBalance } = await response.completed();
     expect(freeBalance[client.signerAddress]).to.be.eq("0");
     expect(freeBalance[nodeSignerAddress]).to.be.eq(ETH_AMOUNT_MD);
   });
 
   it("happy case: node should collateralize tokens", async () => {
-    const tx = await client.requestCollateral(tokenAddress) as any;
-    expect(tx).to.be.ok;
-    await ethProvider.waitForTransaction(tx.hash);
-    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
-    const freeBalance = await client.getFreeBalance(tokenAddress);
+    const response = (await client.requestCollateral(tokenAddress))!;
+    expect(response).to.be.ok;
+    expect(response.completed).to.be.ok;
+    expect(response.transaction).to.be.ok;
+    expect(response.transaction.hash).to.be.ok;
+    expect(response.depositAppIdentityHash).to.be.ok;
+    const { freeBalance } = await response.completed();
     expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });

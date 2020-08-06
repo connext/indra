@@ -21,9 +21,7 @@ export class WithdrawCommitmentRepository extends Repository<WithdrawCommitment>
       .getOne();
   }
 
-  async getWithdrawalCommitmentTx(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction> {
+  async getWithdrawalCommitmentTx(multisigAddress: string): Promise<MinimalTransaction> {
     const withdrawal = await this.findByMultisigAddress(multisigAddress);
     if (!withdrawal) {
       return undefined;

@@ -8,6 +8,8 @@ import {
   WithdrawAppName,
   WithdrawAppState,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+  EventNames,
+  EventPayloads,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -18,7 +20,10 @@ import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import {
+  OnchainTransaction,
+  TransactionReason,
+} from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 
@@ -49,11 +54,53 @@ export class WithdrawService {
     channel: Channel,
     amount: BigNumber,
     assetId: string = AddressZero,
-  ): Promise<void> {
+  ): Promise<providers.TransactionResponse> {
     if (!channel) {
       throw new Error(`No channel exists for multisigAddress ${channel.multisigAddress}`);
     }
-    return this.proposeWithdrawApp(amount, assetId, channel);
+    const { appIdentityHash, withdrawTracker } = await this.proposeWithdrawApp(
+      amount,
+      assetId,
+      channel,
+    );
+
+    let uninstallData: EventPayloads.Uninstall;
+    try {
+      uninstallData = await this.cfCoreService.emitter.waitFor(
+        EventNames.UNINSTALL_EVENT,
+        20_000,
+        (data) => data.appIdentityHash === appIdentityHash,
+      );
+    } catch (e) {
+      this.log.error(`Error waiting for withdrawal app to be uninstalled: ${e.message}`);
+      // TODO: should we uninstall ourselves here?
+    }
+    const action = uninstallData.action as WithdrawAppAction;
+    await this.withdrawRepository.addCounterpartySignatureAndFinalize(
+      withdrawTracker,
+      action.signature,
+    );
+    const state = uninstallData.uninstalledApp.latestState;
+    const appInstance = uninstallData.uninstalledApp;
+    const commitment = await this.cfCoreService.createWithdrawCommitment(
+      {
+        amount: state.transfers[0].amount,
+        // eslint-disable-next-line max-len
+        assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
+          .tokenAddress,
+        recipient: this.cfCoreService.cfCore.signerAddress,
+        nonce: state.nonce,
+      },
+      appInstance.multisigAddress,
+    );
+    await commitment.addSignatures(state.signatures[0], state.signatures[1]);
+    const tx = await commitment.getSignedTransaction();
+    return this.submitWithdrawToChain(
+      appInstance.multisigAddress,
+      tx,
+      appInstance.identityHash,
+      TransactionReason.NODE_WITHDRAWAL,
+    );
   }
 
   /*
@@ -66,6 +113,7 @@ export class WithdrawService {
     const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
+        // eslint-disable-next-line max-len
         assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
           .tokenAddress,
         recipient: state.transfers[0].to,
@@ -107,6 +155,7 @@ export class WithdrawService {
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
       appInstance.identityHash,
+      TransactionReason.USER_WITHDRAWAL,
     );
 
     if (!txRes) {
@@ -142,6 +191,7 @@ export class WithdrawService {
     multisigAddress: string,
     tx: MinimalTransaction,
     appIdentityHash: string,
+    withdrawReason: TransactionReason.NODE_WITHDRAWAL | TransactionReason.USER_WITHDRAWAL,
   ): Promise<providers.TransactionResponse> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -161,11 +211,12 @@ export class WithdrawService {
     }
 
     this.log.info(`Sending withdrawal to chain`);
-    const txRes = await this.onchainTransactionService.sendUserWithdrawal(
-      channel,
-      tx,
-      appIdentityHash,
-    );
+    let txRes: providers.TransactionResponse;
+    if (withdrawReason === TransactionReason.NODE_WITHDRAWAL) {
+      txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx, appIdentityHash);
+    } else {
+      txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx, appIdentityHash);
+    }
     this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
     return txRes;
   }
@@ -179,7 +230,7 @@ export class WithdrawService {
     withdrawerSignature: string,
     counterpartySignature: string,
     multisigAddress: string,
-  ) {
+  ): Promise<Withdraw> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const withdraw = new Withdraw();
     withdraw.appIdentityHash = appIdentityHash;
@@ -210,7 +261,7 @@ export class WithdrawService {
     amount: BigNumber,
     assetId: string,
     channel: Channel,
-  ): Promise<void> {
+  ): Promise<{ appIdentityHash: string; withdrawTracker: Withdraw }> {
     this.log.debug(`Creating proposal for node withdraw`);
     const nonce = hexlify(randomBytes(32));
 
@@ -258,7 +309,7 @@ export class WithdrawService {
       WITHDRAW_STATE_TIMEOUT,
     );
 
-    await this.saveWithdrawal(
+    const withdrawTracker = await this.saveWithdrawal(
       appIdentityHash,
       BigNumber.from(amount),
       assetId,
@@ -268,6 +319,7 @@ export class WithdrawService {
       initialState.signatures[1],
       channel.multisigAddress,
     );
-    return;
+
+    return { appIdentityHash, withdrawTracker };
   }
 }

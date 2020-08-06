@@ -1,5 +1,5 @@
 import { ProposeMiddlewareContext } from "@connext/types";
-import { validateSignedTransferApp } from ".";
+import { validateSignedTransferApp } from "./validation";
 
 export const proposeSignedTransferMiddleware = (cxt: ProposeMiddlewareContext) => {
   const { params } = cxt;

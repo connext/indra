@@ -122,7 +122,7 @@ export interface IConnextClient {
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   unsubscribeToSwapRates(from: Address, to: Address): Promise<void>;
-  requestCollateral(tokenAddress: Address): Promise<NodeResponses.RequestCollateral | void>;
+  requestCollateral(tokenAddress: Address): Promise<PublicResults.RequestCollateral>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
   getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;

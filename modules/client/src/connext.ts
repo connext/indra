@@ -34,6 +34,8 @@ import {
   EventName,
   EventPayload,
   SupportedApplicationNames,
+  EventNames,
+  FreeBalanceResponse,
 } from "@connext/types";
 import {
   delay,
@@ -186,10 +188,26 @@ export class ConnextClient implements IConnextClient {
     return this.node.getChannel();
   };
 
-  public requestCollateral = async (
-    tokenAddress: string,
-  ): Promise<NodeResponses.RequestCollateral | void> => {
-    return this.node.requestCollateral(tokenAddress);
+  public requestCollateral = async (assetId: string): Promise<PublicResults.RequestCollateral> => {
+    const requestCollateralResponse = await this.node.requestCollateral(assetId);
+    if (!requestCollateralResponse) {
+      return undefined;
+    }
+    const completed = (): Promise<FreeBalanceResponse> =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await this.waitFor(
+            EventNames.UNINSTALL_EVENT,
+            120_000,
+            (data) => data.appIdentityHash === requestCollateralResponse.depositAppIdentityHash,
+          );
+          const freeBalance = await this.getFreeBalance(assetId);
+          resolve({ freeBalance });
+        } catch (e) {
+          reject(e);
+        }
+      });
+    return { ...requestCollateralResponse, completed };
   };
 
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
