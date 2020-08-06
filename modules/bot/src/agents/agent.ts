@@ -167,7 +167,11 @@ export class Agent {
 
   async requestCollateral(assetId: string = AddressZero) {
     // Perform deposit
-    await this.client.requestCollateral(assetId);
+    const res = await this.client.requestCollateral(assetId);
+    if (!res) {
+      return;
+    }
+    await res.completed();
   }
 
   async depositIfNeeded(
