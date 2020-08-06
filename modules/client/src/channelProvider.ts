@@ -208,6 +208,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return this.cfCore;
   };
 
+  public removeAllListeners = (): any => {
+    this.cfCore.removeAllListeners();
+    return this.cfCore;
+  };
+
   public once = (
     event: string | EventName | MethodName,
     listener: (...args: any[]) => void,

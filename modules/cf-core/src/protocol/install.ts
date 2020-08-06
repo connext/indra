@@ -55,7 +55,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     const loggerId = (params as ProtocolParams.Install).proposal.identityHash || processID;
     log.info(`[${loggerId}] Initiation started`);
-    log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params)}`);
+    log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params, true, 0)}`);
 
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
@@ -144,6 +144,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
       `Failed to validate responders signature on free balance update in the install protocol. Our commitment: ${stringify(
         freeBalanceUpdateData.toJson(),
+        true,
+        0,
       )}`,
     );
     logTime(log, substart, `[${loggerId}] Verified responder's sig on free balance update`);
@@ -194,7 +196,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       (params as ProtocolParams.Install) || {};
     const loggerId = proposalJson?.identityHash || processID;
     log.info(`[${loggerId}] Response started`);
-    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
+    log.debug(
+      `[${loggerId}] Protocol response started with parameters ${stringify(params, true, 0)}`,
+    );
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnFreeBalanceStateUpdate = signature;
@@ -259,6 +263,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
       `Failed to validate initiators signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
         freeBalanceUpdateData.toJson(),
+        true,
+        0,
       )}`,
     );
     logTime(log, substart, `[${loggerId}] Verified initiator's free balance update sig`);

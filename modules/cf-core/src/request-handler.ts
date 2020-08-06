@@ -11,6 +11,7 @@ import {
   EventName,
   ProtocolEventMessage,
   NetworkContexts,
+  IOnchainTransactionService,
 } from "@connext/types";
 import { logTime } from "@connext/utils";
 import EventEmitter from "eventemitter3";
@@ -39,6 +40,7 @@ export class RequestHandler {
     readonly blocksNeededForConfirmation: number,
     readonly lockService: ILockService,
     public readonly log: ILoggerService,
+    readonly transactionService: IOnchainTransactionService | undefined,
   ) {
     this.log = this.log.newContext("CF-RequestHandler");
   }

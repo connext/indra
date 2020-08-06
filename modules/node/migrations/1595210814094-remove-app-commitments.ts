@@ -63,10 +63,8 @@ export class removeAppCommitments1595210814094 implements MigrationInterface {
       IF remove_app_result IS NULL OR update_free_balance_result IS NULL OR update_set_state_result IS NULL
       THEN
         RAISE EXCEPTION 
-        'Operation could not be completed: remove_app_result -> %, remove_set_state_result -> %, remove_conditional_result -> %, update_free_balance_result -> %, update_set_state_result -> %', 
+        'Operation could not be completed: remove_app_result -> %, update_free_balance_result -> %, update_set_state_result -> %', 
         remove_app_result, 
-        remove_set_state_result,
-        remove_conditional_result,
         update_free_balance_result,
         update_set_state_result;
       END IF;

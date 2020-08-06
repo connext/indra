@@ -40,7 +40,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
-    log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
+    log.info(`[${loggerId}] Initiation started: ${stringify(params, false, 0)}`);
 
     const {
       multisigAddress,
@@ -79,7 +79,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${loggerId}] Received responder's m2: ${stringify((m2 as any).data.customData)}`,
+      `[${loggerId}] Received responder's m2: ${stringify((m2 as any).data.customData, false, 0)}`,
     );
     substart = Date.now();
 
@@ -97,7 +97,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       appIdentityHash,
       log,
     );
-    log.info(`Initiator syncing with: ${stringify(syncType)}`);
+    log.info(`Initiator syncing with: ${stringify(syncType, true, 0)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
     // Should already have information from counterparty needed to sync your
@@ -110,7 +110,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error(
         `Need to sync from counterparty with ${
           syncType.type
-        }, but did not receive any commitments in m2: ${stringify(m2)}`,
+        }, but did not receive any commitments in m2: ${stringify(m2, false, 0)}`,
       );
     }
 
@@ -239,7 +239,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${loggerId}] Received responder's m4: ${stringify((m2 as any).data.customData)}`,
+      `[${loggerId}] Received responder's m4: ${stringify((m2 as any).data.customData, false, 0)}`,
     );
     substart = Date.now();
 
@@ -277,7 +277,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    log.debug(`[${loggerId}] Response started with m1: ${stringify(customData)}`);
+    log.debug(`[${loggerId}] Response started with m1: ${stringify(customData, false, 0)}`);
     const {
       initiatorIdentifier,
       responderIdentifier,
@@ -292,7 +292,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       appIdentityHash,
       log,
     );
-    log.info(`Responder syncing with: ${stringify(syncType)}`);
+    log.info(`Responder syncing with: ${stringify(syncType, true, 0)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
     const { message: m3 } = (yield [
@@ -308,7 +308,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${loggerId}] Received initiator's m3: ${stringify((m3 as any).data.customData)}`,
+      `[${loggerId}] Received initiator's m3: ${stringify((m3 as any).data.customData, false, 0)}`,
     );
     substart = Date.now();
 
@@ -537,6 +537,8 @@ function makeSyncDetermination(
     throw new Error(
       `Cannot make sync determination. Missing information from counterparty, got: ${stringify(
         counterpartyData,
+        true,
+        0,
       )}`,
     );
   }
@@ -575,7 +577,9 @@ function makeSyncDetermination(
       throw new Error(
         `Could not find an unsynced app, or there was more than one. My apps: ${stringify(
           myApps,
-        )}, theirs: ${stringify(theirApps)}`,
+          true,
+          0,
+        )}, theirs: ${stringify(theirApps, true, 0)}`,
       );
     }
 
@@ -608,7 +612,9 @@ function makeSyncDetermination(
         log.error(
           `Could not find out of sync proposal (counterparty behind). My proposals: ${stringify(
             myProposals,
-          )}, counterparty proposals: ${stringify(proposals)}.`,
+            true,
+            0,
+          )}, counterparty proposals: ${stringify(proposals, true, 0)}.`,
         );
       }
       return {
@@ -623,7 +629,9 @@ function makeSyncDetermination(
         log.error(
           `Could not find out of sync proposal (counterparty ahead). My proposals: ${stringify([
             ...myChannel.proposedAppInstances.keys(),
-          ])}, counterparty proposals: ${stringify(proposals)}`,
+            true,
+            0,
+          ])}, counterparty proposals: ${stringify(proposals, true, 0)}`,
         );
       }
       return {
@@ -641,7 +649,8 @@ function makeSyncDetermination(
   // To get to this point in the function, we know that the channel fell out of
   // sync while taking action on the app. This means that we *know* this app has
   // to be synced
-  if (!appIdentityHash) {
+  const sameApps = myChannel.appInstances.size === apps!.length;
+  if (!appIdentityHash || sameApps) {
     // assume that there is no problem with the apps
     // while this is not technically true, we know that if the appId was not
     // provided and we are syncing on error, the retry of the fn should work
@@ -651,9 +660,11 @@ function makeSyncDetermination(
   const myApp = myChannel.appInstances.get(appIdentityHash);
   if (!myApp) {
     throw new Error(
-      `Counterparty channel has record of app we do not, despite free balance nonces being in sync. Our apps: ${stringify(
+      `Counterparty channel has record of app we do not (${appIdentityHash}), despite free balance nonces being in sync. Our apps: ${stringify(
         [...myChannel.appInstances.keys()],
-      )}, their apps: ${stringify(apps)}`,
+        true,
+        0,
+      )}, their apps: ${stringify(apps, true, 0)}`,
     );
   }
 
@@ -662,7 +673,9 @@ function makeSyncDetermination(
     throw new Error(
       `Our channel has record of app counterparty does not, despite free balance nonces being in sync. Our apps: ${stringify(
         [...myChannel.appInstances.keys()],
-      )}, their apps: ${stringify(apps)}`,
+        true,
+        0,
+      )}, their apps: ${stringify(apps, true, 0)}`,
     );
   }
 
@@ -924,6 +937,8 @@ async function syncChannel(
         throw new Error(
           `Expected counterparty to return a string representing the uninstalled appId, got: ${stringify(
             affectedApp,
+            true,
+            0,
           )}`,
         );
       }
