@@ -64,6 +64,7 @@ export const getCancelAction = (
     | SimpleLinkedTransferAppAction;
   switch (transferType) {
     case ConditionalTransferTypes.LinkedTransfer:
+    case ConditionalTransferTypes.OnlineLinkedTransfer:
     case ConditionalTransferTypes.HashLockTransfer: {
       action = { preImage: HashZero } as HashLockTransferAppAction;
       break;
@@ -393,9 +394,8 @@ export class TransferService {
 
     // special case for expiry in initial state, receiver app must always expire first
     if ((initialState as HashLockTransferAppState).expiry) {
-      (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
-        TIMEOUT_BUFFER,
-      );
+      (initialState as HashLockTransferAppState).expiry =
+        (initialState as HashLockTransferAppState).expiry.sub(TIMEOUT_BUFFER);
     }
 
     if ((initialState as GraphBatchedTransferAppState).swapRate) {
@@ -529,16 +529,18 @@ export class TransferService {
   // sender comes back online, node can unlock transfer
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
-    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
-      senderIdentifier,
-      this.cfCoreService.cfCore.signerAddress,
-    );
-
-    for (const senderApp of senderTransferApps) {
-      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
-        senderApp.meta.paymentId,
+    const senderTransferApps =
+      await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+        senderIdentifier,
         this.cfCoreService.cfCore.signerAddress,
       );
+
+    for (const senderApp of senderTransferApps) {
+      const correspondingReceiverApp =
+        await this.transferRepository.findTransferAppByPaymentIdAndSender(
+          senderApp.meta.paymentId,
+          this.cfCoreService.cfCore.signerAddress,
+        );
 
       if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
         continue;

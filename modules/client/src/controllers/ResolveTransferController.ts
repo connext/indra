@@ -197,7 +197,8 @@ export class ResolveTransferController extends AbstractController {
           action = data && signature && ({ data, signature } as SimpleSignedTransferAppAction);
           break;
         }
-        case ConditionalTransferTypes.LinkedTransfer: {
+        case ConditionalTransferTypes.LinkedTransfer:
+        case ConditionalTransferTypes.OnlineLinkedTransfer: {
           const { preImage } = params as PublicParams.ResolveLinkedTransfer;
           action = preImage && ({ preImage } as SimpleLinkedTransferAppAction);
           break;
@@ -252,7 +253,8 @@ export class ResolveTransferController extends AbstractController {
         const { data, signature } = params as PublicParams.ResolveSignedTransfer;
         return !!data && !!signature;
       }
-      case ConditionalTransferTypes.LinkedTransfer: {
+      case ConditionalTransferTypes.LinkedTransfer:
+      case ConditionalTransferTypes.OnlineLinkedTransfer: {
         const { preImage } = params as PublicParams.ResolveLinkedTransfer;
         return !!preImage;
       }

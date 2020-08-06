@@ -12,6 +12,7 @@ import {
   WithdrawAppName,
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
+  OnlineLinkedTransferAppName,
   SimpleSignedTransferAppName,
   DepositAppName,
   SimpleTwoPartySwapAppName,
@@ -44,6 +45,7 @@ export const AppNames = {
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [OnlineLinkedTransferAppName]: OnlineLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
   [WithdrawAppName]: WithdrawAppName,
@@ -57,6 +59,7 @@ interface AppActionMap {
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppAction;
   [GraphSignedTransferAppName]: GraphSignedTransferAppAction;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppAction;
+  [OnlineLinkedTransferAppName]: SimpleLinkedTransferAppAction;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
   [SimpleTwoPartySwapAppName]: {}; // no action
   [WithdrawAppName]: WithdrawAppAction;
@@ -72,6 +75,7 @@ interface AppStateMap {
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppState;
   [GraphSignedTransferAppName]: GraphSignedTransferAppState;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppState;
+  [OnlineLinkedTransferAppName]: SimpleLinkedTransferAppState;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
   [SimpleTwoPartySwapAppName]: SimpleSwapAppState;
   [WithdrawAppName]: WithdrawAppState;
@@ -104,6 +108,7 @@ export const SupportedApplicationNames = enumify({
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [OnlineLinkedTransferAppName]: OnlineLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
   [WithdrawAppName]: WithdrawAppName,
@@ -111,7 +116,9 @@ export const SupportedApplicationNames = enumify({
   [DepositAppName]: DepositAppName,
 });
 
-export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof typeof SupportedApplicationNames];
+export type SupportedApplicationNames = typeof SupportedApplicationNames[
+  keyof typeof SupportedApplicationNames
+];
 
 // These apps have actions which do not depend on contract storage & have zero side-effects
 // This array is used to determine whether or not it is safe to run some app's
@@ -121,6 +128,7 @@ export const PureActionApps = [
   GraphSignedTransferAppName,
   SimpleSignedTransferAppName,
   SimpleLinkedTransferAppName,
+  OnlineLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
 ];
 

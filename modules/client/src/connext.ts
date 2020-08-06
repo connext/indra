@@ -22,7 +22,6 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
-  MinimalTransaction,
   NodeResponses,
   PublicParams,
   PublicResults,
@@ -302,7 +301,7 @@ export class ConnextClient implements IConnextClient {
     return this.createTransferController.createTransfer({
       amount: params.amount,
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      conditionType: params.conditionType || ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
       paymentId: params.paymentId || getRandomBytes32(),
       preImage: getRandomBytes32(),

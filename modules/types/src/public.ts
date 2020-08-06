@@ -68,7 +68,9 @@ type ResolveHashLockTransferResponse = {
 // linked transfer
 
 type LinkedTransferParameters = {
-  conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
+  conditionType:
+    | typeof ConditionalTransferTypes.LinkedTransfer
+    | typeof ConditionalTransferTypes.OnlineLinkedTransfer;
   amount: BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
@@ -84,7 +86,9 @@ type LinkedTransferResponse = {
 };
 
 type ResolveLinkedTransferParameters = {
-  conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
+  conditionType:
+    | typeof ConditionalTransferTypes.LinkedTransfer
+    | typeof ConditionalTransferTypes.OnlineLinkedTransfer;
   paymentId: Bytes32;
   preImage: Bytes32;
 };
@@ -293,6 +297,9 @@ type WithdrawResponse = {
 // transfer
 
 type TransferParameters = MethodParams.Deposit & {
+  conditionType?:
+    | typeof ConditionalTransferTypes.LinkedTransfer
+    | typeof ConditionalTransferTypes.OnlineLinkedTransfer;
   recipient: PublicIdentifier;
   meta?: any;
   paymentId?: Bytes32;

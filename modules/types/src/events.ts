@@ -19,6 +19,7 @@ type GraphTransfer = typeof ConditionalTransferTypes.GraphTransfer;
 type GraphBatchedTransfer = typeof ConditionalTransferTypes.GraphBatchedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
 type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
+type OnlineLinkedTransfer = typeof ConditionalTransferTypes.OnlineLinkedTransfer;
 
 ////////////////////////////////////////
 const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
@@ -216,13 +217,16 @@ type SyncFailedEventData = {
 
 interface EventPayloadMap {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: ConditionalTransferCreatedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | OnlineLinkedTransfer |
+    SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: ConditionalTransferUnlockedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | OnlineLinkedTransfer |
+    SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: ConditionalTransferFailedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | OnlineLinkedTransfer |
+    SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   [CREATE_CHANNEL_EVENT]: CreateMultisigEventData;
   [SETUP_FAILED_EVENT]: SetupFailedEventData;
@@ -322,6 +326,9 @@ export namespace EventPayloads {
   // client/node specific
   export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
   export type LinkedTransferCreated = ConditionalTransferCreatedEventData<LinkedTransfer>;
+  export type OnlineLinkedTransferCreated = ConditionalTransferCreatedEventData<
+    OnlineLinkedTransfer
+  >;
   export type SignedTransferCreated = ConditionalTransferCreatedEventData<SignedTransfer>;
   export type GraphTransferCreated = ConditionalTransferCreatedEventData<GraphTransfer>;
   export type GraphBatchedTransferCreated = ConditionalTransferCreatedEventData<
@@ -329,6 +336,9 @@ export namespace EventPayloads {
   >;
   export type HashLockTransferUnlocked = ConditionalTransferUnlockedEventData<HashLockTransfer>;
   export type LinkedTransferUnlocked = ConditionalTransferUnlockedEventData<LinkedTransfer>;
+  export type OnlineLinkedTransferUnlocked = ConditionalTransferUnlockedEventData<
+    OnlineLinkedTransfer
+  >;
   export type SignedTransferUnlocked = ConditionalTransferUnlockedEventData<SignedTransfer>;
   export type GraphTransferUnlocked = ConditionalTransferUnlockedEventData<GraphTransfer>;
   export type GraphBatchedTransferUnlocked = ConditionalTransferUnlockedEventData<
@@ -336,17 +346,21 @@ export namespace EventPayloads {
   >;
   export type HashLockTransferFailed = ConditionalTransferFailedEventData<HashLockTransfer>;
   export type LinkedTransferFailed = ConditionalTransferFailedEventData<LinkedTransfer>;
+  export type OnlineLinkedTransferFailed = ConditionalTransferFailedEventData<OnlineLinkedTransfer>;
   export type SignedTransferFailed = ConditionalTransferFailedEventData<SignedTransfer>;
   export type GraphTransferFailed = ConditionalTransferFailedEventData<GraphTransfer>;
   export type GraphBatchedTransferFailed = ConditionalTransferFailedEventData<GraphBatchedTransfer>;
   export type ConditionalTransferCreated<T> = ConditionalTransferCreatedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | OnlineLinkedTransfer |
+    SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   export type ConditionalTransferUnlocked<T> = ConditionalTransferUnlockedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | OnlineLinkedTransfer |
+    SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   export type ConditionalTransferFailed<T> = ConditionalTransferFailedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | OnlineLinkedTransfer |
+    SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   export type DepositStarted = DepositStartedEventData;
   export type DepositConfirmed = DepositConfirmedEventData;
