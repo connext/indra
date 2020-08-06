@@ -11,7 +11,7 @@ import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
 
-describe("Reclaim", () => {
+describe.only("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -74,12 +74,13 @@ describe("Reclaim", () => {
           res();
         }
       });
-      await clientA.transfer({
+      const t = await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
         paymentId,
       });
+      console.log("t: ", t);
     });
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);

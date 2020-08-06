@@ -80,7 +80,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
       );
       return {
         transaction: response.transaction,
-        depositAppIdentityHash: response.depositAppIdentityHash,
+        depositAppIdentityHash: response.appIdentityHash,
       };
     } catch (e) {
       this.log.warn(`Failed to collateralize: ${e.message}`);

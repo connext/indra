@@ -6,6 +6,7 @@ import {
   StateChannelJSON,
   DepositAppName,
   DepositAppState,
+  FreeBalanceResponse,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
@@ -106,14 +107,11 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<
-    | {
-        transaction: providers.TransactionResponse;
-        depositAppIdentityHash?: string;
-        rebalanceType: RebalanceType;
-      }
-    | undefined
-  > {
+  ): Promise<{
+    completed?: () => Promise<FreeBalanceResponse>;
+    transaction?: providers.TransactionResponse;
+    appIdentityHash?: string;
+  }> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
@@ -161,9 +159,12 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let depositRes:
-      | { tx: providers.TransactionResponse; appIdentityHash: string }
-      | undefined = undefined;
+    let rebalanceRes: {
+      completed?: () => Promise<FreeBalanceResponse>;
+      transaction?: providers.TransactionResponse;
+      appIdentityHash?: string;
+    } = {};
+
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -171,7 +172,7 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        depositRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        rebalanceRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
       } else {
         this.log.info(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
@@ -184,7 +185,8 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} > reclaimThreshold ${reclaimThreshold.toString()}, withdrawing`,
         );
         const amount = nodeFreeBalance.sub(target);
-        await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
+        const transaction = await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
+        rebalanceRes.transaction = transaction;
       } else {
         this.log.info(
           `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${reclaimThreshold.toString()}`,
@@ -194,13 +196,7 @@ export class ChannelService {
     this.log.info(
       `Rebalance finished for ${channel.userIdentifier} on chain ${channel.chainId}, assetId: ${assetId}`,
     );
-    return (
-      depositRes && {
-        transaction: depositRes.tx,
-        depositAppIdentityHash: depositRes.appIdentityHash,
-        rebalanceType,
-      }
-    );
+    return rebalanceRes;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(

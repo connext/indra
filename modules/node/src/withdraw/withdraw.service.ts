@@ -54,7 +54,7 @@ export class WithdrawService {
     channel: Channel,
     amount: BigNumber,
     assetId: string = AddressZero,
-  ): Promise<{ completed: () => Promise<providers.TransactionResponse> }> {
+  ): Promise<providers.TransactionResponse> {
     if (!channel) {
       throw new Error(`No channel exists for multisigAddress ${channel.multisigAddress}`);
     }
@@ -95,14 +95,12 @@ export class WithdrawService {
     );
     await commitment.addSignatures(state.signatures[0], state.signatures[1]);
     const tx = await commitment.getSignedTransaction();
-    const completed = () =>
-      this.submitWithdrawToChain(
-        appInstance.multisigAddress,
-        tx,
-        appInstance.identityHash,
-        TransactionReason.NODE_WITHDRAWAL,
-      );
-    return { completed };
+    return this.submitWithdrawToChain(
+      appInstance.multisigAddress,
+      tx,
+      appInstance.identityHash,
+      TransactionReason.NODE_WITHDRAWAL,
+    );
   }
 
   /*

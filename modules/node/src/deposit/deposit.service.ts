@@ -8,6 +8,7 @@ import {
   MinimalTransaction,
   EventNames,
   Bytes32,
+  FreeBalanceResponse,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -44,7 +45,7 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     assetId: string,
-  ): Promise<{ tx: providers.TransactionResponse; appIdentityHash: string } | undefined> {
+  ): Promise<{ completed: () => Promise<FreeBalanceResponse>, appIdentityHash: string }> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
@@ -145,11 +146,24 @@ export class DepositService {
       return undefined;
     }
     // remove the deposit rights when transaction fails or is mined
-    response
-      .wait()
-      .then(async () => await cleanUpDepositRights())
-      .catch(async (e) => await cleanUpDepositRights());
-    return { tx: response, appIdentityHash };
+    const completed = (): Promise<FreeBalanceResponse> =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await response.wait();
+          const freeBalance = await this.cfCoreService.getFreeBalance(
+            channel.userIdentifier,
+            channel.multisigAddress,
+            assetId,
+          );
+          resolve({ freeBalance });
+        } catch (e) {
+          this.log.error(`Error in node deposit: ${e.message}`);
+          reject(e);
+        } finally {
+          await cleanUpDepositRights();
+        }
+      });
+    return { completed, appIdentityHash };
   }
 
   async requestDepositRights(
