@@ -11,7 +11,7 @@ import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
 
-describe.only("Reclaim", () => {
+describe("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
