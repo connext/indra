@@ -45,7 +45,11 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     assetId: string,
-  ): Promise<{ completed: () => Promise<FreeBalanceResponse>; appIdentityHash: string }> {
+  ): Promise<{
+    completed: () => Promise<FreeBalanceResponse>;
+    appIdentityHash: string;
+    transaction: providers.TransactionResponse;
+  }> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
@@ -162,7 +166,7 @@ export class DepositService {
         await cleanUpDepositRights();
       }
     });
-    return { completed: () => completed, appIdentityHash };
+    return { completed: () => completed, appIdentityHash, transaction: response };
   }
 
   async requestDepositRights(

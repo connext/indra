@@ -23,10 +23,11 @@ describe("Collateral", () => {
   it("happy case: node should collateralize ETH", async () => {
     const response = (await client.requestCollateral(AddressZero))!;
     expect(response).to.be.ok;
-    const tx = response.transaction;
-    expect(tx.hash).to.be.ok;
-    await response.completed();
-    const freeBalance = await client.getFreeBalance(AddressZero);
+    expect(response.completed).to.be.ok;
+    expect(response.transaction).to.be.ok;
+    expect(response.transaction.hash).to.be.ok;
+    expect(response.depositAppIdentityHash).to.be.ok;
+    const { freeBalance } = await response.completed();
     expect(freeBalance[client.signerAddress]).to.be.eq("0");
     expect(freeBalance[nodeSignerAddress]).to.be.eq(ETH_AMOUNT_MD);
   });
@@ -34,10 +35,11 @@ describe("Collateral", () => {
   it("happy case: node should collateralize tokens", async () => {
     const response = (await client.requestCollateral(tokenAddress))!;
     expect(response).to.be.ok;
-    const tx = response.transaction;
-    expect(tx.hash).to.be.ok;
-    await response.completed();
-    const freeBalance = await client.getFreeBalance(tokenAddress);
+    expect(response.completed).to.be.ok;
+    expect(response.transaction).to.be.ok;
+    expect(response.transaction.hash).to.be.ok;
+    expect(response.depositAppIdentityHash).to.be.ok;
+    const { freeBalance } = await response.completed();
     expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });

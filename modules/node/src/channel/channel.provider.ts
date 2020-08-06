@@ -9,10 +9,7 @@ import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import {
-  OnchainTransactionRepository,
-  onchainEntityToReceipt,
-} from "../onchainTransactions/onchainTransaction.repository";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
@@ -31,6 +28,7 @@ import {
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
+import { stringify } from "@connext/utils";
 
 const { getAddress } = utils;
 
@@ -78,6 +76,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
+      this.log.error(`*** rebalance res: ${stringify(response)}`);
       return {
         transaction: response.transaction,
         depositAppIdentityHash: response.appIdentityHash,
