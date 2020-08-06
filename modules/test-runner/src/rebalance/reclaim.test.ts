@@ -8,7 +8,6 @@ import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
-import { reject } from "lodash";
 
 const { AddressZero, One, Two } = constants;
 

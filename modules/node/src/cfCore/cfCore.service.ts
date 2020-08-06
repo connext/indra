@@ -40,7 +40,6 @@ import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../consta
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { MAX_RETRIES, KNOWN_ERRORS } from "../onchainTransactions/onchainTransaction.service";
 
 const { Zero } = constants;
 
@@ -156,7 +155,7 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses(channel.chainId);
+    const contractAddresses = this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
