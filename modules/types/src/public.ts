@@ -19,7 +19,7 @@ type FreeBalanceResponse = {
 };
 
 type DepositResponse = {
-  txHash: string;
+  transaction: providers.TransactionResponse;
   completed: () => Promise<FreeBalanceResponse>;
 };
 

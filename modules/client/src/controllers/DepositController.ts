@@ -51,6 +51,7 @@ export class DepositController extends AbstractController {
       amount: amount.toString(),
       assetId: tokenAddress,
     });
+    const transaction = await this.ethProvider.getTransaction(txHash);
     const completed: Promise<PublicResults.RescindDepositRights> = new Promise(
       async (resolve, reject) => {
         try {
@@ -62,8 +63,7 @@ export class DepositController extends AbstractController {
             hash: txHash,
           });
           this.log.info(`Sent deposit transaction to chain: ${txHash}`);
-          const tx = await this.ethProvider.getTransaction(txHash);
-          await tx.wait();
+          await transaction.wait();
           const res = await this.rescindDepositRights({ appIdentityHash, assetId });
           this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
             hash: txHash,
@@ -84,7 +84,7 @@ export class DepositController extends AbstractController {
       },
     );
     return {
-      txHash,
+      transaction,
       completed: () => completed,
     };
   };

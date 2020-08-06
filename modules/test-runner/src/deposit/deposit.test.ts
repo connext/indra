@@ -70,7 +70,7 @@ describe("Deposits", () => {
     };
     const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
     if (response.completed) {
-      expect(response.txHash).to.be.ok;
+      expect(response.transaction).to.be.ok;
       await response.completed();
     }
     await assertOnchainBalance(client, expected);
@@ -86,7 +86,7 @@ describe("Deposits", () => {
     };
     const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
     if (response.completed) {
-      expect(response.txHash).to.be.ok;
+      expect(response.transaction).to.be.ok;
       await response.completed();
     }
     await assertClientFreeBalance(client, expected);
@@ -123,7 +123,7 @@ describe("Deposits", () => {
     await client.requestDepositRights({ assetId: expected.assetId });
     const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
     if (response.completed) {
-      expect(response.txHash).to.be.ok;
+      expect(response.transaction).to.be.ok;
       await response.completed();
     }
     await assertClientFreeBalance(client, expected);
@@ -213,13 +213,13 @@ describe("Deposits", () => {
       client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
       let response = await client.deposit({ amount: TWO, assetId: expected.assetId });
       if (response.completed) {
-        expect(response.txHash).to.be.ok;
+        expect(response.transaction).to.be.ok;
         await response.completed();
       }
       await client.withdraw({ amount: TWO, assetId: expected.assetId });
       response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
       if (response.completed) {
-        expect(response.txHash).to.be.ok;
+        expect(response.transaction).to.be.ok;
         await response.completed();
       }
       resolve();
@@ -241,7 +241,7 @@ describe("Deposits", () => {
     };
     let response = await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
     if (response.completed) {
-      expect(response.txHash).to.be.ok;
+      expect(response.transaction).to.be.ok;
       await response.completed();
     }
     await client.withdraw({ amount: TWO, assetId: ethExpected.assetId });
@@ -250,7 +250,7 @@ describe("Deposits", () => {
       assetId: tokenExpected.assetId,
     });
     if (response.completed) {
-      expect(response.txHash).to.be.ok;
+      expect(response.transaction).to.be.ok;
       await response.completed();
     }
     await assertClientFreeBalance(client, ethExpected);
