@@ -180,7 +180,7 @@ export class ChannelService {
         const amount = nodeFreeBalance.sub(target);
         await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
       } else {
-        this.log.debug(
+        this.log.info(
           `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${reclaimThreshold.toString()}`,
         );
       }
