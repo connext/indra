@@ -46,7 +46,6 @@ export class DepositController extends AbstractController {
     this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
-    let ret: PublicResults.RescindDepositRights;
     const txHash = await this.connext.channelProvider.walletDeposit({
       amount: amount.toString(),
       assetId: tokenAddress,
@@ -70,7 +69,7 @@ export class DepositController extends AbstractController {
             amount: amount,
             assetId: tokenAddress,
           } as EventPayloads.DepositConfirmed);
-          this.log.info(`deposit complete for assetId ${assetId}: ${JSON.stringify(ret)}`);
+          this.log.info(`deposit complete for assetId ${assetId}: ${JSON.stringify(res)}`);
           resolve(res);
         } catch (e) {
           this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
@@ -78,7 +77,7 @@ export class DepositController extends AbstractController {
             assetId: tokenAddress,
             error: e.stack || e.message,
           } as EventPayloads.DepositFailed);
-          ret = await this.rescindDepositRights({ appIdentityHash, assetId });
+          await this.rescindDepositRights({ appIdentityHash, assetId });
           reject(new Error(e.stack || e.message));
         }
       },
