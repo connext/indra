@@ -79,44 +79,21 @@ export const requestCollateral = async (
   const log = new ColorfulLogger("RequestCollateral", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
   const preCollateralBal = await client.getFreeBalance(tokenAddress);
-  log.debug(`client.requestCollateral() called`);
+  log.debug(`calling client.requestCollateral()`);
   const start = Date.now();
+  const res = await client.requestCollateral(assetId);
+  log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
   if (!enforce) {
-    // TODO: rm 'as any' once type returned by requestCollateral is fixed
-    const tx = (await client.requestCollateral(assetId)) as any;
-    log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-    await ethProvider.waitForTransaction(tx.hash);
-    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
-    log.info(`collateralization finished for real in ${Date.now() - start}`);
+    res && (await res.completed());
     return;
   }
-  return new Promise(async (resolve, reject) => {
-    log.debug(`client.requestCollateral() called`);
-    const start = Date.now();
-    // watch for balance change on uninstall
-    try {
-      await Promise.race([
-        delayAndThrow(20_000, `Could not detect increase in node free balance within 20s`),
-        new Promise(async (res) => {
-          client.on(EventNames.UNINSTALL_EVENT, async () => {
-            const currBal = await client.getFreeBalance(tokenAddress);
-            if (currBal[client.nodeSignerAddress].lte(preCollateralBal[client.nodeSignerAddress])) {
-              // no increase in bal
-              return;
-            }
-            // otherwise resolve
-            return res();
-          });
-          // TODO: rm 'as any' once type returned by requestCollateral is fixed
-          const tx = (await client.requestCollateral(assetId)) as any;
-          await ethProvider.waitForTransaction(tx.hash);
-          await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
-        }),
-      ]);
-      log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-      resolve();
-    } catch (e) {
-      return reject(e);
-    }
-  });
+  if (!res) {
+    throw new Error("Node did not collateralized, and collateral should be enforced");
+  }
+  log.info(`waiting for collateral tx to be mined and ap to be uninstalled`);
+  const fb = await res.completed();
+  log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+  if (fb[client.nodeSignerAddress].lt(preCollateralBal[client.nodeSignerAddress])) {
+    throw new Error("Expected increase in balance following collateralization");
+  }
 };
