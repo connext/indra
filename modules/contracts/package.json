@@ -21,14 +21,15 @@
     "solidity"
   ],
   "scripts": {
-    "build": "rm -rf ./dist/* && npm run compile && npm run transpile",
-    "build-bundle": "npm run compile && webpack --config ops/webpack.config.js",
+    "build": "npm run clean && npm run compile && npm run transpile && npm run bundle",
+    "bundle": "webpack --config ops/webpack.config.js",
+    "clean": "rm -rf ./dist/*",
     "compile": "npx buidler compile",
     "lint": "npm run lint-ts && npm run lint-sol",
-    "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
     "lint-sol": "solium -d .",
+    "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
     "test": "npx buidler test",
-    "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
+    "transpile": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@connext/types": "7.0.4",

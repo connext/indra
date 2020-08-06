@@ -254,11 +254,6 @@ contracts: types utils $(shell find modules/contracts $(find_options))
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-contracts-bundle: types utils $(shell find modules/contracts $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build-bundle"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 store: types utils contracts $(shell find modules/store $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/store && npm run build"
@@ -325,7 +320,7 @@ database: $(shell find ops/database $(find_options))
 	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-ethprovider: contracts-bundle $(shell find modules/contracts/ops $(find_options))
+ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 	$(log_start)
 	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider modules/contracts
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
