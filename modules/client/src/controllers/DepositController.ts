@@ -47,11 +47,11 @@ export class DepositController extends AbstractController {
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
     let ret: PublicResults.RescindDepositRights;
-    const depositTx = await this.connext.channelProvider.walletDeposit({
+    const txHash = await this.connext.channelProvider.walletDeposit({
       amount: amount.toString(),
       assetId: tokenAddress,
     });
-    const depositConfirmation: Promise<PublicResults.RescindDepositRights> = new Promise(
+    const completed: Promise<PublicResults.RescindDepositRights> = new Promise(
       async (resolve, reject) => {
         try {
           this.log.debug(`Starting deposit`);
@@ -59,14 +59,14 @@ export class DepositController extends AbstractController {
             amount: amount,
             assetId: tokenAddress,
             appIdentityHash,
-            hash: depositTx,
+            hash: txHash,
           });
-          this.log.info(`Sent deposit transaction to chain: ${depositTx}`);
-          const tx = await this.ethProvider.getTransaction(depositTx);
+          this.log.info(`Sent deposit transaction to chain: ${txHash}`);
+          const tx = await this.ethProvider.getTransaction(txHash);
           await tx.wait();
           const res = await this.rescindDepositRights({ appIdentityHash, assetId });
           this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
-            hash: depositTx,
+            hash: txHash,
             amount: amount,
             assetId: tokenAddress,
           } as EventPayloads.DepositConfirmed);
@@ -84,8 +84,8 @@ export class DepositController extends AbstractController {
       },
     );
     return {
-      depositTx,
-      depositConfirmation: () => depositConfirmation,
+      txHash,
+      completed: () => completed,
     };
   };
 

@@ -19,8 +19,8 @@ type FreeBalanceResponse = {
 };
 
 type DepositResponse = {
-  depositTx: string;
-  depositConfirmation: () => Promise<FreeBalanceResponse>;
+  txHash: string;
+  completed: () => Promise<FreeBalanceResponse>;
 };
 
 type CheckDepositRightsParameters = {
