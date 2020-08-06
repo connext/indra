@@ -5,10 +5,10 @@ import {
   IConnextClient,
   EventPayloads,
 } from "@connext/types";
-import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
+import { ColorfulLogger, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber } from "ethers";
 
-import { env, ethProvider, expect } from "../";
+import { env, expect } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
@@ -91,9 +91,9 @@ export const requestCollateral = async (
     throw new Error("Node did not collateralized, and collateral should be enforced");
   }
   log.info(`waiting for collateral tx to be mined and ap to be uninstalled`);
-  const fb = await res.completed();
+  const { freeBalance } = await res.completed();
   log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-  if (fb[client.nodeSignerAddress].lt(preCollateralBal[client.nodeSignerAddress])) {
+  if (freeBalance[client.nodeSignerAddress].lt(preCollateralBal[client.nodeSignerAddress])) {
     throw new Error("Expected increase in balance following collateralization");
   }
 };
