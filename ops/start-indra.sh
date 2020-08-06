@@ -215,7 +215,7 @@ then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
   chain_id_1=1337; chain_id_2=1338;
-  INDRA_CHAIN_MODE="${INDRA_ENV#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  bash ops/start-testnet.sh $chain_id_1 $chain_id_2
   INDRA_CHAIN_PROVIDERS="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
   INDRA_CONTRACT_ADDRESSES="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
 
