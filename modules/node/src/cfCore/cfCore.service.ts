@@ -40,7 +40,6 @@ import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../consta
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { MAX_RETRIES, KNOWN_ERRORS } from "../onchainTransactions/onchainTransaction.service";
 
 const { Zero } = constants;
 
@@ -489,7 +488,12 @@ export class CFCoreService {
     this.configService.getSupportedChains().forEach((chainId) => {
       const contractAddresses = this.configService.getContractAddresses(chainId);
       RegistryOfApps.forEach((app) => {
-        const appDefinitionAddress = contractAddresses[app.name];
+        // Special case: OnlineLinkedTransferApp uses same contract as SimpleLinkedTransferApp
+        const appDefinitionAddress = contractAddresses[
+          app.name === SupportedApplicationNames.OnlineLinkedTransferApp
+            ? SupportedApplicationNames.SimpleLinkedTransferApp
+            : app.name
+        ];
         this.log.info(`Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`);
         // set both name and app definition as keys for better lookup
         this.appRegistryMap.set(appDefinitionAddress, {
