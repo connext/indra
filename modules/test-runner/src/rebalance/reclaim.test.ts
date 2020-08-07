@@ -58,7 +58,13 @@ describe.only("Reclaim", () => {
     await clientB.requestCollateral(AddressZero);
 
     clientA.on("UNINSTALL_EVENT", (msg) => {
-      const { multisigAddress } = data.data;
+      const { multisigAddress } = msg;
+      console.log("sender uninstall event multisig", multisigAddress);
+    });
+
+    clientB.on("UNINSTALL_EVENT", (msg) => {
+      const { multisigAddress } = msg;
+      console.log("receiver uninstall event multisig", multisigAddress);
     });
 
     // transfer to node to get node over upper bound reclaim
