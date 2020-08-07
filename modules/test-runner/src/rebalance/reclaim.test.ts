@@ -36,6 +36,8 @@ describe("Reclaim", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
+    clientA.off();
+    clientB.off();
   });
 
   it("happy case: node should reclaim ETH with async transfer", async () => {
@@ -56,16 +58,6 @@ describe("Reclaim", () => {
       AddressZero,
     );
     await clientB.requestCollateral(AddressZero);
-
-    clientA.on("UNINSTALL_EVENT", (msg) => {
-      const { multisigAddress } = msg;
-      console.log("sender uninstall event multisig", multisigAddress);
-    });
-
-    clientB.on("UNINSTALL_EVENT", (msg) => {
-      const { multisigAddress } = msg;
-      console.log("receiver uninstall event multisig", multisigAddress);
-    });
 
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
@@ -135,6 +127,16 @@ describe("Reclaim", () => {
       BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       tokenAddress,
     );
+
+    clientA.on("UNINSTALL_EVENT", (msg) => {
+      const { multisigAddress } = msg;
+      console.log("sender uninstall event multisig", multisigAddress);
+    });
+
+    clientB.on("UNINSTALL_EVENT", (msg) => {
+      const { multisigAddress } = msg;
+      console.log("receiver uninstall event multisig", multisigAddress);
+    });
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
     const preBalance = await tokenContract.balanceOf(clientA.multisigAddress);
