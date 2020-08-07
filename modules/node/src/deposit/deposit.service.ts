@@ -10,7 +10,7 @@ import {
   Bytes32,
   FreeBalanceResponse,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify, getRandomBytes32 } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, providers } from "ethers";
 
@@ -199,8 +199,9 @@ export class DepositService {
     channel: Channel,
     appIdentityHash: string,
   ): Promise<string | undefined> {
-    this.log.info(
-      `Active deposit for user ${channel.userIdentifier} on ${channel.multisigAddress}, waiting`,
+    const id = getRandomBytes32();
+    this.log.error(
+      `[${id}] Active deposit for user ${channel.userIdentifier} on ${channel.multisigAddress}, waiting`,
     );
     const ethProvider = this.configService.getEthProvider(channel.chainId);
     const startingBlock = await ethProvider.getBlockNumber();
@@ -209,7 +210,7 @@ export class DepositService {
     // check to make sure that app is still installed
     const app = channel.appInstances.find((app) => app.identityHash);
     if (app && app.type === AppType.UNINSTALLED) {
-      this.log.info(`Deposit app with ${appIdentityHash} has already been uninstalled`);
+      this.log.error(`[${id}] Deposit app with ${appIdentityHash} has already been uninstalled`);
       return appIdentityHash;
     }
 
@@ -231,18 +232,18 @@ export class DepositService {
       // the deposit tx has either failed or succeeded, regardless
       // the deposit app should not exist at this point.
       // uninstall and rescind deposit rights, then return string
-      this.log.info(
-        `Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}, calling uninstall`,
+      this.log.error(
+        `[${id}] Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}, calling uninstall`,
       );
       await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
-      this.log.info(
-        `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      this.log.error(
+        `[${id}] Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
       );
       return appIdentityHash;
     }
 
     // transaction is still pending, wait until it is broadcast
-    this.log.warn(`Waiting for uninstallation of ${appIdentityHash}`);
+    this.log.error(`[${id}] Waiting for uninstallation of ${appIdentityHash}`);
     const result = await Promise.race([
       new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
@@ -270,8 +271,8 @@ export class DepositService {
 
     ethProvider.off("block");
     if (!result) {
-      this.log.warn(
-        `Waited 5 blocks for uninstall of ${appIdentityHash} without success.  Waiting for tx: ${transaction.hash}`,
+      this.log.error(
+        `[${id}] Waited 5 blocks for uninstall of ${appIdentityHash} without success.  Waiting for tx: ${transaction.hash}`,
       );
     }
     return result as string | undefined;
