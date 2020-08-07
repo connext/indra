@@ -123,16 +123,9 @@ describe("Reclaim", () => {
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    console.log(`multisigA addr: ${clientA.multisigAddress}`);
-    console.log(`multisigB addr: ${clientB.multisigAddress}`);
-    console.log(`clientA addr: ${clientA.signerAddress}`);
-    console.log(`clientB addr: ${clientB.signerAddress}`);
-    console.log(`node addr: ${clientA.nodeSignerAddress}`);
-    console.log(`waiting for promise`);
     await new Promise(async (res, rej) => {
       const paymentId = getRandomBytes32();
       tokenContract.on("Transfer", (from, to, balance) => {
-        console.log(`caught transfer -- to: ${to}, from: ${from}, balance: ${balance.toString()}`);
         if (to === clientA.nodeSignerAddress && from === clientA.multisigAddress) {
           res();
         }
@@ -146,7 +139,6 @@ describe("Reclaim", () => {
         })
         .catch(rej);
     });
-    console.log(`promise resolved`);
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer
