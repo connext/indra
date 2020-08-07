@@ -235,7 +235,7 @@ export class DepositService {
     }
 
     // transaction is still pending, wait until it is broadcast
-    this.log.info(`Waiting for uninstallation of ${appIdentityHash}`);
+    this.log.warn(`Waiting for uninstallation of ${appIdentityHash}`);
     const result = await Promise.race([
       new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
@@ -255,13 +255,13 @@ export class DepositService {
         // only wait for 5 blocks
         ethProvider.on("block", async (blockNumber: number) => {
           if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
-            ethProvider.off("block");
             return resolve(undefined);
           }
         });
       }),
     ]);
 
+    ethProvider.off("block");
     if (!result) {
       this.log.warn(
         `Waited 5 blocks for uninstall of ${appIdentityHash} without success.  Waiting for tx: ${transaction.hash}`,
