@@ -95,6 +95,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // LISTENER METHODS
   on(event: string, listener: (...args: any[]) => void): any;
   once(event: string, listener: (...args: any[]) => void): any;
+  removeAllListeners(): any;
 
   ///////////////////////////////////
   // SIGNER METHODS

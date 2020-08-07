@@ -40,7 +40,6 @@ import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../consta
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { MAX_RETRIES, KNOWN_ERRORS } from "../onchainTransactions/onchainTransaction.service";
 
 const { Zero } = constants;
 
@@ -144,30 +143,9 @@ export class CFCoreService {
       } as MethodParams.DeployStateDepositHolder,
     };
     this.logCfCoreMethodStart(MethodNames.chan_deployStateDepositHolder, params.parameters);
-    const errors: { [k: number]: string } = [];
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const deployRes = await this.cfCore.rpcRouter.dispatch(params);
-        this.logCfCoreMethodResult(
-          MethodNames.chan_deployStateDepositHolder,
-          deployRes.result.result,
-        );
-        return deployRes.result.result as MethodResults.DeployStateDepositHolder;
-      } catch (e) {
-        errors[attempt] = e.message;
-        const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
-        if (!knownErr) {
-          this.log.error(
-            `Failed to deploy multisig with unknown error: ${e.message}. Should use onchain transaction service for this`,
-          );
-          throw new Error(e.stack || e.message);
-        }
-        this.log.warn(
-          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying multisig deployment. Use onchain tx service.`,
-        );
-      }
-    }
-    throw new Error(`Failed to deploy multisig (errors indexed by attempt): ${stringify(errors)}`);
+    const deployRes = await this.cfCore.rpcRouter.dispatch(params);
+    this.logCfCoreMethodResult(MethodNames.chan_deployStateDepositHolder, deployRes.result.result);
+    return deployRes.result.result as MethodResults.DeployStateDepositHolder;
   }
 
   async createWithdrawCommitment(
@@ -177,7 +155,7 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses(channel.chainId);
+    const contractAddresses = this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),

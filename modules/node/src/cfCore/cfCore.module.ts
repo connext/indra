@@ -20,6 +20,7 @@ import { CFCoreService } from "./cfCore.service";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 import { CacheModule } from "../caching/cache.module";
+import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 
 @Module({
   exports: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
@@ -29,6 +30,7 @@ import { CacheModule } from "../caching/cache.module";
     LockModule,
     LoggerModule,
     MessagingModule,
+    OnchainTransactionModule,
     TypeOrmModule.forFeature([
       CFCoreRecordRepository,
       ChannelRepository,

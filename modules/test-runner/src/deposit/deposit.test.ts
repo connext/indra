@@ -68,7 +68,11 @@ describe("Deposits", () => {
       client: ONE,
       assetId: AddressZero,
     };
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    if (response.completed) {
+      expect(response.transaction).to.be.ok;
+      await response.completed();
+    }
     await assertOnchainBalance(client, expected);
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
@@ -80,7 +84,11 @@ describe("Deposits", () => {
       client: One.toString(),
       assetId: tokenAddress,
     };
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    if (response.completed) {
+      expect(response.transaction).to.be.ok;
+      await response.completed();
+    }
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });
@@ -113,7 +121,11 @@ describe("Deposits", () => {
       assetId: tokenAddress,
     };
     await client.requestDepositRights({ assetId: expected.assetId });
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    if (response.completed) {
+      expect(response.transaction).to.be.ok;
+      await response.completed();
+    }
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
     const { appIdentityHash } = await client.checkDepositRights({
@@ -199,9 +211,17 @@ describe("Deposits", () => {
       client.once(EventNames.INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
       client.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
       client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
-      await client.deposit({ amount: TWO, assetId: expected.assetId });
+      let response = await client.deposit({ amount: TWO, assetId: expected.assetId });
+      if (response.completed) {
+        expect(response.transaction).to.be.ok;
+        await response.completed();
+      }
       await client.withdraw({ amount: TWO, assetId: expected.assetId });
-      await client.deposit({ amount: expected.client, assetId: expected.assetId });
+      response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
+      if (response.completed) {
+        expect(response.transaction).to.be.ok;
+        await response.completed();
+      }
       resolve();
     });
     await assertClientFreeBalance(client, expected);
@@ -219,9 +239,20 @@ describe("Deposits", () => {
       assetId: tokenAddress,
       node: Zero,
     };
-    await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
+    let response = await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
+    if (response.completed) {
+      expect(response.transaction).to.be.ok;
+      await response.completed();
+    }
     await client.withdraw({ amount: TWO, assetId: ethExpected.assetId });
-    await client.deposit({ amount: tokenExpected.client, assetId: tokenExpected.assetId });
+    response = await client.deposit({
+      amount: tokenExpected.client,
+      assetId: tokenExpected.assetId,
+    });
+    if (response.completed) {
+      expect(response.transaction).to.be.ok;
+      await response.completed();
+    }
     await assertClientFreeBalance(client, ethExpected);
     await assertClientFreeBalance(client, tokenExpected);
     await assertNodeFreeBalance(client, ethExpected);

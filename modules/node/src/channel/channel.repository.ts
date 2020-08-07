@@ -227,22 +227,4 @@ export class ChannelRepository extends Repository<Channel> {
 
     return profile;
   }
-
-  async setInflightCollateralization(
-    channel: Channel,
-    assetId: string,
-    collateralizationInFlight: boolean,
-  ): Promise<void> {
-    const toSave = {
-      ...channel.activeCollateralizations,
-      [assetId]: collateralizationInFlight,
-    };
-    const query = this.createQueryBuilder()
-      .update(Channel)
-      .set({
-        activeCollateralizations: toSave,
-      })
-      .where("multisigAddress = :multisigAddress", { multisigAddress: channel.multisigAddress });
-    await query.execute();
-  }
 }

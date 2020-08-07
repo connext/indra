@@ -1,5 +1,11 @@
 import { getLocalStore } from "@connext/store";
-import { IConnextClient, IChannelSigner, EventNames } from "@connext/types";
+import {
+  IConnextClient,
+  IChannelSigner,
+  EventNames,
+  CF_METHOD_TIMEOUT,
+  IStoreService,
+} from "@connext/types";
 import { getRandomChannelSigner, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
@@ -23,11 +29,13 @@ describe("Restore State", () => {
   let tokenAddress: string;
   let nodeSignerAddress: string;
   let signerA: IChannelSigner;
+  let store: IStoreService;
 
   beforeEach(async () => {
     const nats = getNatsClient();
     signerA = getRandomChannelSigner(ethProviderUrl);
-    clientA = await createClient({ signer: signerA, store: getLocalStore() });
+    store = getLocalStore();
+    clientA = await createClient({ signer: signerA, store });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
 
@@ -50,9 +58,9 @@ describe("Restore State", () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
 
-    // TODO: rm 'as any' once type returned by requestCollateral is fixed
-    const tx = (await clientA.requestCollateral(tokenAddress)) as any;
-    await ethProvider.waitForTransaction(tx.hash);
+    const response = await clientA.requestCollateral(tokenAddress);
+    expect(response).to.be.ok;
+    await ethProvider.waitForTransaction(response!.transaction.hash);
     await clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
 
     // Wait for the node to uninstall the deposit app & persist too
@@ -67,7 +75,7 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPre[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
-    await clientA.store.clear();
+    await store.clear();
 
     // check that getting balances will now error
     await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
@@ -76,8 +84,12 @@ describe("Restore State", () => {
     await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
+    await clientA.messaging.disconnect();
+    clientA.off();
+    await delay(1000);
 
-    await clientA.restoreState();
+    // recreate client
+    clientA = await createClient({ signer: signerA, store });
 
     // check balances post
     const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
@@ -93,11 +105,12 @@ describe("Restore State", () => {
     const assetId = tokenAddress;
     const recipient = clientA.publicIdentifier;
     expect(recipient).to.be.eq(signerA.publicIdentifier);
+    const preTransfer = await clientA.getFreeBalance(assetId);
     const senderClient = await createClient();
     await fundChannel(senderClient, TOKEN_AMOUNT, assetId);
 
     // first clear the client store and take client offline
-    await clientA.store.clear();
+    await store.clear();
     await clientA.messaging.disconnect();
     clientA.off();
 
@@ -108,10 +121,12 @@ describe("Restore State", () => {
       assetId,
       recipient,
     });
-    await sent;
+    const createRes = await sent;
 
     // delay so that the node -> receiver proposal times out
-    await delay(30_000);
+    // wait out for the entire lock service
+    const timer = CF_METHOD_TIMEOUT + 1500;
+    await delay(timer * 2);
 
     const freeBalanceSender = await senderClient.getFreeBalance(assetId);
     expect(freeBalanceSender[senderClient.signerAddress]).to.be.eq(
@@ -119,7 +134,19 @@ describe("Restore State", () => {
     );
 
     // bring clientA back online
-    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 30_000);
+    const unlocked = new Promise((resolve, reject) => {
+      senderClient.once(
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        resolve,
+        (msg) => msg.paymentId === createRes.paymentId,
+      );
+      senderClient.once(
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
+        (msg) => reject(msg.error),
+        (msg) => msg.paymentId === createRes.paymentId,
+      );
+      delay(10_000).then(() => reject(`No events thrown in 10s`));
+    });
     clientA = await createClient(
       {
         signer: signerA,
@@ -127,11 +154,14 @@ describe("Restore State", () => {
       },
       false,
     );
+
     expect(clientA.signerAddress).to.be.eq(signerA.address);
     expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
     await unlocked;
 
     const freeBalanceA = await clientA.getFreeBalance(assetId);
-    expect(freeBalanceA[clientA.signerAddress]).to.be.eq(transferAmount);
+    expect(freeBalanceA[clientA.signerAddress]).to.be.eq(
+      preTransfer[clientA.signerAddress].add(transferAmount),
+    );
   });
 });

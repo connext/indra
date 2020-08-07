@@ -100,10 +100,20 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
+  async findByAppId(appIdentityHash: string): Promise<OnchainTransaction | undefined> {
+    const tx = await this.createQueryBuilder("onchainTransaction")
+      .where("onchainTransaction.appIdentityHash = :appIdentityHash", {
+        appIdentityHash,
+      })
+      .getOne();
+    return tx;
+  }
+
   async addResponse(
     tx: providers.TransactionResponse,
     reason: TransactionReason,
     channel: Channel,
+    appIdentityHash?: string,
   ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
@@ -126,6 +136,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           blockNumber: tx.blockNumber,
           raw: tx.raw,
           gasUsed: Zero,
+          appIdentityHash,
         })
         .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
         .setParameter("nonce", toBN(tx.nonce).toNumber())
@@ -161,6 +172,8 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           status: TransactionStatus.SUCCESS,
           gasUsed: tx.gasUsed || Zero,
           logsBloom: tx.logsBloom,
+          blockNumber: tx.blockNumber,
+          blockHash: tx.blockHash,
         })
         .where("onchain_transaction.hash = :txHash", {
           txHash: tx.transactionHash,

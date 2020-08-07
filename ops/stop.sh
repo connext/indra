@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
+
+# make sure a network for this project has been created
+docker network create --attachable --driver overlay $project 2> /dev/null || true
+
 target=$1 # one of: indra, daicard, all
 shift
 

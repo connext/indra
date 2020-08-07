@@ -16,6 +16,7 @@ export enum TransactionReason {
   USER_WITHDRAWAL = "USER_WITHDRAWAL",
   COLLATERALIZATION = "COLLATERALIZATION",
   NODE_WITHDRAWAL = "NODE_WITHDRAWAL",
+  MULTISIG_DEPLOY = "MULTISIG_DEPLOY",
 }
 
 export enum TransactionStatus {
@@ -89,6 +90,9 @@ export class OnchainTransaction {
 
   @Column("jsonb", { nullable: true })
   errors!: { [k: number]: string };
+
+  @Column("text", { nullable: true })
+  appIdentityHash!: string;
 }
 
 @ViewEntity({

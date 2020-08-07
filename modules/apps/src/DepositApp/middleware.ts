@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { validateDepositApp } from ".";
+import { validateDepositApp } from "./validation";
 
 export const uninstallDepositMiddleware = async (
   context: UninstallMiddlewareContext,

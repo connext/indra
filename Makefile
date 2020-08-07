@@ -92,10 +92,9 @@ reset: stop-all
 	docker container prune -f
 	docker network rm $(project) $(project)_cf_tester $(project)_node_tester $(project)_test_store 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
-	docker volume rm $(project)_chain_1337 $(project)_chain_1338 $(project)_database_dev  2> /dev/null || true
+	docker volume rm $(project)_database_dev  2> /dev/null || true
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
 	rm -rf .chaindata/*
-	rm -rf .flags/deployed-contracts
 	rm -rf modules/bot/.bot-store
 
 quick-reset:

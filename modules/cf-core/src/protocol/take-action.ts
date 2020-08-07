@@ -35,7 +35,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
     log.info(`[${loggerId}] Initiation started`);
-    log.debug(`[${loggerId}] Protocol initiated with params: ${stringify(params)}`);
+    log.debug(`[${loggerId}] Protocol initiated with params: ${stringify(params, true, 0)}`);
 
     const {
       appIdentityHash,
@@ -134,6 +134,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySig,
       `Failed to validate responder's signature on initial set state commitment in the take-action protocol. Our commitment: ${stringify(
         setStateCommitment.toJson(),
+        true,
+        0,
       )}`,
     );
     logTime(log, substart, `[${loggerId}] Verified responders signature`);
@@ -166,7 +168,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     } = message.data;
     const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
     log.info(`[${loggerId}] Response started`);
-    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
+    log.debug(
+      `[${loggerId}] Protocol response started with parameters ${stringify(params, true, 0)}`,
+    );
 
     const {
       appIdentityHash,
@@ -228,6 +232,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignature,
       `Failed to validate initiator's signature on initial set state commitment in the take-action protocol. Our commitment: ${stringify(
         setStateCommitment.toJson(),
+        true,
+        0,
       )}`,
     );
     logTime(log, substart, `[${loggerId}] Verified initiators signature`);

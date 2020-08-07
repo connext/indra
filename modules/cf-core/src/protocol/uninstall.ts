@@ -36,7 +36,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message.data;
     const loggerId = (params as ProtocolParams.Uninstall).appIdentityHash || processID;
     log.info(`[${loggerId}] Initiation started`);
-    log.debug(`[${loggerId}] Protocol initiated with params ${stringify(params)}`);
+    log.debug(`[${loggerId}] Protocol initiated with params ${stringify(params, true, 0)}`);
 
     const {
       responderIdentifier,
@@ -146,6 +146,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignature,
       `Failed to validate responder's signature on free balance commitment in the uninstall protocol. Our commitment: ${stringify(
         uninstallCommitment.toJson(),
+        true,
+        0,
       )}`,
     );
     logTime(log, substart, `[${loggerId}] Verified responder's sig`);
@@ -173,7 +175,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID, customData } = message.data;
     const loggerId = (params as ProtocolParams.Uninstall).appIdentityHash || processID;
     log.info(`[${loggerId}] Response started`);
-    log.debug(`[${loggerId}] Protocol response started with params ${stringify(params)}`);
+    log.debug(`[${loggerId}] Protocol response started with params ${stringify(params, true, 0)}`);
 
     const {
       initiatorIdentifier,
@@ -262,6 +264,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignature,
       `Failed to validate initiator's signature on free balance commitment in the uninstall protocol. Our commitment: ${stringify(
         uninstallCommitment.toJson(),
+        true,
+        0,
       )}`,
     );
     logTime(log, substart, `[${loggerId}] Asserted valid signature in responding uninstall`);
