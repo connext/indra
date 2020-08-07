@@ -361,10 +361,10 @@ export class TransferService {
       );
       if (depositResponse) {
         try {
-          // OK to use channel without getting fresh data bc this only
-          // uses it for logging info
           await this.depositService.handleActiveDeposit(
-            receiverChannel,
+            await this.channelRepository.findByMultisigAddressOrThrow(
+              receiverChannel.multisigAddress,
+            ),
             depositResponse.appIdentityHash,
           );
         } catch (e) {

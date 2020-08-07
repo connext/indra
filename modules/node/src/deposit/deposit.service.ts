@@ -25,7 +25,7 @@ import {
   TransactionReason,
   TransactionStatus,
 } from "../onchainTransactions/onchainTransaction.entity";
-import { AppInstance } from "../appInstance/appInstance.entity";
+import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 
 const { Zero, AddressZero } = constants;
 
@@ -205,6 +205,13 @@ export class DepositService {
     const ethProvider = this.configService.getEthProvider(channel.chainId);
     const startingBlock = await ethProvider.getBlockNumber();
     const BLOCKS_TO_WAIT = 5;
+
+    // check to make sure that app is still installed
+    const app = channel.appInstances.find((app) => app.identityHash);
+    if (app && app.type === AppType.UNINSTALLED) {
+      this.log.info(`Deposit app with ${appIdentityHash} has already been uninstalled`);
+      return appIdentityHash;
+    }
 
     // Get the transaction associated with the deposit
     const transaction = await this.onchainTransactionService.findByAppId(appIdentityHash);

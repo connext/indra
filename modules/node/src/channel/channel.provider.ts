@@ -76,11 +76,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
-      this.log.error(`*** rebalance res: ${stringify(response)}`);
-      return {
-        transaction: response.transaction,
-        depositAppIdentityHash: response.appIdentityHash,
-      };
+      return (
+        response && {
+          transaction: response.transaction,
+          depositAppIdentityHash: response.appIdentityHash,
+        }
+      );
     } catch (e) {
       this.log.warn(`Failed to collateralize: ${e.message}`);
       return undefined;
