@@ -129,13 +129,15 @@ describe("Reclaim", () => {
     );
 
     clientA.on("UNINSTALL_EVENT", (msg) => {
-      const { multisigAddress } = msg;
+      const { multisigAddress, uninstalledApp } = msg;
       console.log("sender uninstall event multisig", multisigAddress);
+      console.log("final app state", uninstalledApp.latestState);
     });
 
     clientB.on("UNINSTALL_EVENT", (msg) => {
-      const { multisigAddress } = msg;
+      const { multisigAddress, uninstalledApp } = msg;
       console.log("receiver uninstall event multisig", multisigAddress);
+      console.log("final app state", uninstalledApp.latestState);
     });
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
