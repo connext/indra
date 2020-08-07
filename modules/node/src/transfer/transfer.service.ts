@@ -370,7 +370,7 @@ export class TransferService {
           ]);
         } catch (e) {
           throw new Error(
-            `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${e.message}`,
+            `Could not deposit sufficient collateral to resolve transfer for receiver within ${RECEIVER_COLLATERALIZATION_TIMEOUT}ms: ${receiverIdentifier}. ${e.message}`,
           );
         }
       }
