@@ -64,5 +64,5 @@ then
   mocha --slow 1000 --timeout 180000 --bail --check-leaks --watch $bundle
 else
   echo "Starting test-runner"
-  mocha --slow 1000 --timeout 180000 --bail --check-leaks --exit $bundle
+  mocha --slow 1000 --timeout 180000 --bail --check-leaks --exit $noOnly $bundle
 fi
