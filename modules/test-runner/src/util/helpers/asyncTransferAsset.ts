@@ -1,5 +1,5 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { ColorfulLogger, getRandomBytes32, stringify } from "@connext/utils";
+import { ColorfulLogger, getRandomBytes32, stringify, delay } from "@connext/utils";
 import { BigNumber } from "ethers";
 
 import { env } from "../env";
@@ -26,55 +26,61 @@ export async function asyncTransferAsset(
   } = await clientB.getFreeBalance(assetId);
   const paymentId = getRandomBytes32();
 
-  const transferFinished = () => {
-    return Promise.all([
-      new Promise((resolve, reject) => {
-        clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
-          log.debug(`Got recipient transfer unlocked event with ${stringify(data)}`);
-          expect(data.paymentId).to.be.ok;
-          if (data.paymentId === paymentId) {
-            expect(data).to.deep.include({
-              amount: transferAmount,
-              sender: clientA.publicIdentifier,
-              recipient: clientB.publicIdentifier,
-              paymentId,
-            });
-            return resolve();
-          }
-        });
-        clientB.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (data) => {
-          log.debug(`Got recipient transfer failed event with ${stringify(data)}`);
-          expect(data.paymentId).to.be.ok;
-          expect(data.error).to.be.ok;
-          if (data.paymentId === paymentId) {
-            return reject(new Error(data.error));
-          }
-        });
-      }),
-      new Promise((resolve) => {
-        clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
-          log.debug(`Got sender transfer unlocked event with ${stringify(data)}`);
-          if (data.paymentId === paymentId) {
-            return resolve();
-          }
-        });
-      }),
-    ]);
-  };
-
   const start = Date.now();
-  log.info(`call client.transfer()`);
-  const { appIdentityHash } = await clientA.transfer({
-    amount: transferAmount.toString(),
-    assetId,
-    meta: { ...SENDER_INPUT_META },
-    recipient: clientB.publicIdentifier,
-    paymentId,
-  });
-  log.info(`transfer() returned in ${Date.now() - start}ms`);
+  let appIdentityHash;
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+        log.debug(`Got recipient transfer unlocked event with ${stringify(data)}`);
+        expect(data.paymentId).to.be.ok;
+        if (data.paymentId === paymentId) {
+          expect(data).to.deep.include({
+            amount: transferAmount,
+            sender: clientA.publicIdentifier,
+            recipient: clientB.publicIdentifier,
+            paymentId,
+          });
+          return resolve();
+        }
+      });
+      clientB.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (data) => {
+        log.debug(`Got recipient transfer failed event with ${stringify(data)}`);
+        expect(data.paymentId).to.be.ok;
+        expect(data.error).to.be.ok;
+        if (data.paymentId === paymentId) {
+          return reject(new Error(data.error));
+        }
+      });
+    }),
+    new Promise((resolve) => {
+      clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+        log.debug(`Got sender transfer unlocked event with ${stringify(data)}`);
+        if (data.paymentId === paymentId) {
+          return resolve();
+        }
+      });
+    }),
+    new Promise((resolve, reject) => {
+      log.info(`call client.transfer()`);
+      clientA
+        .transfer({
+          amount: transferAmount.toString(),
+          assetId,
+          meta: { ...SENDER_INPUT_META },
+          recipient: clientB.publicIdentifier,
+          paymentId,
+        })
+        .then((res) => {
+          log.info(`transfer() returned in ${Date.now() - start}ms`);
+          appIdentityHash = res.appIdentityHash;
+          resolve();
+        })
+        .catch(reject);
+      delay(30_000).then(() => reject("Transfer did not finish within 30s"));
+    }),
+  ]);
 
-  await transferFinished();
-  log.info(`Got transfer finished event in ${Date.now() - start}ms`);
+  log.info(`Got transfer finished events in ${Date.now() - start}ms`);
 
   const appInstanceCheck = await clientA.getAppInstance(appIdentityHash);
   expect(appInstanceCheck).to.be.undefined;
