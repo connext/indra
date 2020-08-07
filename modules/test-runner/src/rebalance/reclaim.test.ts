@@ -11,7 +11,7 @@ import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
 
-describe("Reclaim", () => {
+describe.only("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -25,6 +25,10 @@ describe("Reclaim", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
+    console.log("senderId", clientA.publicIdentifier);
+    console.log("sender multisig", clientA.multisigAddress);
+    console.log("recipientId", clientB.publicIdentifier);
+    console.log("recipient multisig", clientB.multisigAddress);
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -52,6 +56,10 @@ describe("Reclaim", () => {
       AddressZero,
     );
     await clientB.requestCollateral(AddressZero);
+
+    clientA.on("UNINSTALL_EVENT", (msg) => {
+      const { multisigAddress } = data.data;
+    });
 
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound

@@ -6,7 +6,7 @@ import { env } from "../env";
 import { expect } from "../";
 import { ExistingBalancesAsyncTransfer } from "../types";
 
-const log = new ColorfulLogger("AsyncTransfer", env.logLevel);
+const log = new ColorfulLogger("AsyncTransfer", 4);
 
 export async function asyncTransferAsset(
   clientA: IConnextClient,
