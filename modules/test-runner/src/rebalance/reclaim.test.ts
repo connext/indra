@@ -11,7 +11,7 @@ import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
 
-describe("Reclaim", () => {
+describe.only("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -65,7 +65,7 @@ describe("Reclaim", () => {
     const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async (res) => {
+    await new Promise(async (res, rej) => {
       const paymentId = getRandomBytes32();
       clientA.ethProvider.on("block", async () => {
         const balance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
@@ -74,13 +74,15 @@ describe("Reclaim", () => {
           res();
         }
       });
-      const t = await clientA.transfer({
-        amount: One.toString(),
-        assetId: AddressZero,
-        recipient: clientB.publicIdentifier,
-        paymentId,
-      });
-      console.log("t: ", t);
+      clientA
+        .transfer({
+          amount: One.toString(),
+          assetId: AddressZero,
+          recipient: clientB.publicIdentifier,
+          paymentId,
+        })
+        .then((t) => console.log("t: ", t))
+        .catch(rej);
     });
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
@@ -133,13 +135,15 @@ describe("Reclaim", () => {
           res();
         }
       });
-      const t = await clientA.transfer({
-        amount: One.toString(),
-        assetId: AddressZero,
-        recipient: clientB.publicIdentifier,
-        paymentId,
-      });
-      console.log("t: ", t);
+      clientA
+        .transfer({
+          amount: One.toString(),
+          assetId: tokenAddress,
+          recipient: clientB.publicIdentifier,
+          paymentId,
+        })
+        .then((t) => console.log("t: ", t))
+        .catch(rej);
     });
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
