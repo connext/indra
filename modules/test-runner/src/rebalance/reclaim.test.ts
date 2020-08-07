@@ -108,7 +108,7 @@ describe.only("Reclaim", () => {
     ).to.be.true;
   });
 
-  it.only("happy case: node should reclaim tokens after async transfer", async () => {
+  it("happy case: node should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
       collateralizeThreshold: toBN("5"),
