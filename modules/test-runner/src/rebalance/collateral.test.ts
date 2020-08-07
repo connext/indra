@@ -1,5 +1,5 @@
-import { IConnextClient } from "@connext/types";
-import { constants } from "ethers";
+import { IConnextClient, EventNames } from "@connext/types";
+import { constants, BigNumber } from "ethers";
 
 import { createClient, ETH_AMOUNT_MD, expect, TOKEN_AMOUNT } from "../util";
 
@@ -42,5 +42,22 @@ describe("Collateral", () => {
     const { freeBalance } = await response.completed();
     expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
+  });
+
+  it("should properly handle concurrent collateral requests", async () => {
+    const appDef = client.config.contractAddresses[client.chainId].DepositApp;
+    let depositAppCount = 0;
+    client.on(EventNames.INSTALL_EVENT, (msg) => {
+      const { appDefinition } = msg.appInstance;
+      if (appDefinition === appDef) {
+        depositAppCount += 1;
+      }
+    });
+    const res = await Promise.all([
+      client.requestCollateral(tokenAddress),
+      client.requestCollateral(tokenAddress),
+    ]);
+    await Promise.all(res.map((r) => r?.completed()));
+    expect(depositAppCount).to.be.eq(1);
   });
 });
