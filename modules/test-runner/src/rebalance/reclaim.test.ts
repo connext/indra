@@ -121,32 +121,35 @@ describe("Reclaim", () => {
     );
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
+    const preBalance = await tokenContract.balanceOf(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async (res, rej) => {
       const paymentId = getRandomBytes32();
-      tokenContract.on("Transfer", (from, to, balance) => {
-        if (to === clientA.nodeSignerAddress && from === clientA.multisigAddress) {
+      clientA.ethProvider.on("block", async () => {
+        const balance = await tokenContract.balanceOf(clientA.multisigAddress);
+        if (preBalance.gt(balance)) {
+          clientA.ethProvider.off("block");
           res();
-          tokenContract.removeAllListeners("Transfer");
         }
       });
-      await clientA
-        .transfer({
-          amount: One.toString(),
-          assetId: tokenAddress,
-          recipient: clientB.publicIdentifier,
-          paymentId,
-        })
-        .catch(rej);
+      const t = await clientA.transfer({
+        amount: One.toString(),
+        assetId: AddressZero,
+        recipient: clientB.publicIdentifier,
+        paymentId,
+      });
+      console.log("t: ", t);
     });
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer
     // so try to pre-emptively avoid race conditions
+    expect(freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.target))).to.be
+      .true;
     expect(
-      freeBalancePost[nodeSignerAddress].sub(BigNumber.from(REBALANCE_PROFILE.target)).abs(),
-    ).to.be.eq(One);
+      freeBalancePost[nodeSignerAddress].lte(BigNumber.from(REBALANCE_PROFILE.target).add(One)),
+    ).to.be.true;
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
