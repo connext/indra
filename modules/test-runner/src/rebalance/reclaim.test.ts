@@ -128,6 +128,7 @@ describe("Reclaim", () => {
       tokenContract.on("Transfer", (from, to, balance) => {
         if (to === clientA.nodeSignerAddress && from === clientA.multisigAddress) {
           res();
+          tokenContract.removeAllListeners("Transfer");
         }
       });
       await clientA
