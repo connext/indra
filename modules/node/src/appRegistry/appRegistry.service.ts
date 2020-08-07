@@ -19,7 +19,7 @@ import {
   DefaultApp,
   ConditionalTransferTypes,
 } from "@connext/types";
-import { getAddressFromAssetId, toBN } from "@connext/utils";
+import { getAddressFromAssetId, toBN, delayAndThrow } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers";
 
@@ -33,7 +33,7 @@ import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { TransferService } from "../transfer/transfer.service";
+import { TransferService, RECEIVER_COLLATERALIZATION_TIMEOUT } from "../transfer/transfer.service";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -121,10 +121,10 @@ export class AppRegistryService implements OnModuleInit {
             proposeInstallParams.responderDepositAssetId,
           );
           try {
-            await this.depositService.handleActiveDeposit(
-              installerChannel,
-              depositResponse.appIdentityHash,
-            );
+            await Promise.race([
+              depositResponse.completed(),
+              delayAndThrow(RECEIVER_COLLATERALIZATION_TIMEOUT),
+            ]);
           } catch (e) {
             throw new Error(
               `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}. ${e.message}`,

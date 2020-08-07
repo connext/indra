@@ -25,6 +25,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   calculateExchangeWad,
   toBN,
+  delayAndThrow,
 } from "@connext/utils";
 import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
@@ -47,6 +48,8 @@ import { CFCoreStore } from "../cfCore/cfCore.store";
 
 const { Zero, HashZero } = constants;
 const { parseUnits } = utils;
+
+export const RECEIVER_COLLATERALIZATION_TIMEOUT = 60_000;
 
 export const getCancelAction = (
   transferType: ConditionalTransferTypes,
@@ -361,12 +364,10 @@ export class TransferService {
       );
       if (depositResponse) {
         try {
-          // OK to use channel without getting fresh data bc this only
-          // uses it for logging info
-          await this.depositService.handleActiveDeposit(
-            receiverChannel,
-            depositResponse.appIdentityHash,
-          );
+          await Promise.race([
+            depositResponse.completed(),
+            delayAndThrow(RECEIVER_COLLATERALIZATION_TIMEOUT),
+          ]);
         } catch (e) {
           throw new Error(
             `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${e.message}`,
@@ -393,6 +394,7 @@ export class TransferService {
 
     // special case for expiry in initial state, receiver app must always expire first
     if ((initialState as HashLockTransferAppState).expiry) {
+      // eslint-disable-next-line max-len
       (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
         TIMEOUT_BUFFER,
       );
@@ -529,12 +531,14 @@ export class TransferService {
   // sender comes back online, node can unlock transfer
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
+    // eslint-disable-next-line max-len
     const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
       senderIdentifier,
       this.cfCoreService.cfCore.signerAddress,
     );
 
     for (const senderApp of senderTransferApps) {
+      // eslint-disable-next-line max-len
       const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
         senderApp.meta.paymentId,
         this.cfCoreService.cfCore.signerAddress,
