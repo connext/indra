@@ -86,7 +86,11 @@ export class DepositService {
         channel.userIdentifier,
         channel.multisigAddress,
       );
-      const uninstalledApp = await this.handleActiveDeposit(channel, depositApp.identityHash);
+      const uninstalledApp = await this.handleActiveDeposit(
+        channel.multisigAddress,
+        depositApp.identityHash,
+        channel.chainId,
+      );
       if (!uninstalledApp) {
         throw new Error(
           `Attempted to wait for ongoing transaction on chain ${channel.chainId}, but it took longer than 5 blocks, retry later. For deposit app: ${depositApp.identityHash} `,
@@ -196,23 +200,17 @@ export class DepositService {
   }
 
   async handleActiveDeposit(
-    channel: Channel,
+    multisigAddress: string,
     appIdentityHash: string,
+    chainId: number,
   ): Promise<string | undefined> {
     const id = getRandomBytes32();
     this.log.error(
-      `[${id}] Active deposit for user ${channel.userIdentifier} on ${channel.multisigAddress}, waiting`,
+      `[${id}] handleActiveDeposit for ${multisigAddress} started. Deposit app: ${appIdentityHash}`,
     );
-    const ethProvider = this.configService.getEthProvider(channel.chainId);
+    const ethProvider = this.configService.getEthProvider(chainId);
     const startingBlock = await ethProvider.getBlockNumber();
     const BLOCKS_TO_WAIT = 5;
-
-    // check to make sure that app is still installed
-    const app = channel.appInstances.find((app) => app.identityHash);
-    if (app && app.type === AppType.UNINSTALLED) {
-      this.log.error(`[${id}] Deposit app with ${appIdentityHash} has already been uninstalled`);
-      return appIdentityHash;
-    }
 
     // Get the transaction associated with the deposit
     const transaction = await this.onchainTransactionService.findByAppId(appIdentityHash);
@@ -239,6 +237,14 @@ export class DepositService {
       this.log.error(
         `[${id}] Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
       );
+      return appIdentityHash;
+    }
+
+    // check to make sure that app is still installed
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const app = channel.appInstances.find((app) => app.identityHash);
+    if (app && app.type === AppType.UNINSTALLED) {
+      this.log.error(`[${id}] Deposit app with ${appIdentityHash} has already been uninstalled`);
       return appIdentityHash;
     }
 

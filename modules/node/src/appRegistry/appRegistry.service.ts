@@ -122,10 +122,9 @@ export class AppRegistryService implements OnModuleInit {
           );
           try {
             await this.depositService.handleActiveDeposit(
-              await this.channelRepository.findByMultisigAddressOrThrow(
-                installerChannel.multisigAddress,
-              ),
+              installerChannel.multisigAddress,
               depositResponse.appIdentityHash,
+              installerChannel.chainId,
             );
           } catch (e) {
             throw new Error(
