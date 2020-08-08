@@ -70,7 +70,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   findByIdentityHashAndType(identityHash: string, type: AppType): Promise<AppInstance | undefined> {
     return this.findOne({
-      where: { identityHash, type: AppType.PROPOSAL },
+      where: { identityHash, type },
       relations: ["channel"],
     });
   }
