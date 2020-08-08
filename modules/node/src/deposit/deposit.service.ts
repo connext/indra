@@ -18,7 +18,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import {
   OnchainTransaction,
@@ -26,6 +25,7 @@ import {
   TransactionStatus,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const { Zero, AddressZero } = constants;
 
@@ -36,7 +36,7 @@ export class DepositService {
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly channelRepository: ChannelRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("DepositService");
   }
@@ -239,10 +239,13 @@ export class DepositService {
     }
 
     // check to make sure that app is still installed
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    const app = channel.appInstances.find((app) => app.identityHash);
-    if (app && app.type === AppType.UNINSTALLED) {
-      this.log.error(`[${id}] Deposit app with ${appIdentityHash} has already been uninstalled`);
+    const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
+    if (!app) {
+      throw new Error(`[${id}] Could not find deposit app with hash ${appIdentityHash} in channel`);
+    }
+
+    if (app.type === AppType.UNINSTALLED) {
+      this.log.error(`[${id}] Deposit app ${appIdentityHash} already uninstalled`);
       return appIdentityHash;
     }
 
