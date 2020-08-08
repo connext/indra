@@ -362,10 +362,9 @@ export class TransferService {
       if (depositResponse) {
         try {
           await this.depositService.handleActiveDeposit(
-            await this.channelRepository.findByMultisigAddressOrThrow(
-              receiverChannel.multisigAddress,
-            ),
+            receiverChannel.multisigAddress,
             depositResponse.appIdentityHash,
+            receiverChannel.chainId,
           );
         } catch (e) {
           throw new Error(
