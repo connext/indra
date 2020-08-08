@@ -233,10 +233,8 @@ export class DepositService {
       this.log.error(
         `[${id}] Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}, calling uninstall`,
       );
-      await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
-      this.log.error(
-        `[${id}] Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
+      await this.rescindDepositRights(appIdentityHash, multisigAddress);
+      this.log.error(`[${id}] Released deposit rights on chain ${chainId} for ${multisigAddress}`);
       return appIdentityHash;
     }
 
