@@ -1,6 +1,6 @@
 {
   "name": "@connext/apps",
-  "version": "7.1.0",
+  "version": "7.1.1",
   "description": "Connext Counterfactual Apps",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -19,8 +19,8 @@
   },
   "devDependencies": {
     "@connext/contracts": "3.4.1",
-    "@connext/types": "7.1.0",
-    "@connext/utils": "7.1.0",
+    "@connext/types": "7.1.1",
+    "@connext/utils": "7.1.1",
     "@rollup/plugin-json": "4.1.0",
     "ethers": "5.0.7",
     "rollup": "2.23.0",
