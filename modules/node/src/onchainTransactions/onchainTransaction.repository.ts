@@ -109,6 +109,21 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
+  async addAppUninstallFlag(appUninstalled: boolean, hash: string): Promise<void> {
+    return getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(OnchainTransaction)
+        .set({
+          appUninstalled,
+        })
+        .where("onchain_transaction.hash = :hash", {
+          hash,
+        })
+        .execute();
+    });
+  }
+
   async addResponse(
     tx: providers.TransactionResponse,
     reason: TransactionReason,
