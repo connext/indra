@@ -1,3 +1,5 @@
+import { providers } from "ethers";
+
 import { Address, BigNumber, Bytes32, DecString, Network, PublicIdentifier } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
@@ -8,7 +10,7 @@ import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
-import { Collateralizations, RebalanceProfile } from "./misc";
+import { RebalanceProfile } from "./misc";
 import { ContractAddresses } from "./contracts";
 
 type GetRebalanceProfileResponse = RebalanceProfile;
@@ -64,7 +66,6 @@ type GetChannelResponse = {
   userIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
-  activeCollateralizations: Collateralizations;
 };
 
 // returns the transaction hash of the multisig deployment
@@ -73,7 +74,9 @@ type CreateChannelResponse = {
   transactionHash: Bytes32;
 };
 
-type RequestCollateralResponse = MethodResults.Deposit | undefined;
+type RequestCollateralResponse =
+  | { transaction: providers.TransactionResponse; depositAppIdentityHash: string }
+  | undefined;
 
 // returned by the node when client calls channel.restore
 type ChannelRestoreResponse = {

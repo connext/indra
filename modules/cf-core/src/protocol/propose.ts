@@ -35,7 +35,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { processID, params } = message.data;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started`);
-    log.debug(`[${loggerId}] Initiation started: ${stringify(params)}`);
+    log.debug(`[${loggerId}] Initiation started: ${stringify(params, true, 0)}`);
 
     const {
       abiEncodings,
@@ -162,7 +162,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
       `Failed to validate responders signature on initial set state commitment in the propose protocol. Our commitment: ${stringify(
         setStateCommitment.toJson(),
-      )}. Initial state: ${stringify(initialState)}`,
+        true,
+        0,
+      )}. Initial state: ${stringify(initialState, true, 0)}`,
     );
     logTime(log, substart, `[${loggerId}] Asserted valid responder signature set state commitment`);
 
@@ -173,7 +175,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnConditionalTransaction,
       `Failed to validate responders signature on conditional transaction commitment in the propose protocol. Our commitment: ${stringify(
         conditionalTxCommitment.toJson(),
-      )}. Initial state: ${stringify(initialState)}`,
+        true,
+        0,
+      )}. Initial state: ${stringify(initialState, true, 0)}`,
     );
     logTime(
       log,
@@ -217,7 +221,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Response started`);
-    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
+    log.debug(
+      `[${loggerId}] Protocol response started with parameters ${stringify(params, true, 0)}`,
+    );
 
     const {
       abiEncodings,
@@ -321,7 +327,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignatureOnInitialState,
       `Failed to validate initiator's signature on initial set state commitment in the propose protocol. Process: ${processID}. Our commitment: ${stringify(
         setStateCommitment.toJson(),
-      )}. Initial state: ${stringify(initialState)}`,
+        true,
+        0,
+      )}. Initial state: ${stringify(initialState, true, 0)}`,
     );
     logTime(log, substart, `[${loggerId}] Asserted valid signature responder propose`);
 
@@ -332,7 +340,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignatureOnConditionalTransaction,
       `Failed to validate initiator's signature on conditional transaction commitment in the propose protocol. Our commitment: ${stringify(
         conditionalTxCommitment.toJson(),
-      )}. Initial state: ${stringify(initialState)}`,
+        true,
+        0,
+      )}. Initial state: ${stringify(initialState, true, 0)}`,
     );
     logTime(
       log,

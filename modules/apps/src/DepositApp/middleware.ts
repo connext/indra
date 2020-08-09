@@ -6,10 +6,11 @@ import {
   ProposeMiddlewareContext,
   UninstallMiddlewareContext,
   JsonRpcProvider,
+  InstallMiddlewareContext,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { validateDepositApp } from ".";
+import { validateDepositApp } from "./validation";
 
 export const uninstallDepositMiddleware = async (
   context: UninstallMiddlewareContext,
@@ -51,6 +52,24 @@ export const uninstallDepositMiddleware = async (
   // TODO: withdrawal amount validation?
 };
 
+export const installDepositMiddleware = async (
+  context: InstallMiddlewareContext,
+  provider: JsonRpcProvider,
+) => {
+  const { appInstance, stateChannel } = context;
+  const depositApp = stateChannel.appInstances.find(([id, app]) => {
+    return (
+      app.appDefinition === appInstance.appDefinition &&
+      app.latestState["assetId"] === appInstance.latestState["assetId"]
+    );
+  });
+  if (depositApp) {
+    throw new Error(
+      `Cannot install two deposit apps with the same asset id simultaneously. Existing app: ${depositApp[0]}`,
+    );
+  }
+};
+
 export const proposeDepositMiddleware = async (
   context: ProposeMiddlewareContext,
   provider: JsonRpcProvider,
@@ -64,7 +83,7 @@ export const proposeDepositMiddleware = async (
   });
   if (depositApp) {
     throw new Error(
-      `Cannot install two deposit apps with the same asset id simultaneously. Existing app: ${depositApp[0]}`,
+      `Channel already has an installed deposit app with the same asset id. Existing app: ${depositApp[0]}`,
     );
   }
   await validateDepositApp(params, stateChannel, provider);

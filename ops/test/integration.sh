@@ -4,21 +4,17 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-mode="${TEST_MODE:-local}"
-name="${project}_test_runner"
-commit="`git rev-parse HEAD | head -c 8`"
-release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
+# make sure a network for this project has been created
+docker swarm init 2> /dev/null || true
+docker network create --attachable --driver overlay $project 2> /dev/null || true
+
+version="$1"
+cmd="${2:-test}"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
 then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
-fi
-
-if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-then
-  id="`docker network create --attachable --driver overlay $project`"
-  echo "Created ATTACHABLE network with id $id"
 fi
 
 source $root/dev.env
@@ -36,59 +32,44 @@ elif [[ ! -f "$addresses_file" ]]
 then echo "File ${addresses_file} does not exist, make sure the testnet chains are running" && exit 1
 fi
 chain_providers="`cat $providers_file`"
-contract_addresses="`cat $addresses_file`"
+contract_addresses="`cat $addresses_file | jq . -c`"
 
 ########################################
-## Launch test image
+## Launch test runner
 
-if [[ -n "`docker image ls -q $name:$1`" ]]
-then image=$name:$1; shift # rm $1 from $@
-elif [[ "$mode" == "release" ]]
-then image=$name:$release;
-elif [[ "$mode" == "staging" ]]
-then image=$name:$commit;
-else
-
-  echo "Executing image ${project}_builder"
-
-  exec docker run \
-    $interactive \
-    --entrypoint="bash" \
-    --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
-    --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
-    --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
-    --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
-    --env="INDRA_MNEMONIC=$INDRA_MNEMONIC" \
-    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
-    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-    --env="INDRA_PROXY_URL=http://proxy:80" \
-    --env="NODE_ENV=development" \
-    --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-    --mount="type=bind,source=$root,target=/root" \
-    --name="$name" \
-    --network="$project" \
-    --rm \
-    --tmpfs "/tmpfs" \
-    ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
-fi
-
-echo "Executing image $image"
-
-exec docker run \
-  $interactive \
-  $watchOptions \
-  --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
-  --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
-  --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
-  --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
-  --env="INDRA_MNEMONIC=$INDRA_MNEMONIC" \
-  --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
-  --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-  --env="INDRA_PROXY_URL=https://proxy:443" \
-  --env="NODE_ENV=production" \
-  --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-  --name="$name" \
-  --network="$project" \
+common="$interactive \
+  --env=INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN \
+  --env=INDRA_CHAIN_PROVIDERS=$chain_providers \
+  --env=INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL \
+  --env=INDRA_CONTRACT_ADDRESSES=$contract_addresses \
+  --env=INDRA_NATS_URL=nats://proxy:4222 \
+  --env=INDRA_NODE_URL=http://proxy:80 \
+  --env=NODE_TLS_REJECT_UNAUTHORIZED=0 \
+  --name=${project}_test_runner \
+  --network=$project \
   --rm \
-  --tmpfs "/tmpfs" \
-  $image $@
+  --tmpfs /tmpfs"
+
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -z "$version" ]]
+  then
+    if [[ -n "$git_tag" ]]
+    then version="`echo $git_tag | sed 's/indra-//'`"
+    else version="`git rev-parse HEAD | head -c 8`"
+    fi
+  fi
+  image=${project}_test_runner:$version
+  echo "Executing $cmd w image $image"
+  exec docker run --env=NODE_ENV=production $common $image $cmd
+
+else
+  echo "Executing $cmd w image ${project}_builder"
+  exec docker run \
+    $common \
+    --entrypoint=bash \
+    --volume="$root:/root" \
+    ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $cmd"
+fi

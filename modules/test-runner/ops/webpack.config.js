@@ -1,11 +1,5 @@
+const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
-const nodeExternals = require("webpack-node-externals");
-const webpack = require("webpack");
-
-const mode = process.env.MODE === "release" ? "release" : "staging";
-const allowlist = mode === "release" ? "" : [/@connext\/[^p].*/];
-
-console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
   mode: "development",
@@ -13,16 +7,15 @@ module.exports = {
 
   entry: path.join(__dirname, "../src/index.ts"),
 
-  externals: [
-    nodeExternals({
-      modulesDir: path.resolve(__dirname, "../../../node_modules"),
-      allowlist,
-    }),
-  ],
+  externals: {
+    "mocha": "commonjs2 mocha",
+    "sequelize": "commonjs2 sequelize",
+    "sqlite3": "commonjs2 sqlite3",
+  },
 
   node: {
-    __filename: true,
-    __dirname: true,
+    __filename: false,
+    __dirname: false,
   },
 
   resolve: {
@@ -67,8 +60,15 @@ module.exports = {
   },
 
   plugins: [
-    new webpack.DefinePlugin({
-      window: {},
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.join(__dirname, "../../../node_modules/@connext/pure-evm-wasm/pure-evm_bg.wasm"),
+          to: path.join(__dirname, "../dist/pure-evm_bg.wasm"),
+        },
+      ],
     }),
   ],
+
+  stats: { warnings: false },
 };

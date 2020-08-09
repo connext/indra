@@ -13,10 +13,12 @@ import {
   NULL_INITIAL_STATE_FOR_PROPOSAL,
   NO_STATE_CHANNEL_FOR_OWNERS,
   NO_MULTISIG_IN_PARAMS,
+  TOO_MANY_APPS_IN_CHANNEL,
 } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { MethodController } from "../controller";
+import { MAX_CHANNEL_APPS } from "../../constants";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -55,6 +57,10 @@ export class ProposeInstallAppInstanceController extends MethodController {
       throw new Error(
         NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
       );
+    }
+
+    if (preProtocolStateChannel.proposedAppInstances.size >= MAX_CHANNEL_APPS) {
+      throw new Error(TOO_MANY_APPS_IN_CHANNEL);
     }
 
     const appIdentity = {

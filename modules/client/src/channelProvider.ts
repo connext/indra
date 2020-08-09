@@ -94,6 +94,8 @@ export const createCFChannelProvider = async ({
     );
   }
 
+  const getLatestSwapRate = (from: string, to: string) => node.getLatestSwapRate(from, to);
+
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
@@ -105,6 +107,7 @@ export const createCFChannelProvider = async ({
         },
       },
       { [network.chainId]: supportedTokenAddresses[network.chainId] },
+      getLatestSwapRate,
     ),
   );
 
@@ -201,6 +204,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   public on = (event: string | EventName | MethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.on(event as any, listener);
+    return this.cfCore;
+  };
+
+  public removeAllListeners = (): any => {
+    this.cfCore.removeAllListeners();
     return this.cfCore;
   };
 

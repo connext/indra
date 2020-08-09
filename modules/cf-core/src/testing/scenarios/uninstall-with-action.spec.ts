@@ -39,6 +39,7 @@ function assertUninstallMessage(
   uninstalledApp: AppInstanceJson,
   action: AppAction,
   msg: ProtocolEventMessage<"UNINSTALL_EVENT">,
+  protocolMeta?: any,
 ) {
   assertMessage<typeof EventNames.UNINSTALL_EVENT>(msg, {
     from: senderId,
@@ -48,6 +49,7 @@ function assertUninstallMessage(
       multisigAddress,
       uninstalledApp,
       action,
+      protocolMeta,
     },
   });
 }
@@ -110,6 +112,8 @@ describe("Node A and B install an app, then uninstall with a given action", () =
       )
       .toJson();
 
+    const protocolMeta = { hello: "world" };
+
     await Promise.all([
       new Promise(async (resolve, reject) => {
         nodeA.on(EventNames.UNINSTALL_EVENT, async (msg) => {
@@ -124,6 +128,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
               expected,
               action,
               msg,
+              protocolMeta,
             );
 
             const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
@@ -139,7 +144,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
       new Promise(async (resolve, reject) => {
         try {
           await nodeB.rpcRouter.dispatch(
-            constructUninstallRpc(appIdentityHash, multisigAddress, action),
+            constructUninstallRpc(appIdentityHash, multisigAddress, action, protocolMeta),
           );
 
           const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);

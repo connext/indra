@@ -56,7 +56,7 @@ export const deployContract = async (
     gasLimit: BigNumber.from("5000000"),
   });
   console.log(`Sent transaction to deploy ${name}, txHash: ${tx.hash}`);
-  // const receipt = await tx.wait();
+  const receipt = await tx.wait();
   // const { gasUsed, cumulativeGasUsed } = receipt;
   // console.log(`Gas from deploy:`, stringify({ gasUsed, cumulativeGasUsed }));
   const address = Contract.getContractAddress(tx);

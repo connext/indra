@@ -5,7 +5,7 @@ import {
   IConnextClient,
   EventPayloads,
 } from "@connext/types";
-import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
+import { ColorfulLogger, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber } from "ethers";
 
 import { env, expect } from "../";
@@ -19,28 +19,30 @@ export const fundChannel = async (
   const tokenAddress = getAddressFromAssetId(assetId);
   const prevFreeBalance = await client.getFreeBalance(tokenAddress);
   await new Promise(async (resolve, reject) => {
-    client.once(EventNames.DEPOSIT_CONFIRMED_EVENT, async () => {
-      const freeBalance = await client.getFreeBalance(tokenAddress);
-      // verify free balance increased as expected
-      const expected = prevFreeBalance[client.signerAddress].add(amount);
-      expect(freeBalance[client.signerAddress]).to.equal(expected);
-      log.info(`Got deposit confirmed event, helper wrapper is returning`);
-      return resolve();
+    let syncFailed = false;
+    client.once(EventNames.SYNC_FAILED_EVENT, (msg) => {
+      syncFailed = true;
     });
     // register failure listeners
     client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: EventPayloads.DepositFailed) => {
       return reject(new Error(msg.error));
     });
-    client.once(
-      EventNames.PROPOSE_INSTALL_FAILED_EVENT,
-      async (msg: EventPayloads.ProposeFailed) => {
-        return reject(new Error(msg.error));
-      },
-    );
-    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+    client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg: EventPayloads.ProposeFailed) => {
+      if (!syncFailed) {
+        return;
+      }
       return reject(new Error(msg.error));
     });
-    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+    client.on(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+      if (!syncFailed) {
+        return;
+      }
+      return reject(new Error(msg.error));
+    });
+    client.on(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+      if (!syncFailed) {
+        return;
+      }
       return reject(new Error(msg.error));
     });
 
@@ -48,8 +50,19 @@ export const fundChannel = async (
       // FYI this function returns after fundChannel has returned (at resolve above)
       log.debug(`client.deposit() called`);
       const start = Date.now();
-      await client.deposit({ amount: amount.toString(), assetId });
+      const response = await client.deposit({ amount: amount.toString(), assetId });
+
+      // TODO: remove this check once backwards compatibility is not needed
+      if (response.completed) {
+        await response.completed();
+      }
+      const freeBalance = await client.getFreeBalance(tokenAddress);
+      // verify free balance increased as expected
+      const expected = prevFreeBalance[client.signerAddress].add(amount);
+      expect(freeBalance[client.signerAddress]).to.equal(expected);
+      log.info(`Got deposit confirmed event, helper wrapper is returning`);
       log.info(`client.deposit() returned in ${Date.now() - start}`);
+      return resolve();
     } catch (e) {
       return reject(new Error(e.stack || e.message));
     }
@@ -66,37 +79,21 @@ export const requestCollateral = async (
   const log = new ColorfulLogger("RequestCollateral", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
   const preCollateralBal = await client.getFreeBalance(tokenAddress);
-  log.debug(`client.requestCollateral() called`);
+  log.debug(`calling client.requestCollateral()`);
   const start = Date.now();
+  const res = await client.requestCollateral(assetId);
+  log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
   if (!enforce) {
-    await client.requestCollateral(assetId);
-    log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+    res && (await res.completed());
     return;
   }
-  return new Promise(async (resolve, reject) => {
-    log.debug(`client.requestCollateral() called`);
-    const start = Date.now();
-    // watch for balance change on uninstall
-    try {
-      await Promise.race([
-        delayAndThrow(20_000, `Could not detect increase in node free balance within 20s`),
-        new Promise(async (res) => {
-          client.on(EventNames.UNINSTALL_EVENT, async () => {
-            const currBal = await client.getFreeBalance(tokenAddress);
-            if (currBal[client.nodeSignerAddress].lte(preCollateralBal[client.nodeSignerAddress])) {
-              // no increase in bal
-              return;
-            }
-            // otherwise resolve
-            return res();
-          });
-          await client.requestCollateral(assetId);
-        }),
-      ]);
-      log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-      resolve();
-    } catch (e) {
-      return reject(e);
-    }
-  });
+  if (!res) {
+    throw new Error("Node did not collateralized, and collateral should be enforced");
+  }
+  log.info(`waiting for collateral tx to be mined and ap to be uninstalled`);
+  const { freeBalance } = await res.completed();
+  log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+  if (freeBalance[client.nodeSignerAddress].lt(preCollateralBal[client.nodeSignerAddress])) {
+    throw new Error("Expected increase in balance following collateralization");
+  }
 };

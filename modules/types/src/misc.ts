@@ -1,7 +1,7 @@
-import { Address, BigNumber, Bytes32, PublicIdentifier } from "./basic";
+import { Address, BigNumber, Bytes32, PublicIdentifier, TransactionReceipt } from "./basic";
 import { enumify } from "./utils";
-
-export type Collateralizations = { [assetId: string]: boolean };
+import { MinimalTransaction } from "./commitments";
+import { StateChannelJSON } from "./state";
 
 export type RebalanceProfile = {
   assetId: Address;
@@ -51,3 +51,10 @@ export type SwapRate = AllowedSwap & {
   rate: string; // DecString?
   blockNumber?: number;
 };
+
+export interface IOnchainTransactionService {
+  sendTransaction(
+    transaction: MinimalTransaction,
+    channel: StateChannelJSON,
+  ): Promise<TransactionReceipt>;
+}

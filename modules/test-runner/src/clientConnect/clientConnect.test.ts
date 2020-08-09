@@ -4,25 +4,48 @@ import { ClientOptions } from "@connext/types";
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
-import { createClient, env, ethProviderUrl, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
+import {
+  createClient,
+  env,
+  ethProviderUrl,
+  expect,
+  sendOnchainValue,
+  fundChannel,
+  ETH_AMOUNT_SM,
+} from "../util";
 
-const { AddressZero, One } = constants;
+const { AddressZero, One, HashZero } = constants;
 const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
-  it("Client should be able to connect to proxy w/out a messaging url", async () => {
+  it("Client should be able to connect to indra w/out a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
       ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
-      nodeUrl: env.proxyUrl,
+      nodeUrl: env.nodeUrl,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
     });
     expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
   });
 
-  it("Client should be able to connect to node w a messaging url", async () => {
+  it("Client should be able to connect to indra url w /api suffix", async () => {
+    const signer = getRandomChannelSigner();
+    const protocol = env.nodeUrl.replace(/:\/\/.*/, "://");
+    const nodeHost = env.nodeUrl.replace(/.*:\/\//, "").replace(/\/.*/, "");
+    const client = await connect({
+      ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      nodeUrl: `${protocol}${nodeHost}/api`,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+      logLevel: 4,
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
+  it("Client should be able to connect to indra w a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
       ethProviderUrl,
@@ -117,6 +140,7 @@ describe("Client Connect", () => {
         data: hexlify(randomBytes(32)),
       },
       retry: 0,
+      withdrawalTx: HashZero,
     });
     expect(await createClient({ signer: pk, store })).rejectedWith("Something");
   });

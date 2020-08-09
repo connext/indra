@@ -13,6 +13,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateProgressedEventPayload,
+  StateSchemaVersion,
   STORE_SCHEMA_VERSION,
   StoredAppChallenge,
   StoredAppChallengeStatus,
@@ -191,19 +192,12 @@ export class CFCoreStore implements IStoreService {
 
     let channel = new Channel();
     channel.multisigAddress = multisigAddress;
-    channel.schemaVersion = this.schemaVersion;
+    channel.schemaVersion = StateSchemaVersion;
     channel.userIdentifier = userIdentifier;
     channel.nodeIdentifier = nodeIdentifier;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     channel.chainId = chainId;
-    const tokens = this.configService.getSupportedTokens();
-    const activeCollateralizations = {};
-    (tokens[chainId] || []).forEach((token) => {
-      activeCollateralizations[token] = false;
-    });
-    channel.activeCollateralizations = activeCollateralizations;
-
     const {
       identityHash,
       abiEncodings: { stateEncoding, actionEncoding },

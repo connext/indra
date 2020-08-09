@@ -17,6 +17,8 @@ import {
   GraphSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
   ConditionalTransferTypes,
+  GraphBatchedTransferAppAction,
+  GraphBatchedTransferAppState,
 } from "@connext/types";
 import {
   stringify,
@@ -26,7 +28,7 @@ import {
 } from "@connext/utils";
 import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
-import { constants } from "ethers";
+import { constants, utils } from "ethers";
 import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
@@ -41,8 +43,10 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 
 import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
+import { CFCoreStore } from "../cfCore/cfCore.store";
 
 const { Zero, HashZero } = constants;
+const { parseUnits } = utils;
 
 export const getCancelAction = (
   transferType: ConditionalTransferTypes,
@@ -50,11 +54,13 @@ export const getCancelAction = (
   | HashLockTransferAppAction
   | SimpleSignedTransferAppAction
   | GraphSignedTransferAppAction
+  | GraphBatchedTransferAppAction
   | SimpleLinkedTransferAppAction => {
   let action:
     | HashLockTransferAppAction
     | SimpleSignedTransferAppAction
     | GraphSignedTransferAppAction
+    | GraphBatchedTransferAppAction
     | SimpleLinkedTransferAppAction;
   switch (transferType) {
     case ConditionalTransferTypes.LinkedTransfer:
@@ -64,6 +70,15 @@ export const getCancelAction = (
     }
     case ConditionalTransferTypes.GraphTransfer: {
       action = { responseCID: HashZero, signature: "0x" } as GraphSignedTransferAppAction;
+      break;
+    }
+    case ConditionalTransferTypes.GraphBatchedTransfer: {
+      action = {
+        responseCID: HashZero,
+        requestCID: HashZero,
+        consumerSignature: "0x",
+        attestationSignature: "0x",
+      } as GraphBatchedTransferAppAction;
       break;
     }
     case ConditionalTransferTypes.SignedTransfer: {
@@ -83,6 +98,7 @@ export class TransferService {
   constructor(
     private readonly log: LoggerService,
     private readonly cfCoreService: CFCoreService,
+    private readonly cfCoreStore: CFCoreStore,
     private readonly channelService: ChannelService,
     private readonly depositService: DepositService,
     private readonly swapRateService: SwapRateService,
@@ -102,30 +118,27 @@ export class TransferService {
     }
   }
 
-  async pruneExpiredApps(channel: Channel): Promise<void> {
-    for (const chainId of this.configService.getSupportedChains()) {
-      this.log.info(
-        `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
-      );
-      const current = await this.configService.getEthProvider(chainId).getBlockNumber();
-      const expiredApps = channel.appInstances.filter((app) => {
-        return (
-          app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current)
-        );
-      });
-      this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${chainId}`);
-      for (const app of expiredApps) {
-        try {
-          // Uninstall all expired apps without taking action
-          await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
-        } catch (e) {
-          this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
-        }
+  async pruneExpiredApps(_channel: Channel): Promise<void> {
+    const channel = await this.cfCoreStore.getStateChannel(_channel.multisigAddress);
+    this.log.info(
+      `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
+    );
+    const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
+    const expiredApps = channel.appInstances.filter(([, app]) => {
+      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
+    });
+    this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
+    for (const [, app] of expiredApps) {
+      try {
+        // Uninstall all expired apps without taking action
+        await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+      } catch (e) {
+        this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
       }
-      this.log.info(
-        `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
-      );
     }
+    this.log.info(
+      `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
+    );
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
@@ -279,23 +292,24 @@ export class TransferService {
     // inflight swap
     const receiverAssetId = meta.receiverAssetId ? meta.receiverAssetId : senderAssetId;
     let receiverAmount = senderAmount;
+    let swapRate = "1";
     if (receiverAssetId !== senderAssetId || senderChainId !== receiverChainId) {
       this.log.warn(
         `Detected an inflight swap from ${senderAssetId} on ${senderChainId} to ${receiverAssetId} on ${receiverChainId}!`,
       );
-      const currentRate = await this.swapRateService.getOrFetchRate(
+      swapRate = await this.swapRateService.getOrFetchRate(
         senderAssetId,
         receiverAssetId,
         senderChainId,
         receiverChainId,
       );
-      this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
+      this.log.warn(`Using swap rate ${swapRate} for inflight swap`);
       const senderDecimals = 18;
       const receiverDecimals = 18;
       receiverAmount = calculateExchangeWad(
         senderAmount,
         senderDecimals,
-        currentRate,
+        swapRate,
         receiverDecimals,
       );
     }
@@ -339,15 +353,25 @@ export class TransferService {
         receiverAmount,
         freeBal[freeBalanceAddr],
       );
-      // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        receiverAssetId,
-      );
-      if (!depositReceipt) {
+      // request collateral and wait for deposit to come through\
+      let depositError: Error | undefined = undefined;
+      try {
+        const depositResponse = await this.depositService.deposit(
+          receiverChannel,
+          deposit,
+          receiverAssetId,
+        );
+        if (!depositResponse) {
+          throw new Error(`Node failed to install deposit app`);
+        }
+        this.log.info(`Installed deposit app in receiver channel, waiting for completion`);
+        await depositResponse.completed();
+      } catch (e) {
+        depositError = e;
+      }
+      if (depositError) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}`,
+          `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${depositError.message}`,
         );
       }
     }
@@ -373,6 +397,10 @@ export class TransferService {
       (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
         TIMEOUT_BUFFER,
       );
+    }
+
+    if ((initialState as GraphBatchedTransferAppState).swapRate) {
+      (initialState as GraphBatchedTransferAppState).swapRate = parseUnits(swapRate, 18);
     }
 
     const {

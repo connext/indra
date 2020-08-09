@@ -1,6 +1,7 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
 import {
   DefaultApp,
+  EventNames,
   MethodParams,
   PublicParams,
   PublicResults,
@@ -11,6 +12,7 @@ import {
 } from "@connext/types";
 import {
   calculateExchangeWad,
+  delay,
   getAddressFromAssetId,
   getAddressError,
   notGreaterThan,
@@ -46,12 +48,8 @@ export class SwapController extends AbstractController {
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
       notPositive(toWad(swapRate)),
+      notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress])),
     );
-
-    const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
-    if (error) {
-      throw new Error(error);
-    }
 
     // get app definition
     const network = await this.ethProvider.getNetwork();
@@ -60,7 +58,18 @@ export class SwapController extends AbstractController {
       chainId: network.chainId,
     })) as DefaultApp;
 
-    // install the swap app
+    this.log.debug(`Requesting collateral`);
+
+    // TODO: don't do as any
+    const tx = await this.connext.requestCollateral(toTokenAddress) as any;
+    if (tx && tx.hash) {
+      await this.ethProvider.waitForTransaction(tx.hash);
+      await this.connext.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+    } else {
+      // TODO: something smarter
+      await delay(5000);
+    }
+
     this.log.debug(`Installing swap app`);
 
     const appIdentityHash = await this.swapAppInstall(

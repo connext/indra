@@ -8,10 +8,15 @@ import {
   ProtocolNames,
   UninstallMiddlewareContext,
   ValidationMiddleware,
+  InstallMiddlewareContext,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 
-import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
+import {
+  uninstallDepositMiddleware,
+  proposeDepositMiddleware,
+  installDepositMiddleware,
+} from "./DepositApp";
 import { proposeLinkedTransferMiddleware } from "./SimpleLinkedTransferApp";
 import { proposeHashLockTransferMiddleware } from "./HashLockTransferApp";
 import { proposeSignedTransferMiddleware } from "./SimpleSignedTransferApp";
@@ -20,6 +25,7 @@ import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
 import { commonAppProposalValidation } from "./shared/validation";
 import { AppRegistry } from "./registry";
 import { proposeGraphSignedTransferMiddleware } from "./GraphSignedTransferApp";
+import { proposeGraphBatchedTransferMiddleware } from "./GraphBatchedTransferApp";
 
 const getNameFromAddress = (contractAddress: ContractAddresses, appDefinition: Address) => {
   const [name] =
@@ -50,6 +56,7 @@ export const sharedProposalMiddleware = (
 export const generateValidationMiddleware = async (
   networkContexts: NetworkContexts,
   supportedTokenAddresses: { [chainId: number]: Address[] },
+  getSwapRate: (fromTokenAddress: Address, toTokenAddress: Address) => Promise<string>, // for graph batched app
 ): Promise<ValidationMiddleware> => {
   const validationMiddleware: ValidationMiddleware = async (
     protocol: ProtocolName,
@@ -61,6 +68,7 @@ export const generateValidationMiddleware = async (
           networkContexts,
           middlewareContext as ProposeMiddlewareContext,
           supportedTokenAddresses,
+          getSwapRate,
         );
         break;
       }
@@ -68,8 +76,11 @@ export const generateValidationMiddleware = async (
         await uninstallMiddleware(networkContexts, middlewareContext as UninstallMiddlewareContext);
         break;
       }
+      case ProtocolNames.install: {
+        await installMiddleware(networkContexts, middlewareContext as InstallMiddlewareContext);
+        break;
+      }
       case ProtocolNames.setup:
-      case ProtocolNames.install:
       case ProtocolNames.takeAction: {
         break;
       }
@@ -100,10 +111,29 @@ const uninstallMiddleware = async (
   }
 };
 
+const installMiddleware = async (
+  networkContexts: NetworkContexts,
+  middlewareContext: InstallMiddlewareContext,
+) => {
+  const { appInstance, stateChannel } = middlewareContext;
+  const { contractAddresses, provider } = networkContexts[stateChannel.chainId];
+  const appDef = appInstance.appDefinition;
+  switch (appDef) {
+    case contractAddresses.DepositApp: {
+      await installDepositMiddleware(middlewareContext, provider);
+      break;
+    }
+    default: {
+      return;
+    }
+  }
+};
+
 const proposeMiddleware = async (
   networkContexts: NetworkContexts,
   middlewareContext: ProposeMiddlewareContext,
   supportedTokenAddresses: { [chainId: number]: Address[] },
+  getSwapRate: (fromTokenAddress: Address, toTokenAddress: Address) => Promise<string>,
 ) => {
   const { proposal, stateChannel } = middlewareContext;
   const { contractAddresses, provider } = networkContexts[stateChannel.chainId];
@@ -113,6 +143,10 @@ const proposeMiddleware = async (
   switch (appDef) {
     case contractAddresses.DepositApp: {
       await proposeDepositMiddleware(middlewareContext, provider);
+      break;
+    }
+    case contractAddresses.GraphBatchedTransferApp: {
+      await proposeGraphBatchedTransferMiddleware(middlewareContext, getSwapRate);
       break;
     }
     case contractAddresses.GraphSignedTransferApp: {

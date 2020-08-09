@@ -3,15 +3,22 @@ set -e
 
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
-release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 chain_url="${1:-http://localhost:8545}"
-mode="${MODE:-local}"
 
 ########################################
 # Calculate stuff based on env
 
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+else version="latest"
+fi
 
 if [[ -f "$root/address-book.json" ]]
 then address_book="$root/address-book.json"
@@ -47,14 +54,24 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-if [[ "$mode" == "release" ]]
-then image="${registry}/${project}_ethprovider:$release"
-elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
+image="${project}_ethprovider:$version"
+
+if [[ -n "`docker container ls -q $image`" ]]
+then
+  echo "Deploying contract deployer (image: $image)..."
+  exec docker run \
+    $interactive \
+    --env=MNEMONIC="$mnemonic" \
+    --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
+    --mount="type=bind,source=$address_book,target=/data/address-book.json" \
+    --name="${project}_contract_deployer" \
+    --rm \
+    $image deploy
+
 else
   image=${project}_builder
-  echo "Deploying $mode-mode contract deployer (image: $image)..."
-  docker run \
+  echo "Deploying contract deployer (image: $image)..."
+  exec docker run \
     $interactive \
     --entrypoint="bash" \
     --env=MNEMONIC="$mnemonic" \
@@ -64,16 +81,4 @@ else
     --name="${project}_contract_deployer" \
     --rm \
     $image modules/contracts/ops/deploy.sh
-  exit
 fi
-
-echo "Deploying $mode-mode contract deployer (image: $image)..."
-
-docker run \
-  $interactive \
-  --env=MNEMONIC="$mnemonic" \
-  --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
-  --mount="type=bind,source=$address_book,target=/data/address-book.json" \
-  --name="${project}_contract_deployer" \
-  --rm \
-  $image deploy

@@ -202,7 +202,11 @@ export default class ListenerService implements OnModuleInit {
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;
     try {
-      await this.channelService.rebalance(channel, assetIdResponder, RebalanceType.RECLAIM);
+      await this.channelService.rebalance(
+        channel.multisigAddress,
+        assetIdResponder,
+        RebalanceType.RECLAIM,
+      );
     } catch (e) {
       this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack}`);
     }

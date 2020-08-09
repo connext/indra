@@ -22,6 +22,7 @@ import {
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
   EventName,
+  IOnchainTransactionService,
 } from "@connext/types";
 import { abrv, delay, nullLogger, stringify } from "@connext/utils";
 import EventEmitter from "eventemitter3";
@@ -66,6 +67,7 @@ export class CFCore {
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
     syncOnStart: boolean = true,
+    onchainTransactionService: IOnchainTransactionService | undefined = undefined,
   ): Promise<CFCore> {
     const node = new CFCore(
       signer,
@@ -75,6 +77,7 @@ export class CFCore {
       blocksNeededForConfirmation,
       logger,
       lockService,
+      onchainTransactionService,
     );
 
     return node.asynchronouslySetupUsingRemoteServices(syncOnStart);
@@ -88,6 +91,7 @@ export class CFCore {
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
     private readonly lockService: ILockService,
+    private readonly transactionService: IOnchainTransactionService | undefined = undefined,
   ) {
     this.log = log.newContext("CFCore");
     this.incoming = new EventEmitter();
@@ -120,6 +124,7 @@ export class CFCore {
       this.blocksNeededForConfirmation!,
       this.lockService,
       this.log,
+      this.transactionService,
     );
     this.registerMessagingConnection();
     this.rpcRouter = new RpcRouter(this.requestHandler);
@@ -204,8 +209,8 @@ export class CFCore {
 
     protocolRunner.register(
       Opcode.IO_SEND,
-      async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
-        const [data, channel, appContext] = args;
+      async (args: [ProtocolMessageData, StateChannel, AppInstance, any]) => {
+        const [data, channel, appContext, protocolMeta] = args;
 
         // check if the protocol start time exists within the message
         // and if it is a final protocol message (see note in
@@ -228,7 +233,7 @@ export class CFCore {
           type: EventNames.PROTOCOL_MESSAGE_EVENT,
         });
 
-        return { channel, appContext };
+        return { channel, appContext, protocolMeta };
       },
     );
 
@@ -534,6 +539,10 @@ export class CFCore {
    */
   off(event: EventName | MethodName, callback?: (res: any) => void) {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
+  }
+
+  removeAllListeners() {
+    this.rpcRouter.unsubscribeAll();
   }
 
   /**
