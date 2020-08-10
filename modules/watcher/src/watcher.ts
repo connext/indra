@@ -26,7 +26,6 @@ import {
   ConditionalTransactionCommitmentJSON,
   ChallengeInitiatedResponse,
   ChallengeEvents,
-  JsonRpcProvider,
   ContractAddressBook,
 } from "@connext/types";
 import {
