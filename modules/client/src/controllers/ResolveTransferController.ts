@@ -77,12 +77,13 @@ export class ResolveTransferController extends AbstractController {
       amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
         .coinTransfers[0].amount;
       assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
-      meta = existingReceiverApp.meta;
+      meta = existingReceiverApp.meta || {};
+
+    // Receiver app is not installed
     } else {
       try {
-        // App is not installed
-        const requireOnline = RequireOnlineApps.includes(conditionType) || meta["requireOnline"];
-        // See note about fresh data
+        const requireOnline = RequireOnlineApps.includes(conditionType); // || meta.requireOnline?
+        // See NOTE about fresh data
         existingReceiverApp = findApp(await this.connext.getAppInstances());
         if (!existingReceiverApp) {
           if (requireOnline) {
@@ -106,7 +107,7 @@ export class ResolveTransferController extends AbstractController {
             installRes.meta.recipient
           ) {
             // TODO: this is hacky
-            this.log.error(`Returning early from install, unlock will happen through listener`);
+            this.log.warn(`Returning early from install, unlock will happen through listener`);
             // @ts-ignore
             return;
           }

@@ -1,11 +1,10 @@
-import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
-import { getRandomBytes32 } from "@connext/utils";
+import { IConnextClient, ConditionalTransferTypes, EventNames } from "@connext/types";
+import { getRandomBytes32, getRandomChannelSigner } from "@connext/utils";
 import { constants } from "ethers";
 
-import { expect } from "../util";
-import { AssetOptions, createClient, fundChannel } from "../util";
+import { AssetOptions, createClient, expect, fundChannel } from "../util";
 
-const { AddressZero, One } = constants;
+const { AddressZero, One, Two } = constants;
 
 describe("Linked Transfer", () => {
   let clientA: IConnextClient;
@@ -65,12 +64,71 @@ describe("Linked Transfer", () => {
     expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
   });
 
+  it("happy case: linked transfers can be sent to an offline recipient", async () => {
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    const offlineSigner = getRandomChannelSigner();
+    await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      assetId: AddressZero,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: getRandomBytes32(),
+      preImage: getRandomBytes32(),
+      recipient: offlineSigner.publicIdentifier,
+    });
+    const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    expect(balBefore.sub(transfer.amount).toString()).to.be.equal(balMiddle.toString());
+    const recipient = await createClient({ id: "O", signer: offlineSigner });
+    // The pending transfer will be resolved during connect, no need to resolve it manually
+    const balAfter = (await recipient.getFreeBalance(transfer.assetId))[recipient.signerAddress];
+    expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
+  });
+
+  it("happy case: linked transfers can require the recipient be online", async () => {
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, Two, transfer.assetId);
+    const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    // Transfer to online client succeeds
+    const linkedTransfer = await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      assetId: AddressZero,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: getRandomBytes32(),
+      preImage: getRandomBytes32(),
+      recipient: clientB.publicIdentifier,
+      requireOnline: true,
+    });
+    expect(balBefore.sub(transfer.amount).toString()).to.be.equal(
+      (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress].toString(),
+    );
+    // this resolve will return early & the unlock will need to be waited on explicitly (y tho..?)
+    await clientB.resolveCondition({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: linkedTransfer.paymentId,
+      preImage: linkedTransfer.preImage!,
+    });
+    await clientB.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+    expect(transfer.amount.toString()).to.be.equal(
+      (await clientB.getFreeBalance(transfer.assetId))[clientB.signerAddress].toString(),
+    );
+    // Transfer to offline client fails
+    expect(clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      assetId: AddressZero,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: getRandomBytes32(),
+      preImage: getRandomBytes32(),
+      recipient: getRandomChannelSigner().publicIdentifier,
+      requireOnline: true,
+    })).to.be.rejected;
+  });
+
   it("happy case: get linked transfer by payment id", async () => {
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
@@ -79,7 +137,6 @@ describe("Linked Transfer", () => {
       preImage,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
-
     expect(linkedTransfer).to.be.ok;
     expect(linkedTransfer).to.deep.include({
       amount: transfer.amount,
