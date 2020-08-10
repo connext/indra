@@ -115,19 +115,27 @@ export class AppRegistryService implements OnModuleInit {
           this.log.info(
             `Calculated collateral amount to cover payment and rebalance: ${amount.toString()}`,
           );
-          const depositResponse = await this.depositService.deposit(
-            installerChannel,
-            amount,
-            proposeInstallParams.responderDepositAssetId,
-          );
+          // request collateral and wait for deposit to come through\
+          let depositError: Error | undefined = undefined;
           try {
-            await this.depositService.handleActiveDeposit(
+            const depositResponse = await this.depositService.deposit(
               installerChannel,
-              depositResponse.appIdentityHash,
+              amount,
+              proposeInstallParams.responderDepositAssetId,
             );
+            if (!depositResponse) {
+              throw new Error(`Node failed to install deposit app`);
+            }
+            this.log.info(
+              `Installed deposit app in channel ${installerChannel.multisigAddress}, waiting for completion`,
+            );
+            await depositResponse.completed();
           } catch (e) {
+            depositError = e;
+          }
+          if (depositError) {
             throw new Error(
-              `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}. ${e.message}`,
+              `Could not deposit sufficient collateral to install app for channel ${installerChannel.multisigAddress}. ${depositError.message}`,
             );
           }
         }

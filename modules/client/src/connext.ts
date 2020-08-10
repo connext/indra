@@ -193,21 +193,20 @@ export class ConnextClient implements IConnextClient {
     if (!requestCollateralResponse) {
       return undefined;
     }
-    const completed = (): Promise<FreeBalanceResponse> =>
-      new Promise(async (resolve, reject) => {
-        try {
-          await this.waitFor(
-            EventNames.UNINSTALL_EVENT,
-            120_000,
-            (data) => data.appIdentityHash === requestCollateralResponse.depositAppIdentityHash,
-          );
-          const freeBalance = await this.getFreeBalance(assetId);
-          resolve({ freeBalance });
-        } catch (e) {
-          reject(e);
-        }
-      });
-    return { ...requestCollateralResponse, completed };
+    const completed: Promise<FreeBalanceResponse> = new Promise(async (resolve, reject) => {
+      try {
+        await this.waitFor(
+          EventNames.UNINSTALL_EVENT,
+          120_000,
+          (data) => data.appIdentityHash === requestCollateralResponse.depositAppIdentityHash,
+        );
+        const freeBalance = await this.getFreeBalance(assetId);
+        resolve({ freeBalance });
+      } catch (e) {
+        reject(e);
+      }
+    });
+    return { ...requestCollateralResponse, completed: () => completed };
   };
 
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {

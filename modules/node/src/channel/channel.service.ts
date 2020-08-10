@@ -114,7 +114,7 @@ export class ChannelService {
   }> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
-      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
+      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId} for ${multisigAddress}`,
     );
     const normalizedAssetId = getAddress(assetId);
     const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
@@ -275,7 +275,7 @@ export class ChannelService {
         this.log.warn(`Converted rebalance targets: ${stringify(targets)}`);
       }
     }
-    this.log.debug(`Rebalancing target: ${stringify(targets)}`);
+    this.log.info(`Rebalancing target for ${assetId} on ${chainId}: ${stringify(targets)}`);
     return targets;
   }
 
@@ -287,6 +287,8 @@ export class ChannelService {
     this.log.info(
       `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} with ${stringify(
         profile,
+        false,
+        0,
       )}`,
     );
     const { assetId, collateralizeThreshold, target, reclaimThreshold } = profile;
@@ -313,8 +315,10 @@ export class ChannelService {
       rebalanceProfile,
     );
     this.log.info(
-      `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} complete: ${JSON.stringify(
+      `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} complete: ${stringify(
         result,
+        false,
+        0,
       )}`,
     );
     return result;

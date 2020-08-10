@@ -353,25 +353,26 @@ export class TransferService {
         receiverAmount,
         freeBal[freeBalanceAddr],
       );
-      // request collateral and wait for deposit to come through
-      const depositResponse = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        receiverAssetId,
-      );
-      if (depositResponse) {
-        try {
-          // OK to use channel without getting fresh data bc this only
-          // uses it for logging info
-          await this.depositService.handleActiveDeposit(
-            receiverChannel,
-            depositResponse.appIdentityHash,
-          );
-        } catch (e) {
-          throw new Error(
-            `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${e.message}`,
-          );
+      // request collateral and wait for deposit to come through\
+      let depositError: Error | undefined = undefined;
+      try {
+        const depositResponse = await this.depositService.deposit(
+          receiverChannel,
+          deposit,
+          receiverAssetId,
+        );
+        if (!depositResponse) {
+          throw new Error(`Node failed to install deposit app`);
         }
+        this.log.info(`Installed deposit app in receiver channel, waiting for completion`);
+        await depositResponse.completed();
+      } catch (e) {
+        depositError = e;
+      }
+      if (depositError) {
+        throw new Error(
+          `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${depositError.message}`,
+        );
       }
     }
 
