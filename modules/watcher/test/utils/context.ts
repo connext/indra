@@ -52,9 +52,10 @@ export const setupContext = async (
 ) => {
   // setup constants / defaults
   const ethProvider = process.env.ETHPROVIDER_URL;
-  const provider = new JsonRpcProvider(ethProvider, await getChainId(ethProvider!));
+  const chainId = await getChainId(ethProvider!);
+  const providers = { [chainId]: new JsonRpcProvider(ethProvider, await getChainId(ethProvider!)) };
 
-  const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
+  const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(providers[chainId]);
   const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];
   const defaultAppOpts = {
     balances: {
@@ -158,7 +159,7 @@ export const setupContext = async (
         value: channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
       });
       await tx.wait();
-      expect(await provider.getBalance(multisigAddress)).to.be.eq(
+      expect(await providers[chainId].getBalance(multisigAddress)).to.be.eq(
         channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
       );
       break;
@@ -243,10 +244,10 @@ export const setupContext = async (
           reject(e.message);
         }
       }),
-      mineBlock(provider),
+      mineBlock(providers[chainId]),
     ]);
     expect((tx as any).transactionHash).to.be.ok;
-    await verifyChallengeUpdatedEvent(app, setState.toJson(), event as any, provider);
+    await verifyChallengeUpdatedEvent(app, setState.toJson(), event as any, providers[chainId]);
   };
 
   const progressState = async (app: AppWithCounterClass = activeApps[0]) => {
@@ -332,7 +333,7 @@ export const setupContext = async (
   return {
     ethProvider,
     challengeRegistry,
-    provider,
+    providers,
     wallet,
     signers,
     store,
