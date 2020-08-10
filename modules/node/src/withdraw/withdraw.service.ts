@@ -25,7 +25,10 @@ import {
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
+import {
+  OnchainTransactionService,
+  OnchainTransactionResponse,
+} from "../onchainTransactions/onchainTransaction.service";
 
 import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
@@ -192,7 +195,7 @@ export class WithdrawService {
     tx: MinimalTransaction,
     appIdentityHash: string,
     withdrawReason: TransactionReason.NODE_WITHDRAWAL | TransactionReason.USER_WITHDRAWAL,
-  ): Promise<providers.TransactionResponse> {
+  ): Promise<OnchainTransactionResponse> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
@@ -211,7 +214,7 @@ export class WithdrawService {
     }
 
     this.log.info(`Sending withdrawal to chain`);
-    let txRes: providers.TransactionResponse;
+    let txRes: OnchainTransactionResponse;
     if (withdrawReason === TransactionReason.NODE_WITHDRAWAL) {
       txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx, appIdentityHash);
     } else {
