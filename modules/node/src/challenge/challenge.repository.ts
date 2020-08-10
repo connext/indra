@@ -3,13 +3,14 @@ import { Repository, EntityRepository } from "typeorm";
 import { Challenge, ProcessedBlock } from "./challenge.entity";
 
 export const entityToStoredChallenge = (entity: Challenge): StoredAppChallenge => {
-  const { app, versionNumber, appStateHash, finalizesAt, status } = entity;
+  const { app, versionNumber, appStateHash, finalizesAt, status, channel } = entity;
   return {
     identityHash: app.identityHash,
     versionNumber,
     appStateHash,
     finalizesAt,
     status,
+    chainId: channel.chainId,
   };
 };
 
