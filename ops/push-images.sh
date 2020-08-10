@@ -16,7 +16,7 @@ if [[ -z "$git_tag" ]]
 then
   message="`git log --format=%B -n 1 HEAD`"
   if [[ "$message" == "Deploy indra-"* ]]
-  then semver="${message#Deploy idnra-}"
+  then semver="${message#Deploy indra-}"
   else semver=""
   fi
 else semver="`echo $git_tag | sed 's/indra-//'`"
@@ -26,8 +26,9 @@ for image in $images
 do
   for version in latest $commit $semver
   do
-    echo "Pushing image: $registry/${project}_$image:$version"
+    echo "Tagging image ${project}_$image:$version as $registry/${project}_$image:$version"
     docker tag ${project}_$image:$version $registry/${project}_$image:$version  || true
+    echo "Pushing image: $registry/${project}_$image:$version"
     docker push $registry/${project}_$image:$version || true
   done
 done
