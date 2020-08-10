@@ -484,12 +484,7 @@ export class CFCoreService {
     this.configService.getSupportedChains().forEach((chainId) => {
       const contractAddresses = this.configService.getContractAddresses(chainId);
       RegistryOfApps.forEach((app) => {
-        // Special case: OnlineLinkedTransferApp uses same contract as SimpleLinkedTransferApp
-        const appDefinitionAddress = contractAddresses[
-          app.name === SupportedApplicationNames.OnlineLinkedTransferApp
-            ? SupportedApplicationNames.SimpleLinkedTransferApp
-            : app.name
-        ];
+        const appDefinitionAddress = contractAddresses[app.name]; 
         this.log.info(`Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`);
         // set both name and app definition as keys for better lookup
         this.appRegistryMap.set(appDefinitionAddress, {

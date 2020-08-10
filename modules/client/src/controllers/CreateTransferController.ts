@@ -75,7 +75,6 @@ export class CreateTransferController extends AbstractController {
     // Set transferMeta & initialState according to conditionType
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer:
-      case ConditionalTransferTypes.OnlineLinkedTransfer: {
         const { preImage, paymentId } = params as PublicParams.LinkedTransfer;
         // add encrypted preImage to meta so node can store it in the DB
         const linkedHash = soliditySha256(["bytes32"], [preImage]);

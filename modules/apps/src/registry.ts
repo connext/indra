@@ -1,7 +1,7 @@
 import { AppRegistryType } from "./shared";
 import { DepositAppRegistryInfo } from "./DepositApp";
 import { HashLockTransferAppRegistryInfo } from "./HashLockTransferApp";
-import { OnlineLinkedTransferAppRegistryInfo, SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
+import { SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
 import { SimpleSignedTransferAppRegistryInfo } from "./SimpleSignedTransferApp";
 import { GraphBatchSignedTransferAppRegistryInfo } from "./GraphBatchedTransferApp";
 import { SimpleTwoPartySwapAppRegistryInfo } from "./SimpleTwoPartySwapApp";
@@ -10,7 +10,6 @@ import { GraphSignedTransferAppRegistryInfo } from "./GraphSignedTransferApp";
 
 export const AppRegistry: AppRegistryType = [
   SimpleLinkedTransferAppRegistryInfo,
-  OnlineLinkedTransferAppRegistryInfo,
   SimpleSignedTransferAppRegistryInfo,
   GraphSignedTransferAppRegistryInfo,
   GraphBatchSignedTransferAppRegistryInfo,

@@ -5,7 +5,6 @@ import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
 
 export const SimpleLinkedTransferAppName = "SimpleLinkedTransferApp";
-export const OnlineLinkedTransferAppName = "OnlineLinkedTransferApp";
 
 ////////////////////////////////////////
 // keep synced w contracts/app/SimpleLinkedTransferApp.sol

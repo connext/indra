@@ -5,7 +5,6 @@ import {
   GraphBatchedTransferAppName,
   GraphSignedTransferAppName,
   HashLockTransferAppName,
-  OnlineLinkedTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
   SupportedApplicationNames,
@@ -28,7 +27,6 @@ export const getTransferTypeFromAppName = (
     SupportedApplicationNames.GraphBatchedTransferApp,
     SupportedApplicationNames.GraphSignedTransferApp,
     SupportedApplicationNames.HashLockTransferApp,
-    SupportedApplicationNames.OnlineLinkedTransferApp,
   ].includes(name)) {
     return "RequireOnline";
   }
@@ -40,7 +38,6 @@ export const ConditionalTransferTypes = enumify({
   GraphTransfer: GraphSignedTransferAppName,
   HashLockTransfer: HashLockTransferAppName,
   LinkedTransfer: SimpleLinkedTransferAppName,
-  OnlineLinkedTransfer: OnlineLinkedTransferAppName,
   SignedTransfer: SimpleSignedTransferAppName,
 });
 export type ConditionalTransferTypes = typeof ConditionalTransferTypes[
@@ -52,7 +49,6 @@ export const ConditionalTransferAppNames = enumify({
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
-  [OnlineLinkedTransferAppName]: OnlineLinkedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
 });
@@ -68,7 +64,6 @@ export interface CreatedConditionalTransferMetaMap {
   [ConditionalTransferTypes.GraphTransfer]: CreatedGraphSignedTransferMeta;
   [ConditionalTransferTypes.HashLockTransfer]: CreatedHashLockTransferMeta;
   [ConditionalTransferTypes.LinkedTransfer]: CreatedLinkedTransferMeta;
-  [ConditionalTransferTypes.OnlineLinkedTransfer]: CreatedLinkedTransferMeta;
   [ConditionalTransferTypes.SignedTransfer]: CreatedSignedTransferMeta;
 }
 export type CreatedConditionalTransferMeta = {
@@ -80,7 +75,6 @@ export interface UnlockedConditionalTransferMetaMap {
   [ConditionalTransferTypes.GraphTransfer]: UnlockedGraphSignedTransferMeta;
   [ConditionalTransferTypes.HashLockTransfer]: UnlockedHashLockTransferMeta;
   [ConditionalTransferTypes.LinkedTransfer]: UnlockedLinkedTransferMeta;
-  [ConditionalTransferTypes.OnlineLinkedTransfer]: UnlockedLinkedTransferMeta;
   [ConditionalTransferTypes.SignedTransfer]: UnlockedSignedTransferMeta;
 }
 export type UnlockedConditionalTransferMeta = {

@@ -80,9 +80,7 @@ type ResolveHashLockTransferResponse = {
 // linked transfer
 
 type LinkedTransferParameters = {
-  conditionType:
-    | typeof ConditionalTransferTypes.LinkedTransfer
-    | typeof ConditionalTransferTypes.OnlineLinkedTransfer;
+  conditionType: typeof ConditionalTransferTypes.LinkedTransfer
   amount: BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
@@ -98,9 +96,7 @@ type LinkedTransferResponse = {
 };
 
 type ResolveLinkedTransferParameters = {
-  conditionType:
-    | typeof ConditionalTransferTypes.LinkedTransfer
-    | typeof ConditionalTransferTypes.OnlineLinkedTransfer;
+  conditionType: typeof ConditionalTransferTypes.LinkedTransfer
   paymentId: Bytes32;
   preImage: Bytes32;
 };
