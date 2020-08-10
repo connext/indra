@@ -114,6 +114,7 @@ export class MiniFreeBalance {
 
   public static channelFactory(
     signers: ChannelSigner[],
+    chainId: number,
     multisigAddress: string,
     networkContext: TestNetworkContext,
     activeApps: AppWithCounterClass[],
@@ -146,7 +147,7 @@ export class MiniFreeBalance {
       ][],
       freeBalanceAppInstance: freeBalance.toJson(),
       monotonicNumProposedApps: channelNonce.toNumber(),
-      chainId: 1337,
+      chainId,
     };
     return [freeBalance, channel];
   }

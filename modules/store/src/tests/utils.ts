@@ -285,6 +285,7 @@ export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
   status: StoredAppChallengeStatus.IN_DISPUTE,
+  chainId: 1337,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
@@ -294,6 +295,7 @@ export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
   timeout: toBN(3),
   turnTaker: TEST_STORE_CHANNEL.userIdentifiers[0],
   signature: getRandomBytes32(),
+  chainId: 1337,
 };
 
 export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = {
@@ -302,4 +304,5 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
   status: ChallengeStatus.IN_DISPUTE,
+  chainId: 1337,
 };

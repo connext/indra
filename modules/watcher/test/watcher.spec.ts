@@ -39,18 +39,20 @@ const logger = new ColorfulLogger(
 );
 
 describe("Watcher.init", () => {
-  let provider: JsonRpcProvider;
+  let providers: { [chainId: number]: JsonRpcProvider };
+  let chainId: number;
 
   beforeEach(async () => {
     const context = await setupContext();
-    provider = context["provider"];
+    providers = context["providers"];
+    chainId = parseInt(Object.keys(providers)[0]);
   });
 
   it("should be able to instantiate with a private key", async () => {
     const watcher = await Watcher.init({
-      context: { ChallengeRegistry: getRandomAddress() } as any,
+      context: { [chainId]: { ChallengeRegistry: getRandomAddress() } } as any,
       logger,
-      provider: provider.connection.url,
+      providers,
       signer: Wallet.createRandom().privateKey,
       store: await getAndInitStore(),
     });
@@ -60,17 +62,17 @@ describe("Watcher.init", () => {
   it("should be able to instantiate with a ChannelSigner", async () => {
     const watcher = await Watcher.init({
       logger,
-      signer: new ChannelSigner(Wallet.createRandom().privateKey, provider.connection.url),
-      provider: provider,
+      signer: new ChannelSigner(Wallet.createRandom().privateKey),
+      providers,
       store: await getAndInitStore(),
-      context: { ChallengeRegistry: getRandomAddress() } as any,
+      context: { [chainId]: { ChallengeRegistry: getRandomAddress() } } as any,
     });
     expect(watcher).to.be.instanceOf(Watcher);
   });
 });
 
 describe("Watcher.initiate", () => {
-  let provider: JsonRpcProvider;
+  let providers: { [x: number]: JsonRpcProvider };
   let store: IStoreService;
   let multisigAddress: string;
   let channelBalances: { [k: string]: BigNumber };
@@ -82,12 +84,13 @@ describe("Watcher.initiate", () => {
 
   let watcher: Watcher;
   let wallet: Wallet;
+  let chainId: number;
 
   beforeEach(async () => {
     const context = await setupContext();
 
     // get all values needed from context
-    provider = context["provider"];
+    providers = context["providers"];
     wallet = context["wallet"];
     multisigAddress = context["multisigAddress"];
     app = context["activeApps"][0];
@@ -96,16 +99,19 @@ describe("Watcher.initiate", () => {
     networkContext = context["networkContext"];
     signers = context["signers"];
     store = context["store"];
+    chainId = parseInt(Object.keys(providers)[0]);
 
     // create watcher
     watcher = await Watcher.init({
-      context: networkContext,
+      context: { [chainId]: networkContext },
       logger,
-      provider,
+      providers,
       signer: context["wallet"].privateKey,
       store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
+    expect(await store.getLatestProcessedBlock()).to.be.eq(
+      await providers[chainId].getBlockNumber(),
+    );
   });
 
   afterEach(async () => {
@@ -147,9 +153,9 @@ describe("Watcher.initiate", () => {
     await addActionToAppInStore(store, activeApps[0]);
     // reinstantiate watcher
     watcher = await Watcher.init({
-      context: networkContext,
+      context: { [chainId]: networkContext },
       logger,
-      provider,
+      providers,
       signer: wallet.privateKey,
       store,
     });
@@ -173,36 +179,40 @@ describe("Watcher.initiate", () => {
 });
 
 describe("Watcher.cancel", () => {
-  let provider: JsonRpcProvider;
+  let providers: { [x: number]: JsonRpcProvider };
   let store: IStoreService;
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
   let networkContext: TestNetworkContext;
+  let chainId: number;
 
   beforeEach(async () => {
     const context = await setupContext(true, [{ defaultTimeout: toBN(2) }]);
 
     // get all values needed from context
-    provider = context["provider"];
+    providers = context["providers"];
     const addActionToAppInStore = context["addActionToAppInStore"];
     store = context["store"];
     app = context["activeApps"][0];
     freeBalance = context["freeBalance"];
     networkContext = context["networkContext"];
+    chainId = parseInt(Object.keys(providers)[0]);
 
     // add action
     await addActionToAppInStore(store, app);
 
     // create watcher
     watcher = await Watcher.init({
-      context: networkContext,
+      context: { [chainId]: networkContext },
       logger,
-      provider,
+      providers,
       signer: context["wallet"].privateKey,
       store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
+    expect(await store.getLatestProcessedBlock()).to.be.eq(
+      await providers[chainId].getBlockNumber(),
+    );
   });
 
   afterEach(async () => {
@@ -222,9 +232,9 @@ describe("Watcher.cancel", () => {
     const app = activeApps[0];
     // create watcher
     watcher = await Watcher.init({
-      context: networkContext,
+      context: { [chainId]: networkContext },
       logger,
-      provider,
+      providers,
       signer: wallet.privateKey,
       store,
     });
@@ -243,7 +253,7 @@ describe("Watcher.cancel", () => {
     // set and progress state
     await initiateDispute(app, freeBalance, watcher, store, networkContext, true);
 
-    await mineBlock(provider);
+    await mineBlock(providers[chainId]);
 
     // wait for outcome
     await waitForSetOutcome(
@@ -264,7 +274,8 @@ describe("Watcher.cancel", () => {
 });
 
 describe("Watcher responses", () => {
-  let provider: JsonRpcProvider;
+  let providers: { [chainId: number]: JsonRpcProvider };
+  let chainId: number;
   let store: IStoreService;
   let watcher: Watcher;
   let app: AppWithCounterClass;
@@ -282,7 +293,8 @@ describe("Watcher responses", () => {
     const context = await setupContext(true, [{ defaultTimeout: toBN(3) }]);
 
     // get all values needed from context
-    provider = context["provider"];
+    providers = context["providers"];
+    chainId = parseInt(Object.keys(providers)[0]);
     store = context["store"];
     app = context["activeApps"][0];
     freeBalance = context["freeBalance"];
@@ -293,13 +305,15 @@ describe("Watcher responses", () => {
 
     // create watcher
     watcher = await Watcher.init({
-      context: networkContext,
+      context: { [chainId]: networkContext },
       logger,
-      provider,
+      providers,
       signer: context["wallet"].privateKey,
       store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.gte((await provider.getBlockNumber()) - 1);
+    expect(await store.getLatestProcessedBlock()).to.be.gte(
+      (await providers[chainId].getBlockNumber()) - 1,
+    );
   });
 
   afterEach(async () => {
@@ -321,9 +335,9 @@ describe("Watcher responses", () => {
       watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
         return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
-      mineBlock(provider),
+      mineBlock(providers[chainId]),
     ]);
-    await verifyChallengeUpdatedEvent(app, expected, appContractEvent as any, provider);
+    await verifyChallengeUpdatedEvent(app, expected, appContractEvent as any, providers[chainId]);
     verifyChallengeProgressedEvent(
       app.identityHash,
       freeBalance.multisigAddress,
@@ -354,9 +368,9 @@ describe("Watcher responses", () => {
       watcher.waitFor(WatcherEvents.StateProgressedEvent, 10_000, (data) => {
         return data.identityHash === setState0.appIdentityHash;
       }),
-      mineBlock(provider),
+      mineBlock(providers[chainId]),
     ]);
-    await verifyChallengeUpdatedEvent(app, expected, appSetStateEvent as any, provider);
+    await verifyChallengeUpdatedEvent(app, expected, appSetStateEvent as any, providers[chainId]);
     await verifyStateProgressedEvent(app, appProgressStateEvent as any, networkContext);
     verifyChallengeProgressedEvent(
       app.identityHash,
@@ -387,9 +401,9 @@ describe("Watcher responses", () => {
       watcher.waitFor(WatcherEvents.StateProgressedEvent, 10_000, (data) => {
         return data.identityHash === setState1.appIdentityHash;
       }),
-      mineBlock(provider),
+      mineBlock(providers[chainId]),
     ]);
-    await verifyChallengeUpdatedEvent(app, expected, appSetStateEvent as any, provider);
+    await verifyChallengeUpdatedEvent(app, expected, appSetStateEvent as any, providers[chainId]);
     await verifyStateProgressedEvent(app, appActionEvent as any, networkContext);
     verifyChallengeProgressedEvent(
       app.identityHash,

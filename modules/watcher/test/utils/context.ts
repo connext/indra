@@ -116,6 +116,7 @@ export const setupContext = async (
 
   const [freeBalance, channel] = MiniFreeBalance.channelFactory(
     signers,
+    chainId,
     multisigAddress,
     networkContext,
     activeApps,

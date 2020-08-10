@@ -44,7 +44,7 @@ export class ChainListener implements IChainListener {
   ) {
     this.log = loggerService.newContext("ChainListener");
     const registries = {};
-    Object.entries(providers).forEach(([chainId, provider]) => {
+    Object.entries(this.providers).forEach(([chainId, provider]) => {
       registries[chainId] = new Contract(
         this.context[chainId].ChallengeRegistry,
         ChallengeRegistry.abi,
@@ -75,7 +75,7 @@ export class ChainListener implements IChainListener {
 
   // parses + emits any event logs from given block to current block
   public parseLogsFrom = async (startingBlock: number): Promise<void> => {
-    const chainIds = Object.keys(this.providers);
+    const chainIds = Object.keys(this.providers).map((k) => parseInt(k));
     for (const chainId of chainIds) {
       const currentBlock = await this.providers[chainId].getBlockNumber();
       if (startingBlock > currentBlock) {
@@ -130,6 +130,7 @@ export class ChainListener implements IChainListener {
               appStateHash,
               versionNumber,
               finalizesAt,
+              chainId,
             });
             break;
           }
@@ -142,6 +143,7 @@ export class ChainListener implements IChainListener {
               timeout,
               turnTaker,
               signature,
+              chainId,
             });
             break;
           }
@@ -255,7 +257,8 @@ export class ChainListener implements IChainListener {
   // created listeners for the challenge registry
   private addChallengeRegistryListeners = (): void => {
     const chainIds = Object.keys(this.providers);
-    chainIds.forEach((chainId) => {
+    chainIds.forEach((chainIdStr) => {
+      const chainId = parseInt(chainIdStr);
       this.registries[chainId].on(
         ChallengeEvents.StateProgressed,
         (
@@ -274,6 +277,7 @@ export class ChainListener implements IChainListener {
             timeout: toBN(timeout),
             turnTaker,
             signature,
+            chainId,
           });
         },
       );
@@ -293,6 +297,7 @@ export class ChainListener implements IChainListener {
             appStateHash,
             versionNumber: toBN(versionNumber),
             finalizesAt: toBN(finalizesAt),
+            chainId,
           });
         },
       );
