@@ -72,11 +72,10 @@ export class CreateTransferController extends AbstractController {
       | GraphBatchedTransferAppState
       | GraphSignedTransferAppState;
 
-    // Set transferMeta & initialState according to conditionType
+    // Set transferMeta & submittedMeta & initialState according to conditionType
     switch (conditionType) {
-      case ConditionalTransferTypes.LinkedTransfer:
-        const { preImage, paymentId } = params as PublicParams.LinkedTransfer;
-        // add encrypted preImage to meta so node can store it in the DB
+      case ConditionalTransferTypes.LinkedTransfer: {
+        const { preImage, paymentId, requireOnline } = params as PublicParams.LinkedTransfer;
         const linkedHash = soliditySha256(["bytes32"], [preImage]);
 
         initialState = {
@@ -85,11 +84,13 @@ export class CreateTransferController extends AbstractController {
           preImage: HashZero,
         } as SimpleLinkedTransferAppState;
 
+        // add encrypted preImage to meta so node can store it in the DB
         if (recipient) {
           const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
           submittedMeta.encryptedPreImage = encryptedPreImage;
         }
         submittedMeta.paymentId = paymentId;
+        submittedMeta.requireOnline = requireOnline;
 
         transferMeta = {} as CreatedLinkedTransferMeta;
 

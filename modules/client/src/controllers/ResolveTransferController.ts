@@ -1,16 +1,16 @@
 import {
+  AppInstanceJson,
   ConditionalTransferTypes,
   EventNames,
+  GenericConditionalTransferAppState,
+  GraphBatchedTransferAppAction,
+  GraphSignedTransferAppAction,
   HashLockTransferAppAction,
   PublicParams,
   PublicResults,
-  getTransferTypeFromAppName,
-  GenericConditionalTransferAppState,
-  SimpleSignedTransferAppAction,
+  RequireOnlineApps,
   SimpleLinkedTransferAppAction,
-  GraphBatchedTransferAppAction,
-  AppInstanceJson,
-  GraphSignedTransferAppAction,
+  SimpleSignedTransferAppAction,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
@@ -81,11 +81,11 @@ export class ResolveTransferController extends AbstractController {
     } else {
       try {
         // App is not installed
-        const transferType = getTransferTypeFromAppName(conditionType);
+        const requireOnline = RequireOnlineApps.includes(conditionType) || meta["requireOnline"];
         // See note about fresh data
         existingReceiverApp = findApp(await this.connext.getAppInstances());
         if (!existingReceiverApp) {
-          if (transferType === "RequireOnline") {
+          if (requireOnline) {
             throw new Error(
               `Receiver app has not been installed, channel: ${stringify(
                 await this.connext.getStateChannel(),

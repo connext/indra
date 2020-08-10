@@ -86,6 +86,7 @@ type LinkedTransferParameters = {
   paymentId: Bytes32;
   preImage: Bytes32;
   recipient?: PublicIdentifier;
+  requireOnline?: boolean;
   meta?: any;
 };
 

@@ -7,31 +7,10 @@ import {
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
-  SupportedApplicationNames,
 } from "./contracts";
 
 ////////////////////////////////////////
 // Types
-
-export type TransferType = "RequireOnline" | "AllowOffline";
-export const getTransferTypeFromAppName = (
-  name: SupportedApplicationNames,
-): TransferType | undefined => {
-  if ([
-    SupportedApplicationNames.SimpleLinkedTransferApp,
-    SupportedApplicationNames.SimpleSignedTransferApp,
-  ].includes(name)) {
-    return "AllowOffline";
-  }
-  if ([
-    SupportedApplicationNames.GraphBatchedTransferApp,
-    SupportedApplicationNames.GraphSignedTransferApp,
-    SupportedApplicationNames.HashLockTransferApp,
-  ].includes(name)) {
-    return "RequireOnline";
-  }
-  return undefined;
-};
 
 export const ConditionalTransferTypes = enumify({
   GraphBatchedTransfer: GraphBatchedTransferAppName,

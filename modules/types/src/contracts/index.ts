@@ -126,6 +126,14 @@ export const PureActionApps = [
   SimpleTwoPartySwapAppName,
 ];
 
+// These apps will malfunction if the recipient is not online during the time of transfer creation
+// Others (eg linked transfer app) can optionally require the recipient be online but not necessary
+export const RequireOnlineApps = [
+  GraphBatchedTransferAppName,
+  GraphSignedTransferAppName,
+  HashLockTransferAppName,
+];
+
 export type AddressBookEntry = {
   address: string;
   constructorArgs?: Array<{ name: string; value: string }>;

@@ -7,7 +7,7 @@ import {
   ConditionalTransferAppNames,
   ConditionalTransferTypes,
   GenericConditionalTransferAppName,
-  getTransferTypeFromAppName,
+  RequireOnlineApps,
   GraphBatchedTransferAppAction,
   GraphBatchedTransferAppState,
   GraphSignedTransferAppAction,
@@ -153,10 +153,12 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
-    const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
+
+    const requireOnline =
+      RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];
 
     // ALLOW OFFLINE SENDER INSTALL
-    if (allowed === "AllowOffline") {
+    if (!requireOnline) {
       this.log.info(
         `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
@@ -198,7 +200,7 @@ export class TransferService {
       );
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
-      if (allowed === "RequireOnline") {
+      if (requireOnline) {
         if (receiverProposeRes?.appIdentityHash) {
           await this.cfCoreService.rejectInstallApp(
             receiverProposeRes.appIdentityHash,
@@ -214,7 +216,7 @@ export class TransferService {
     }
 
     // REQUIRE ONLINE SENDER INSTALL
-    if (allowed === "RequireOnline") {
+    if (requireOnline) {
       this.log.info(
         `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
@@ -242,9 +244,8 @@ export class TransferService {
       }
     } catch (e) {
       this.log.error(`Error installing receiver app: ${e.message || e}`);
-      if (allowed === "RequireOnline") {
-        // cancel sender
-        // https://github.com/ConnextProject/indra/issues/942
+      if (requireOnline) {
+        // cancel sender: https://github.com/ConnextProject/indra/issues/942
         this.log.warn(`Canceling sender payment`);
         await this.cfCoreService.uninstallApp(
           senderAppIdentityHash,
