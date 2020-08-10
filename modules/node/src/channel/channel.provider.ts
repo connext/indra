@@ -9,10 +9,7 @@ import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import {
-  OnchainTransactionRepository,
-  onchainEntityToReceipt,
-} from "../onchainTransactions/onchainTransaction.repository";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
@@ -31,6 +28,7 @@ import {
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
+import { stringify } from "@connext/utils";
 
 const { getAddress } = utils;
 
@@ -66,7 +64,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     userPublicIdentifier: string,
     chainId: number,
     data: { assetId?: string },
-  ): Promise<providers.TransactionResponse | undefined> {
+  ): Promise<NodeResponses.RequestCollateral> {
     // do not allow clients to specify an amount to collateralize with
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       userPublicIdentifier,
@@ -78,7 +76,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
-      return response;
+      return (
+        response && {
+          transaction: response.transaction,
+          depositAppIdentityHash: response.appIdentityHash,
+        }
+      );
     } catch (e) {
       this.log.warn(`Failed to collateralize: ${e.message}`);
       return undefined;

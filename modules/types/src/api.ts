@@ -76,7 +76,7 @@ export interface INodeApiClient {
     paymentId: string,
     conditionType: ConditionalTransferTypes,
   ): Promise<NodeResponses.InstallConditionalTransferReceiverApp>;
-  requestCollateral(assetId: Address): Promise<NodeResponses.RequestCollateral | void>;
+  requestCollateral(assetId: Address): Promise<NodeResponses.RequestCollateral>;
   fetchLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
   fetchSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   fetchGraphTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;

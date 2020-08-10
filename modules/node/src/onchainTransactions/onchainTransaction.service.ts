@@ -20,6 +20,10 @@ const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
 export const MAX_RETRIES = 5;
 export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT, INVALID_NONCE];
 
+export type OnchainTransactionResponse = providers.TransactionResponse & {
+  completed: (confirmations?: number) => Promise<void>; // resolved when tx is properly mined + stored
+};
+
 @Injectable()
 export class OnchainTransactionService implements OnModuleInit {
   private nonces: Map<number, Promise<number>> = new Map();
@@ -46,7 +50,7 @@ export class OnchainTransactionService implements OnModuleInit {
     channel: Channel,
     transaction: MinimalTransaction,
     appIdentityHash: string,
-  ): Promise<providers.TransactionResponse> {
+  ): Promise<OnchainTransactionResponse> {
     return new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
         this.sendTransaction(
@@ -65,7 +69,7 @@ export class OnchainTransactionService implements OnModuleInit {
     channel: Channel,
     transaction: MinimalTransaction,
     appIdentityHash: string,
-  ): Promise<providers.TransactionResponse> {
+  ): Promise<OnchainTransactionResponse> {
     return new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
         this.sendTransaction(
@@ -84,7 +88,7 @@ export class OnchainTransactionService implements OnModuleInit {
     channel: Channel,
     transaction: MinimalTransaction,
     appIdentityHash: string,
-  ): Promise<providers.TransactionResponse> {
+  ): Promise<OnchainTransactionResponse> {
     return new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
         this.sendTransaction(
@@ -101,6 +105,10 @@ export class OnchainTransactionService implements OnModuleInit {
 
   findByHash(hash: string): Promise<OnchainTransaction | undefined> {
     return this.onchainTransactionRepository.findByHash(hash);
+  }
+
+  setAppUninstalled(wasUninstalled: boolean, hash: string): Promise<void> {
+    return this.onchainTransactionRepository.addAppUninstallFlag(wasUninstalled, hash);
   }
 
   async sendMultisigDeployment(
@@ -131,7 +139,7 @@ export class OnchainTransactionService implements OnModuleInit {
     reason: TransactionReason,
     channel: Channel,
     appIdentityHash?: string,
-  ): Promise<providers.TransactionResponse> {
+  ): Promise<OnchainTransactionResponse> {
     const wallet = this.configService.getSigner(channel.chainId);
     this.log.info(
       `sendTransaction: Using provider URL ${
@@ -161,6 +169,16 @@ export class OnchainTransactionService implements OnModuleInit {
         await this.onchainTransactionRepository.addResponse(tx, reason, channel, appIdentityHash);
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
         const start = Date.now();
+        // eslint-disable-next-line no-loop-func
+        const completed: Promise<void> = new Promise(async (resolve, reject) => {
+          try {
+            const receipt = await tx.wait();
+            await this.onchainTransactionRepository.addReceipt(receipt);
+            resolve();
+          } catch (e) {
+            reject(e);
+          }
+        });
         tx.wait().then(async (receipt) => {
           this.log.info(
             `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${
@@ -168,8 +186,10 @@ export class OnchainTransactionService implements OnModuleInit {
             }: ${receipt.transactionHash} in ${Date.now() - start}ms`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
+          this.log.error(`added receipt, status should be success`);
         });
-        return tx;
+
+        return { ...tx, completed: () => completed };
       } catch (e) {
         errors[attempt] = e.message;
         const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));

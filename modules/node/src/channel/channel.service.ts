@@ -6,6 +6,7 @@ import {
   StateChannelJSON,
   DepositAppName,
   DepositAppState,
+  FreeBalanceResponse,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
@@ -106,10 +107,14 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<providers.TransactionResponse | undefined> {
+  ): Promise<{
+    completed?: () => Promise<FreeBalanceResponse>;
+    transaction?: providers.TransactionResponse;
+    appIdentityHash?: string;
+  }> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
-      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
+      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId} for ${multisigAddress}`,
     );
     const normalizedAssetId = getAddress(assetId);
     const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
@@ -154,7 +159,12 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let response: providers.TransactionResponse | undefined = undefined;
+    let rebalanceRes: {
+      completed?: () => Promise<FreeBalanceResponse>;
+      transaction?: providers.TransactionResponse;
+      appIdentityHash?: string;
+    } = {};
+
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -162,23 +172,21 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        const depositRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
-        response = (depositRes || {}).tx;
+        rebalanceRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
       } else {
-        this.log.debug(
+        this.log.info(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
         );
       }
-    }
-
-    if (rebalanceType === RebalanceType.RECLAIM) {
+    } else if (rebalanceType === RebalanceType.RECLAIM) {
       // If free balance is too high, reclaim down to lower bound
       if (nodeFreeBalance.gt(reclaimThreshold) && reclaimThreshold.gt(0)) {
         this.log.info(
           `nodeFreeBalance ${nodeFreeBalance.toString()} > reclaimThreshold ${reclaimThreshold.toString()}, withdrawing`,
         );
         const amount = nodeFreeBalance.sub(target);
-        await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
+        const transaction = await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
+        rebalanceRes.transaction = transaction;
       } else {
         this.log.info(
           `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${reclaimThreshold.toString()}`,
@@ -188,7 +196,7 @@ export class ChannelService {
     this.log.info(
       `Rebalance finished for ${channel.userIdentifier} on chain ${channel.chainId}, assetId: ${assetId}`,
     );
-    return response;
+    return rebalanceRes;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(
@@ -267,7 +275,7 @@ export class ChannelService {
         this.log.warn(`Converted rebalance targets: ${stringify(targets)}`);
       }
     }
-    this.log.debug(`Rebalancing target: ${stringify(targets)}`);
+    this.log.info(`Rebalancing target for ${assetId} on ${chainId}: ${stringify(targets)}`);
     return targets;
   }
 
@@ -279,6 +287,8 @@ export class ChannelService {
     this.log.info(
       `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} with ${stringify(
         profile,
+        false,
+        0,
       )}`,
     );
     const { assetId, collateralizeThreshold, target, reclaimThreshold } = profile;
@@ -305,8 +315,10 @@ export class ChannelService {
       rebalanceProfile,
     );
     this.log.info(
-      `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} complete: ${JSON.stringify(
+      `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} complete: ${stringify(
         result,
+        false,
+        0,
       )}`,
     );
     return result;

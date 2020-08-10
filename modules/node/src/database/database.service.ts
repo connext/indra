@@ -69,6 +69,7 @@ import { updateOnchain1594840136529 } from "../../migrations/1594840136529-updat
 import { removeAppCommitments1595210814094 } from "../../migrations/1595210814094-remove-app-commitments";
 import { updateTxEnum1595439120210 } from "../../migrations/1595439120210-update-tx-enum";
 import { addAppIdTx1596488084652 } from "../../migrations/1596488084652-add-app-id-tx";
+import { transactionAppFlag1596924706697 } from "../../migrations/1596924706697-transaction-app-flag";
 
 export const entities = [
   AppInstance,
@@ -137,6 +138,7 @@ export const migrations = [
   removeAppCommitments1595210814094,
   updateTxEnum1595439120210,
   addAppIdTx1596488084652,
+  transactionAppFlag1596924706697,
 ];
 
 @Injectable()

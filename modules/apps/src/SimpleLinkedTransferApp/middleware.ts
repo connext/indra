@@ -1,5 +1,5 @@
 import { ProposeMiddlewareContext } from "@connext/types";
-import { validateSimpleLinkedTransferApp } from ".";
+import { validateSimpleLinkedTransferApp } from "./validation";
 
 export const proposeLinkedTransferMiddleware = (cxt: ProposeMiddlewareContext) => {
   const { params } = cxt;

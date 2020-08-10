@@ -159,15 +159,20 @@ export class Agent {
 
   async deposit(amount: BigNumber, assetId: string = AddressZero) {
     // Perform deposit
-    await this.client.deposit({
+    const res = await this.client.deposit({
       amount,
       assetId,
     });
+    await res.completed();
   }
 
   async requestCollateral(assetId: string = AddressZero) {
     // Perform deposit
-    await this.client.requestCollateral(assetId);
+    const res = await this.client.requestCollateral(assetId);
+    if (!res) {
+      return;
+    }
+    await res.completed();
   }
 
   async depositIfNeeded(
@@ -188,7 +193,7 @@ export class Agent {
     );
     await this.deposit(depositAmount, assetId);
     const balanceAfterDeposit = await this.client.getFreeBalance(assetId);
-    this.log.info(
+    this.log.error(
       `Finished depositing. Agent balance: ${balanceAfterDeposit[this.client.signerAddress]}`,
     );
   }

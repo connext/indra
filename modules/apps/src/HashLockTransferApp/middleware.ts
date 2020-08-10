@@ -1,5 +1,5 @@
 import { ProposeMiddlewareContext, JsonRpcProvider } from "@connext/types";
-import { validateHashLockTransferApp } from ".";
+import { validateHashLockTransferApp } from "./validation";
 
 export const proposeHashLockTransferMiddleware = async (
   cxt: ProposeMiddlewareContext,

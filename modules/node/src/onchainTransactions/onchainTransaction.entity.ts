@@ -93,6 +93,9 @@ export class OnchainTransaction {
 
   @Column("text", { nullable: true })
   appIdentityHash!: string;
+
+  @Column("boolean", { default: false })
+  appUninstalled!: boolean;
 }
 
 @ViewEntity({
