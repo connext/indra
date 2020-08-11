@@ -12,6 +12,7 @@ import { MethodResults, MethodParams } from "./methods";
 import { IStoreService } from "./store";
 import { PublicParams, PublicResults } from "./public";
 import { AppAction } from ".";
+import { ChallengeInitiatedResponse } from "./watcher";
 
 /////////////////////////////////
 
@@ -30,6 +31,7 @@ export interface ClientOptions {
   messagingUrl?: string; // optional override for messaging endpoint
   skipSync?: boolean;
   skipInitStore?: boolean;
+  watcherEnabled?: boolean;
 }
 
 export interface IConnextClient {
@@ -97,6 +99,13 @@ export interface IConnextClient {
   swap(params: PublicParams.Swap): Promise<PublicResults.Swap>;
   transfer(params: PublicParams.Transfer): Promise<PublicResults.ConditionalTransfer>;
   withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
+
+  ///////////////////////////////////
+  // DISPUTE METHODS
+  initiateChallenge(
+    params: PublicParams.InitiateChallenge,
+  ): Promise<PublicResults.InitiateChallenge>;
+  cancelChallenge(params: PublicParams.CancelChallenge): Promise<PublicResults.CancelChallenge>;
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS

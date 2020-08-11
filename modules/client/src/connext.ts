@@ -22,7 +22,6 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
-  MinimalTransaction,
   NodeResponses,
   PublicParams,
   PublicResults,
@@ -36,6 +35,7 @@ import {
   SupportedApplicationNames,
   EventNames,
   FreeBalanceResponse,
+  IWatcher,
 } from "@connext/types";
 import {
   delay,
@@ -79,6 +79,7 @@ export class ConnextClient implements IConnextClient {
   public signerAddress: string;
   public store: IStoreService;
   public token: Contract;
+  private watcher: IWatcher;
 
   private opts: InternalClientOptions;
 
@@ -102,6 +103,7 @@ export class ConnextClient implements IConnextClient {
     this.node = opts.node;
     this.store = opts.store;
     this.token = opts.token;
+    this.watcher = opts.watcher;
 
     this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userIdentifier;
@@ -273,6 +275,20 @@ export class ConnextClient implements IConnextClient {
 
   public getTransferHistory = async (): Promise<NodeResponses.GetTransferHistory> => {
     return this.node.getTransferHistory();
+  };
+
+  ///////////////////////////////////
+  // DISPUTE METHODS
+  public initiateChallenge = (
+    params: PublicParams.InitiateChallenge,
+  ): Promise<PublicResults.InitiateChallenge> => {
+    return this.watcher.initiate(params.appIdentityHash);
+  };
+
+  public cancelChallenge = (
+    params: PublicParams.CancelChallenge,
+  ): Promise<PublicResults.CancelChallenge> => {
+    return this.watcher.cancel(params.appIdentityHash, params.req);
   };
 
   ///////////////////////////////////

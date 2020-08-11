@@ -18,6 +18,7 @@ import {
   delay,
   getChainId,
 } from "@connext/utils";
+import { Watcher } from "@connext/watcher";
 
 import { Contract, providers } from "ethers";
 
@@ -45,6 +46,7 @@ export const connect = async (
     logLevel,
     skipSync,
     skipInitStore,
+    watcherEnabled,
   } = opts;
   let { messaging } = opts;
 
@@ -133,6 +135,19 @@ export const connect = async (
     throw new Error("Must provide channelProvider or signer");
   }
 
+  // create watcher, which is enabled by default
+  const watcher = await Watcher.init({
+    logLevel,
+    logger,
+    signer,
+    providers: { [chainId]: ethProvider },
+    context: node.config.contractAddresses,
+    store,
+  });
+  if (!watcherEnabled) {
+    await watcher.disable();
+  }
+
   // create a token contract based on the provided token
   const token = new Contract(config.contractAddresses[chainId].Token, ERC20.abi, ethProvider);
 
@@ -153,6 +168,7 @@ export const connect = async (
     store,
     token,
     chainId,
+    watcher,
   });
 
   logger.info(`Done creating connext client`);
