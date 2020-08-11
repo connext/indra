@@ -1,6 +1,6 @@
 {
   "name": "@connext/utils",
-  "version": "7.1.1",
+  "version": "7.1.2",
   "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -15,11 +15,11 @@
     "test": "./node_modules/.bin/ts-mocha --bail --check-leaks --exit 'src/**/*.spec.ts'"
   },
   "dependencies": {
+    "@connext/types": "7.1.2",
     "axios": "0.19.2",
-    "@connext/types": "7.1.1",
-    "evt": "1.8.4",
     "bs58check": "2.1.2",
-    "eccrypto-js": "4.5.4"
+    "eccrypto-js": "4.5.4",
+    "evt": "1.8.4"
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.4",
