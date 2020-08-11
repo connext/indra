@@ -112,9 +112,10 @@ export class OnchainTransactionService implements OnModuleInit {
 
   async sendMultisigDeployment(
     transaction: MinimalTransaction,
-    json: StateChannelJSON,
+    chainId: number,
+    multisigAddress: string,
   ): Promise<TransactionReceipt> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
       this.queues.get(channel.chainId).add(() => {
         this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)

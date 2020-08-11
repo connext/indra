@@ -61,8 +61,8 @@ export const cfCoreProviderFactory: Provider = {
       log.newContext("CFCore"),
       false, // only clients sync on cf core start
       {
-        sendTransaction: (tx: MinimalTransaction, json: StateChannelJSON) => {
-          return onchainTransactionService.sendMultisigDeployment(tx, json);
+        sendTransaction: (tx: MinimalTransaction, chainId: number, multisigAddress: string) => {
+          return onchainTransactionService.sendMultisigDeployment(tx, chainId, multisigAddress);
         },
       },
     );

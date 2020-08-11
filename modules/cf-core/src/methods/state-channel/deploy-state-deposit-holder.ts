@@ -150,7 +150,11 @@ export class DeployStateDepositController extends MethodController {
     let error: any;
     if (transactionService) {
       log.info("Sending multisig deployment transaction using transaction service");
-      receipt = await transactionService.sendTransaction(minTx, preProtocolStateChannel.toJson());
+      receipt = await transactionService.sendTransaction(
+        minTx,
+        preProtocolStateChannel.chainId,
+        preProtocolStateChannel.multisigAddress,
+      );
     } else {
       // try with nonce retry logic
       for (let tryCount = 1; tryCount <= retryCount; tryCount += 1) {

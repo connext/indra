@@ -1,7 +1,6 @@
 import { Address, BigNumber, Bytes32, PublicIdentifier, TransactionReceipt } from "./basic";
 import { enumify } from "./utils";
 import { MinimalTransaction } from "./commitments";
-import { StateChannelJSON } from "./state";
 
 export type RebalanceProfile = {
   assetId: Address;
@@ -55,6 +54,7 @@ export type SwapRate = AllowedSwap & {
 export interface IOnchainTransactionService {
   sendTransaction(
     transaction: MinimalTransaction,
-    channel: StateChannelJSON,
+    chainId: number,
+    multisigAddress?: string,
   ): Promise<TransactionReceipt>;
 }
