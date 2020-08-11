@@ -16,9 +16,11 @@ import { AppAction } from ".";
 /////////////////////////////////
 
 // channelProvider / signer are both optional but one of them needs to be provided
+// ethProvider and ethProviderUrl are both optional but one of them needs to be provided
 export interface ClientOptions {
   channelProvider?: IChannelProvider;
-  ethProviderUrl: string;
+  ethProvider?: providers.Provider;
+  ethProviderUrl?: string;
   chainId?: number;
   signer?: string | IChannelSigner;
   store?: IStoreService;
