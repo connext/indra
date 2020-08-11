@@ -115,30 +115,54 @@ export class OnchainTransactionService implements OnModuleInit {
     transaction: MinimalTransaction,
     chainId: number,
     multisigAddress: string,
-  ): Promise<TransactionReceipt> {
+  ): Promise<providers.TransactionResponse> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId).add(() => {
+      this.queues.get(chainId).add(() => {
         this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
           .then((result) => resolve(result))
           .catch((error) => reject(error.message));
       });
     });
-    // make sure to wait for the transaction to be completed here, since
-    // the multisig deployment is followed by a call to `getOwners`.
-    // and since the cf-core transaction service expects the tx to be
-    // mined
-    await tx.completed();
-    const stored = await this.onchainTransactionRepository.findByHash(tx.hash);
-    return {
-      to: stored.to,
-      from: stored.from,
-      gasUsed: stored.gasUsed,
-      logsBloom: stored.logsBloom,
-      blockHash: stored.blockHash,
-      transactionHash: stored.hash,
-      blockNumber: stored.blockNumber,
-    } as TransactionReceipt;
+    // make sure the wait function of the response includes the database
+    // updates required to truly mark the transaction as completed
+    const wait: Promise<TransactionReceipt> = new Promise(async (resolve, reject) => {
+      try {
+        const receipt = await tx.wait();
+        await this.onchainTransactionRepository.addReceipt(receipt);
+        resolve(receipt);
+      } catch (e) {
+        reject(e);
+      }
+    });
+    return { ...tx, wait: () => wait };
+  }
+
+  async sendDisputeTransaction(
+    transaction: MinimalTransaction,
+    chainId: number,
+    multisigAddress: string,
+  ): Promise<providers.TransactionResponse> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
+      this.queues.get(chainId).add(() => {
+        this.sendTransaction(transaction, TransactionReason.DISPUTE, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
+    // make sure the wait function of the response includes the database
+    // updates required to truly mark the transaction as completed
+    const wait: Promise<TransactionReceipt> = new Promise(async (resolve, reject) => {
+      try {
+        const receipt = await tx.wait();
+        await this.onchainTransactionRepository.addReceipt(receipt);
+        resolve(receipt);
+      } catch (e) {
+        reject(e);
+      }
+    });
+    return { ...tx, wait: () => wait };
   }
 
   private async sendTransaction(

@@ -969,7 +969,12 @@ export class Watcher implements IWatcher {
     multisigAddress: string,
   ): Promise<providers.TransactionReceipt | string> => {
     if (this.transactionService) {
-      return this.transactionService.sendTransaction(transaction, chainId, multisigAddress);
+      const response = await this.transactionService.sendTransaction(
+        transaction,
+        chainId,
+        multisigAddress,
+      );
+      return response.wait();
     }
     const signer = this.getConnectedSigner(chainId);
 

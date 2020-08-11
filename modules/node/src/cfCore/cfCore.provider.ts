@@ -11,7 +11,7 @@ import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
 import { formatUnits } from "ethers/lib/utils";
-import { NetworkContexts, MinimalTransaction, StateChannelJSON } from "@connext/types";
+import { NetworkContexts, MinimalTransaction } from "@connext/types";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 
 const { EtherSymbol } = constants;

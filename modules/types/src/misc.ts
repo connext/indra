@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, PublicIdentifier, TransactionReceipt } from "./basic";
+import { Address, BigNumber, Bytes32, PublicIdentifier, TransactionResponse } from "./basic";
 import { enumify } from "./utils";
 import { MinimalTransaction } from "./commitments";
 
@@ -56,5 +56,5 @@ export interface IOnchainTransactionService {
     transaction: MinimalTransaction,
     chainId: number,
     multisigAddress?: string,
-  ): Promise<TransactionReceipt>;
+  ): Promise<TransactionResponse>;
 }
