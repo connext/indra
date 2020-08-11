@@ -29,6 +29,7 @@ export class ChallengeRepository extends Repository<Challenge> {
     return this.createQueryBuilder("challenge")
       .leftJoinAndSelect("challenge.stateProgressedEvents", "state_progressed_event")
       .leftJoinAndSelect("challenge.challengeUpdatedEvents", "challenge_updated_event")
+      .leftJoinAndSelect("challenge.channel", "channel")
       .leftJoinAndSelect(
         "challenge.app",
         "app_instance",
