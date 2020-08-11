@@ -1,8 +1,8 @@
+import { getEthProvider } from "@connext/utils";
 import { Argv } from "yargs";
 import { providers } from "ethers";
 
 import { cliOpts } from "../constants";
-import { getProvider } from "../utils";
 
 export const snapshot = async (ethProvider: providers.JsonRpcProvider): Promise<void> => {
   try {
@@ -20,6 +20,6 @@ export const snapshotCommand = {
     return yargs.option("p", cliOpts.ethProvider);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    await snapshot(getProvider(argv.ethProvider));
+    await snapshot(getEthProvider(argv.ethProvider));
   },
 };
