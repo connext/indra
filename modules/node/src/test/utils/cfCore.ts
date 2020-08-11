@@ -177,7 +177,7 @@ export const createStoredAppChallenge = (
     versionNumber: One,
     finalizesAt: Zero,
     status: StoredAppChallengeStatus.IN_DISPUTE,
-    chainId: 1337,
+    chainId: 1339,
     ...overrides,
   };
 };
@@ -192,7 +192,7 @@ export const createStateProgressedEventPayload = (
     timeout: Zero,
     turnTaker: getRandomAddress(),
     signature: getRandomAddress(),
-    chainId: 1337,
+    chainId: 1339,
     ...overrides,
   };
 };
@@ -206,7 +206,7 @@ export const createChallengeUpdatedEventPayload = (
     versionNumber: One,
     finalizesAt: Zero,
     status: ChallengeStatus.IN_DISPUTE,
-    chainId: 1337,
+    chainId: 1339,
     ...overrides,
   };
 };
