@@ -469,10 +469,6 @@ export class CFCoreService {
     return this.appRegistryMap.get(appDefinition);
   }
 
-  public getAppInfoByDefinition(addr: Address): DefaultApp {
-    return this.appRegistryMap.get(addr);
-  }
-
   public getAppInfoByNameAndChain(name: SupportedApplicationNames, chainId: number): DefaultApp {
     return this.appRegistryMap.get(`${name}:${chainId}`);
   }
@@ -488,7 +484,7 @@ export class CFCoreService {
     this.configService.getSupportedChains().forEach((chainId) => {
       const contractAddresses = this.configService.getContractAddresses(chainId);
       RegistryOfApps.forEach((app) => {
-        const appDefinitionAddress = contractAddresses[app.name];
+        const appDefinitionAddress = contractAddresses[app.name]; 
         this.log.info(`Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`);
         // set both name and app definition as keys for better lookup
         this.appRegistryMap.set(appDefinitionAddress, {

@@ -1,7 +1,8 @@
 import {
+  OnlineLinkedTransferAppName,
   OutcomeType,
-  SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppActionEncoding,
+  SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppStateEncoding,
 } from "@connext/types";
 import { constants } from "ethers";
@@ -16,6 +17,11 @@ export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
   name: SimpleLinkedTransferAppName,
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   stateEncoding: SimpleLinkedTransferAppStateEncoding,
+};
+
+export const OnlineLinkedTransferAppRegistryInfo: AppRegistryInfo = {
+  ...SimpleLinkedTransferAppRegistryInfo,
+  name: OnlineLinkedTransferAppName,
 };
 
 // timeout default values
