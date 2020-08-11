@@ -52,8 +52,8 @@ then webpack --config ops/webpack.config.js
 fi
 
 if [[ "$NODE_ENV" == "production" ]]
-then noOnly="--forbid-only"
-else noOnly=""
+then opts="--forbid-only"
+else opts="--bail"
 fi
 
 if [[ "$cmd" == "watch" ]]
@@ -64,5 +64,5 @@ then
   mocha --slow 1000 --timeout 180000 --bail --check-leaks --watch $bundle
 else
   echo "Starting test-runner"
-  mocha --slow 1000 --timeout 180000 --bail --check-leaks --exit $noOnly $bundle
+  mocha --slow 1000 --timeout 180000 --check-leaks --exit $opts $bundle
 fi
