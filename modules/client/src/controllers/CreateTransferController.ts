@@ -42,7 +42,8 @@ export class CreateTransferController extends AbstractController {
     this.log.info(`conditionalTransfer started: ${stringify(params)}`);
 
     const amount = toBN(params.amount);
-    const { meta, recipient, assetId, conditionType } = params;
+    const { meta, recipient, assetId } = params;
+    let conditionType = params.conditionType;
 
     const submittedMeta = { ...(meta || {}) };
     submittedMeta.recipient = recipient;
@@ -72,10 +73,18 @@ export class CreateTransferController extends AbstractController {
       | GraphBatchedTransferAppState
       | GraphSignedTransferAppState;
 
+
     // Set transferMeta & submittedMeta & initialState according to conditionType
     switch (conditionType) {
+      case ConditionalTransferTypes.OnlineTransfer: {
+        // Under the hood, still use the LinkedTransfer contract & logic
+        conditionType = ConditionalTransferTypes.LinkedTransfer;
+        submittedMeta.requireOnline = true;
+      }
+      // OnlineTransfer is almost the same as LinkedTransfer: only difference is requireOnline
+      // eslint-disable-next-line no-fallthrough
       case ConditionalTransferTypes.LinkedTransfer: {
-        const { preImage, paymentId, requireOnline } = params as PublicParams.LinkedTransfer;
+        const { preImage, paymentId } = params as PublicParams.LinkedTransfer;
         const linkedHash = soliditySha256(["bytes32"], [preImage]);
 
         initialState = {
@@ -90,7 +99,6 @@ export class CreateTransferController extends AbstractController {
           submittedMeta.encryptedPreImage = encryptedPreImage;
         }
         submittedMeta.paymentId = paymentId;
-        submittedMeta.requireOnline = requireOnline;
 
         transferMeta = {} as CreatedLinkedTransferMeta;
 

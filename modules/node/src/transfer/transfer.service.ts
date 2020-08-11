@@ -63,6 +63,7 @@ export const getCancelAction = (
     | GraphBatchedTransferAppAction
     | SimpleLinkedTransferAppAction;
   switch (transferType) {
+    case ConditionalTransferTypes.OnlineTransfer:
     case ConditionalTransferTypes.LinkedTransfer:
     case ConditionalTransferTypes.HashLockTransfer: {
       action = { preImage: HashZero } as HashLockTransferAppAction;

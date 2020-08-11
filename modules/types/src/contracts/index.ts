@@ -12,6 +12,7 @@ import {
   WithdrawAppName,
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
+  OnlineLinkedTransferAppName,
   SimpleSignedTransferAppName,
   DepositAppName,
   SimpleTwoPartySwapAppName,
@@ -44,6 +45,7 @@ export const AppNames = {
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [OnlineLinkedTransferAppName]: OnlineLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
   [WithdrawAppName]: WithdrawAppName,
@@ -57,6 +59,7 @@ interface AppActionMap {
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppAction;
   [GraphSignedTransferAppName]: GraphSignedTransferAppAction;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppAction;
+  [OnlineLinkedTransferAppName]: SimpleLinkedTransferAppAction;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
   [SimpleTwoPartySwapAppName]: {}; // no action
   [WithdrawAppName]: WithdrawAppAction;
@@ -68,14 +71,15 @@ export type AppActions = {
 
 interface AppStateMap {
   [DepositAppName]: DepositAppState;
-  [HashLockTransferAppName]: HashLockTransferAppState;
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppState;
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppState;
   [GraphSignedTransferAppName]: GraphSignedTransferAppState;
+  [HashLockTransferAppName]: HashLockTransferAppState;
+  [OnlineLinkedTransferAppName]: SimpleLinkedTransferAppState;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppState;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
   [SimpleTwoPartySwapAppName]: SimpleSwapAppState;
   [WithdrawAppName]: WithdrawAppState;
-  [GenericConditionalTransferAppName]: GenericConditionalTransferAppState;
 }
 export type AppStates = {
   [P in keyof AppStateMap]: AppStateMap[P];
@@ -101,14 +105,15 @@ export type AppState =
   | GenericConditionalTransferAppState;
 
 export const SupportedApplicationNames = enumify({
+  [DepositAppName]: DepositAppName,
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
+  [HashLockTransferAppName]: HashLockTransferAppName,
+  [OnlineLinkedTransferAppName]: OnlineLinkedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
   [WithdrawAppName]: WithdrawAppName,
-  [HashLockTransferAppName]: HashLockTransferAppName,
-  [DepositAppName]: DepositAppName,
 });
 
 export type SupportedApplicationNames = typeof SupportedApplicationNames[
@@ -121,8 +126,9 @@ export type SupportedApplicationNames = typeof SupportedApplicationNames[
 export const PureActionApps = [
   GraphBatchedTransferAppName,
   GraphSignedTransferAppName,
-  SimpleSignedTransferAppName,
+  OnlineLinkedTransferAppName,
   SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
   SimpleTwoPartySwapAppName,
 ];
 
@@ -132,6 +138,7 @@ export const RequireOnlineApps = [
   GraphBatchedTransferAppName,
   GraphSignedTransferAppName,
   HashLockTransferAppName,
+  OnlineLinkedTransferAppName,
 ];
 
 export type AddressBookEntry = {

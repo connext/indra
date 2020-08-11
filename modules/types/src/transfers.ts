@@ -5,6 +5,7 @@ import {
   GraphBatchedTransferAppName,
   GraphSignedTransferAppName,
   HashLockTransferAppName,
+  OnlineLinkedTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
 } from "./contracts";
@@ -17,6 +18,7 @@ export const ConditionalTransferTypes = enumify({
   GraphTransfer: GraphSignedTransferAppName,
   HashLockTransfer: HashLockTransferAppName,
   LinkedTransfer: SimpleLinkedTransferAppName,
+  OnlineTransfer: OnlineLinkedTransferAppName,
   SignedTransfer: SimpleSignedTransferAppName,
 });
 export type ConditionalTransferTypes = typeof ConditionalTransferTypes[
@@ -28,6 +30,7 @@ export const ConditionalTransferAppNames = enumify({
   [GraphBatchedTransferAppName]: GraphBatchedTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
+  [OnlineLinkedTransferAppName]: OnlineLinkedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
 });
@@ -43,6 +46,7 @@ export interface CreatedConditionalTransferMetaMap {
   [ConditionalTransferTypes.GraphTransfer]: CreatedGraphSignedTransferMeta;
   [ConditionalTransferTypes.HashLockTransfer]: CreatedHashLockTransferMeta;
   [ConditionalTransferTypes.LinkedTransfer]: CreatedLinkedTransferMeta;
+  [ConditionalTransferTypes.OnlineTransfer]: CreatedLinkedTransferMeta;
   [ConditionalTransferTypes.SignedTransfer]: CreatedSignedTransferMeta;
 }
 export type CreatedConditionalTransferMeta = {
@@ -54,6 +58,7 @@ export interface UnlockedConditionalTransferMetaMap {
   [ConditionalTransferTypes.GraphTransfer]: UnlockedGraphSignedTransferMeta;
   [ConditionalTransferTypes.HashLockTransfer]: UnlockedHashLockTransferMeta;
   [ConditionalTransferTypes.LinkedTransfer]: UnlockedLinkedTransferMeta;
+  [ConditionalTransferTypes.OnlineTransfer]: UnlockedLinkedTransferMeta;
   [ConditionalTransferTypes.SignedTransfer]: UnlockedSignedTransferMeta;
 }
 export type UnlockedConditionalTransferMeta = {

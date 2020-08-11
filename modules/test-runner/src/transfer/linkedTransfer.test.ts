@@ -93,11 +93,10 @@ describe("Linked Transfer", () => {
     const linkedTransfer = await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      conditionType: ConditionalTransferTypes.OnlineTransfer,
       paymentId: getRandomBytes32(),
       preImage: getRandomBytes32(),
       recipient: clientB.publicIdentifier,
-      requireOnline: true,
     });
     expect(balBefore.sub(transfer.amount).toString()).to.be.equal(
       (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress].toString(),
@@ -116,11 +115,10 @@ describe("Linked Transfer", () => {
     expect(clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      conditionType: ConditionalTransferTypes.OnlineTransfer,
       paymentId: getRandomBytes32(),
       preImage: getRandomBytes32(),
       recipient: getRandomChannelSigner().publicIdentifier,
-      requireOnline: true,
     })).to.be.rejected;
   });
 

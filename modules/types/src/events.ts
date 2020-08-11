@@ -19,6 +19,7 @@ type GraphTransfer = typeof ConditionalTransferTypes.GraphTransfer;
 type GraphBatchedTransfer = typeof ConditionalTransferTypes.GraphBatchedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
 type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
+type OnlineTransfer = typeof ConditionalTransferTypes.OnlineTransfer;
 
 ////////////////////////////////////////
 const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
