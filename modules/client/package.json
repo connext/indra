@@ -24,6 +24,7 @@
     "@connext/messaging": "7.2.0",
     "@connext/store": "7.2.0",
     "@connext/types": "7.2.0",
+    "@connext/watcher": "7.2.0",
     "core-js": "3.6.5",
     "ethers": "5.0.8",
     "evt": "1.8.4",

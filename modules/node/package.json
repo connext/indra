@@ -23,6 +23,7 @@
     "@connext/store": "7.2.0",
     "@connext/types": "7.2.0",
     "@connext/utils": "7.2.0",
+    "@connext/watcher": "7.2.0",
     "@nestjs/common": "7.4.2",
     "@nestjs/core": "7.4.2",
     "@nestjs/microservices": "7.4.2",
