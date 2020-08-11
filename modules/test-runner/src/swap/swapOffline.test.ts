@@ -12,21 +12,21 @@ import {
   APP_PROTOCOL_TOO_LONG,
   CLIENT_INSTALL_FAILED,
   ClientTestMessagingInputOpts,
-  createClientWithMessagingLimits,
   ETH_AMOUNT_SM,
+  RECEIVED,
+  SEND,
+  TOKEN_AMOUNT,
+  TestMessagingService,
+  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
+  createClientWithMessagingLimits,
+  env,
   ethProviderUrl,
   expect,
   fundChannel,
-  RECEIVED,
   requestCollateral,
-  SEND,
   swapAsset,
-  TestMessagingService,
-  TOKEN_AMOUNT,
-  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
-import { addressBook } from "@connext/contracts";
 import { getRandomChannelSigner, delay } from "@connext/utils";
 
 const { AddressZero } = constants;
@@ -117,7 +117,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe.skip("Swap offline", () => {
-  const swapAppAddr = addressBook[1337].SimpleTwoPartySwapApp.address;
+  const swapAppAddr = env.contractAddresses[env.defaultChain].SimpleTwoPartySwapApp.address;
   it("Bot A tries to propose swap app, but gets no response from the node", async () => {
     const messagingConfig = {
       ceiling: { [SEND]: 0 },

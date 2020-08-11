@@ -10,7 +10,6 @@ extra="$1"
 images="bot builder database ethprovider node proxy test_runner"
 
 commit="`git rev-parse HEAD | head -c 8`"
-git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
 semver="`cat package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
 
 for image in $images
