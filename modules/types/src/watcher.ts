@@ -21,6 +21,7 @@ import { IChannelSigner } from "./crypto";
 import { ILoggerService, ILogger } from "./logger";
 import { Ctx } from "evt";
 import { ContractAddressBook } from "./node";
+import { IOnchainTransactionService } from "./misc";
 
 ////////////////////////////////////////
 // Watcher external parameters
@@ -32,6 +33,7 @@ export type WatcherInitOptions = {
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
   logLevel?: number;
+  transactionService?: IOnchainTransactionService;
 };
 
 ////////////////////////////////////////

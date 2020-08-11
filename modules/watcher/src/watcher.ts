@@ -27,6 +27,7 @@ import {
   ChallengeInitiatedResponse,
   ChallengeEvents,
   ContractAddressBook,
+  IOnchainTransactionService,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -77,6 +78,7 @@ export class Watcher implements IWatcher {
     private readonly store: IWatcherStoreService,
     private readonly listener: ChainListener,
     log: ILoggerService,
+    private readonly transactionService?: IOnchainTransactionService,
   ) {
     this.log = log.newContext("Watcher");
     const registries = {};
@@ -110,6 +112,7 @@ export class Watcher implements IWatcher {
       providers: givenProviders,
       context,
       store,
+      transactionService,
     } = opts;
 
     const log =
@@ -131,7 +134,15 @@ export class Watcher implements IWatcher {
       typeof providedSigner === "string" ? new ChannelSigner(providedSigner) : providedSigner;
 
     const listener = new ChainListener(chainProviders, context, log);
-    const watcher = new Watcher(signer, chainProviders, context, store, listener, log);
+    const watcher = new Watcher(
+      signer,
+      chainProviders,
+      context,
+      store,
+      listener,
+      log,
+      transactionService,
+    );
     await watcher.enable();
     return watcher;
   };
@@ -648,6 +659,7 @@ export class Watcher implements IWatcher {
     const response = await this.sendContractTransaction(
       await commitment.getSignedTransaction(),
       channel.chainId,
+      channel.multisigAddress,
     );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
@@ -681,7 +693,11 @@ export class Watcher implements IWatcher {
       }
     }
     const challenge = await this.getChallengeOrThrow(channel.freeBalanceAppInstance!.identityHash);
-    const response = await this.sendContractTransaction(setup, channel.chainId);
+    const response = await this.sendContractTransaction(
+      setup,
+      channel.chainId,
+      channel.multisigAddress,
+    );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeCompletionFailedEvent, {
         appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
@@ -712,6 +728,7 @@ export class Watcher implements IWatcher {
     const response = await this.sendContractTransaction(
       await commitment.getSignedTransaction(),
       channel.chainId,
+      channel.multisigAddress,
     );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeCompletionFailedEvent, {
@@ -760,7 +777,11 @@ export class Watcher implements IWatcher {
         action,
       ]),
     };
-    const response = await this.sendContractTransaction(tx, channel.chainId);
+    const response = await this.sendContractTransaction(
+      tx,
+      channel.chainId,
+      channel.multisigAddress,
+    );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
         appInstanceId: app.identityHash,
@@ -805,7 +826,11 @@ export class Watcher implements IWatcher {
         action,
       ]),
     };
-    const response = await this.sendContractTransaction(tx, channel.chainId);
+    const response = await this.sendContractTransaction(
+      tx,
+      channel.chainId,
+      channel.multisigAddress,
+    );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
         appInstanceId: app.identityHash,
@@ -872,7 +897,11 @@ export class Watcher implements IWatcher {
         encodedFinalState,
       ]),
     };
-    const response = await this.sendContractTransaction(tx, channel.chainId);
+    const response = await this.sendContractTransaction(
+      tx,
+      channel.chainId,
+      channel.multisigAddress,
+    );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeOutcomeFailedEvent, {
         appInstanceId: app.identityHash,
@@ -910,7 +939,11 @@ export class Watcher implements IWatcher {
         req,
       ]),
     };
-    const response = await this.sendContractTransaction(tx, channel.chainId);
+    const response = await this.sendContractTransaction(
+      tx,
+      channel.chainId,
+      channel.multisigAddress,
+    );
     if (typeof response === "string") {
       this.emit(WatcherEvents.ChallengeCancellationFailedEvent, {
         appInstanceId: app.identityHash,
@@ -933,7 +966,11 @@ export class Watcher implements IWatcher {
   private sendContractTransaction = async (
     transaction: MinimalTransaction,
     chainId: number,
+    multisigAddress: string,
   ): Promise<providers.TransactionReceipt | string> => {
+    if (this.transactionService) {
+      return this.transactionService.sendTransaction(transaction, chainId, multisigAddress);
+    }
     const signer = this.getConnectedSigner(chainId);
 
     const KNOWN_ERRORS = ["the tx doesn't have the correct nonce"];
