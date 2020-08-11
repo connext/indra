@@ -1,10 +1,10 @@
+import { getEthProvider } from "@connext/utils";
 import { Wallet, utils } from "ethers";
 import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
 import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
-import { getProvider } from "../utils";
 
 const initialSupply = utils.parseEther("100000000");
 
@@ -47,7 +47,7 @@ export const newTokenCommand = {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     await newToken(
-      Wallet.fromMnemonic(argv.mnemonic).connect(getProvider(argv.ethProvider)),
+      Wallet.fromMnemonic(argv.mnemonic).connect(getEthProvider(argv.ethProvider)),
       argv.addressBook,
       argv.force,
     );

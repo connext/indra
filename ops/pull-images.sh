@@ -5,23 +5,31 @@ root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
+extra="$1"
+
 images="bot builder database ethprovider node proxy test_runner"
 
-# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ -z "$1" ]]
+commit="`git rev-parse HEAD | head -c 8`"
+git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+
+# Try to get the semver from git tag or commit message
+if [[ -z "$git_tag" ]]
 then
-  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-  if [[ -n "$git_tag" ]]
-  then version="`echo $git_tag | sed 's/indra-//'`"
-  else version="`git rev-parse HEAD | head -c 8`"
+  message="`git log --format=%B -n 1 HEAD`"
+  if [[ "$message" == "Deploy indra-"* ]]
+  then semver="${message#Deploy indra-}"
+  else semver=""
   fi
-else version="$1"
+else semver="`echo $git_tag | sed 's/indra-//'`"
 fi
 
 for image in $images
 do
-  echo "Pulling image: $registry/${project}_$image:$version"
-  docker pull $registry/${project}_$image:$version || true
-  docker tag $registry/${project}_$image:$version ${project}_$image:$version || true
-  docker tag $registry/${project}_$image:$version ${project}_$image:latest || true
+  for version in $extra latest $commit $semver
+  do
+    echo "Pulling image: $registry/${project}_$image:$version"
+    docker pull $registry/${project}_$image:$version || true
+    echo "Tagging image $registry/${project}_$image:$version as ${project}_$image:$version"
+    docker tag $registry/${project}_$image:$version ${project}_$image:$version || true
+  done
 done

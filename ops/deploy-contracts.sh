@@ -9,15 +9,10 @@ chain_url="${1:-http://localhost:8545}"
 ########################################
 # Calculate stuff based on env
 
-# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ "$INDRA_ENV" == "prod" ]]
-then
-  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-  if [[ -n "$git_tag" ]]
-  then version="`echo $git_tag | sed 's/indra-//'`"
-  else version="`git rev-parse HEAD | head -c 8`"
-  fi
-else version="latest"
+git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+if [[ -n "$git_tag" ]]
+then version="`echo $git_tag | sed 's/indra-//'`"
+else version="`git rev-parse HEAD | head -c 8`"
 fi
 
 if [[ -f "$root/address-book.json" ]]
@@ -56,7 +51,7 @@ fi
 
 image="${project}_ethprovider:$version"
 
-if [[ -n "`docker container ls -q $image`" ]]
+if [[ -n "`docker image ls -q $image`" ]]
 then
   echo "Deploying contract deployer (image: $image)..."
   exec docker run \

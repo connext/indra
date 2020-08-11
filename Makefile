@@ -286,12 +286,12 @@ daicard-bundle: types utils store client $(shell find modules/daicard $(find_opt
 
 bot-bundle: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/bot && npm run build && npm run build-bundle"
+	$(docker_run) "cd modules/bot && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node-bundle: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build && npm run build-bundle && touch src/main.ts"
+	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 test-runner-bundle: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))

@@ -5,4 +5,4 @@ if [[ -d "modules/bot" ]]
 then cd modules/bot
 fi
 
-node dist/bundle.js $@
+node dist/cli.js $@
