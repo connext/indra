@@ -1,9 +1,9 @@
+import { getEthProvider } from "@connext/utils";
 import { Wallet, Contract, constants, utils } from "ethers";
 import { Argv } from "yargs";
 
 import { ConnextToken } from "../artifacts";
 import { cliOpts } from "../constants";
-import { getProvider } from "../utils";
 import { getAddressBook } from "../address-book";
 
 const { EtherSymbol } = constants;
@@ -59,6 +59,6 @@ export const dripCommand = {
       .demandOption(["k", "p"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    await drip(new Wallet(argv.privateKey, getProvider(argv.ethProvider)), argv.addressBook);
+    await drip(new Wallet(argv.privateKey, getEthProvider(argv.ethProvider)), argv.addressBook);
   },
 };

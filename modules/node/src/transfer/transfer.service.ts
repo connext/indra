@@ -1,24 +1,24 @@
 import { Injectable } from "@nestjs/common";
 import {
   Address,
-  Bytes32,
-  ConditionalTransferAppNames,
   AppStates,
-  PublicResults,
-  HashLockTransferAppState,
+  Bytes32,
   CoinTransfer,
-  GenericConditionalTransferAppName,
-  MethodParams,
-  getTransferTypeFromAppName,
-  SupportedApplicationNames,
-  MethodResults,
-  HashLockTransferAppAction,
-  SimpleSignedTransferAppAction,
-  GraphSignedTransferAppAction,
-  SimpleLinkedTransferAppAction,
+  ConditionalTransferAppNames,
   ConditionalTransferTypes,
+  GenericConditionalTransferAppName,
+  RequireOnlineApps,
   GraphBatchedTransferAppAction,
   GraphBatchedTransferAppState,
+  GraphSignedTransferAppAction,
+  HashLockTransferAppAction,
+  HashLockTransferAppState,
+  MethodParams,
+  MethodResults,
+  PublicResults,
+  SimpleLinkedTransferAppAction,
+  SimpleSignedTransferAppAction,
+  SupportedApplicationNames,
 } from "@connext/types";
 import {
   stringify,
@@ -63,6 +63,7 @@ export const getCancelAction = (
     | GraphBatchedTransferAppAction
     | SimpleLinkedTransferAppAction;
   switch (transferType) {
+    case ConditionalTransferTypes.OnlineTransfer:
     case ConditionalTransferTypes.LinkedTransfer:
     case ConditionalTransferTypes.HashLockTransfer: {
       action = { preImage: HashZero } as HashLockTransferAppAction;
@@ -153,10 +154,12 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
-    const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
+
+    const requireOnline =
+      RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];
 
     // ALLOW OFFLINE SENDER INSTALL
-    if (allowed === "AllowOffline") {
+    if (!requireOnline) {
       this.log.info(
         `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
@@ -198,7 +201,7 @@ export class TransferService {
       );
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
-      if (allowed === "RequireOnline") {
+      if (requireOnline) {
         if (receiverProposeRes?.appIdentityHash) {
           await this.cfCoreService.rejectInstallApp(
             receiverProposeRes.appIdentityHash,
@@ -214,7 +217,7 @@ export class TransferService {
     }
 
     // REQUIRE ONLINE SENDER INSTALL
-    if (allowed === "RequireOnline") {
+    if (requireOnline) {
       this.log.info(
         `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
@@ -242,9 +245,8 @@ export class TransferService {
       }
     } catch (e) {
       this.log.error(`Error installing receiver app: ${e.message || e}`);
-      if (allowed === "RequireOnline") {
-        // cancel sender
-        // https://github.com/ConnextProject/indra/issues/942
+      if (requireOnline) {
+        // cancel sender: https://github.com/ConnextProject/indra/issues/942
         this.log.warn(`Canceling sender payment`);
         await this.cfCoreService.uninstallApp(
           senderAppIdentityHash,
@@ -394,9 +396,8 @@ export class TransferService {
 
     // special case for expiry in initial state, receiver app must always expire first
     if ((initialState as HashLockTransferAppState).expiry) {
-      (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
-        TIMEOUT_BUFFER,
-      );
+      (initialState as HashLockTransferAppState).expiry =
+        (initialState as HashLockTransferAppState).expiry.sub(TIMEOUT_BUFFER);
     }
 
     if ((initialState as GraphBatchedTransferAppState).swapRate) {
@@ -530,16 +531,18 @@ export class TransferService {
   // sender comes back online, node can unlock transfer
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
-    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
-      senderIdentifier,
-      this.cfCoreService.cfCore.signerAddress,
-    );
-
-    for (const senderApp of senderTransferApps) {
-      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
-        senderApp.meta.paymentId,
+    const senderTransferApps =
+      await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+        senderIdentifier,
         this.cfCoreService.cfCore.signerAddress,
       );
+
+    for (const senderApp of senderTransferApps) {
+      const correspondingReceiverApp =
+        await this.transferRepository.findTransferAppByPaymentIdAndSender(
+          senderApp.meta.paymentId,
+          this.cfCoreService.cfCore.signerAddress,
+        );
 
       if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
         continue;

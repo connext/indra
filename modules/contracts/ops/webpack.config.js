@@ -1,16 +1,10 @@
-const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = {
   mode: "development",
   target: "node",
 
-  entry: path.join(__dirname, "../src/index.ts"),
-
-  externals: {
-    "sequelize": "commonjs2 sequelize",
-    "sqlite3": "commonjs2 sqlite3",
-  },
+  entry: path.join(__dirname, "../src.ts/cli.ts"),
 
   node: {
     __filename: false,
@@ -57,17 +51,6 @@ module.exports = {
       },
     ],
   },
-
-  plugins: [
-    new CopyPlugin({
-      patterns: [
-        {
-          from: path.join(__dirname, "../../../node_modules/@connext/pure-evm-wasm/pure-evm_bg.wasm"),
-          to: path.join(__dirname, "../dist/pure-evm_bg.wasm"),
-        },
-      ],
-    }),
-  ],
 
   stats: { warnings: false },
 };

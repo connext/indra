@@ -196,7 +196,6 @@ export const startBot = async (
   const numberPayments = Object.keys(elapsed).length;
   if (numberPayments < limit) {
     log.error(`Only able to run ${numberPayments}/${limit} requested payments before exiting.`);
-    exitCode += 1;
   }
   log.info(`Payment times: ${stringify(elapsed)}`);
   const average = Object.values(elapsed).reduce((prev, curr) => prev + curr, 0) / numberPayments;

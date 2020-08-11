@@ -5,7 +5,7 @@ import {
   MinimalTransaction,
   TransactionReceipt,
 } from "@connext/types";
-import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { delay, getGasPrice, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Contract, Signer, utils, constants, providers } from "ethers";
 
 import {
@@ -164,7 +164,7 @@ export class DeployStateDepositController extends MethodController {
           const tx: providers.TransactionResponse = await signer.sendTransaction({
             ...minTx,
             gasLimit: CREATE_PROXY_AND_SETUP_GAS,
-            gasPrice: provider.getGasPrice(),
+            gasPrice: getGasPrice(provider),
             nonce,
           });
           memoryNonce = nonce + 1;

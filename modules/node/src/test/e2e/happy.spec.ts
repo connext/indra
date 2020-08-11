@@ -10,13 +10,13 @@ import { INestApplication } from "@nestjs/common";
 import { getMemoryStore } from "@connext/store";
 import { Test, TestingModule } from "@nestjs/testing";
 import { IConnextClient } from "@connext/types";
+import { Provider, TransactionResponse } from "@ethersproject/providers";
 import { Wallet, constants, utils } from "ethers";
 
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
 import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
-import { TransactionResponse } from "@ethersproject/providers";
 
 const { AddressZero } = constants;
 const { parseEther } = utils;
@@ -29,6 +29,7 @@ describe("Happy path", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let chainId: number;
+  let ethProvider: Provider;
 
   before(async () => {
     const start = Date.now();
@@ -46,7 +47,7 @@ describe("Happy path", () => {
     await app.listen(configService.getPort());
 
     chainId = configService.getSupportedChains()[0];
-    const ethProvider = configService.getEthProvider(chainId);
+    ethProvider = configService.getEthProvider(chainId);
     const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     log.info(`ethProviderUrl: ${ethProviderUrl}`);
@@ -108,5 +109,8 @@ describe("Happy path", () => {
       amount: parseEther("0.01"),
     });
     log.info(`withdrawRes: ${stringify(withdrawRes)}`);
+    await ethProvider.waitForTransaction(withdrawRes.transaction.hash);
+    const receipt = await ethProvider.getTransactionReceipt(withdrawRes.transaction.hash);
+    expect(receipt.status).to.equal(1);
   });
 });

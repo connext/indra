@@ -23,11 +23,12 @@ else echo "Running in non-interactive mode"
 fi
 
 common="$interactive \
-  --name=${project}_e2e_test \
+  --name=${project}_e2e_test_${chainid} \
   --network=$project \
   --rm"
 
 args="--chain-id $chainid \
+  --token-address '$ASSET_ID' \
   --funder-mnemonic '$MNEMONIC' \
   --log-level $LOG_LEVEL"
 
@@ -35,9 +36,6 @@ exec docker run \
     $common \
     --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-    --env="LOG_LEVEL=$LOG_LEVEL" \
-    --env="TOKEN_ADDRESS=$ASSET" \
-    --env="MNEMONIC=$MNEMONIC" \
     --entrypoint=bash \
     --volume="$root:/root" \
     ${project}_builder -c "cd modules/bot && node dist/src/index.js e2e $args"

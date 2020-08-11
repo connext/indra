@@ -1,5 +1,12 @@
-import { abrv, ChannelSigner, ColorfulLogger, getRandomPrivateKey } from "@connext/utils";
-import { constants, providers, utils, Wallet, Contract, BigNumber } from "ethers";
+import {
+  abrv,
+  ChannelSigner,
+  ColorfulLogger,
+  getEthProvider,
+  getGasPrice,
+  getRandomPrivateKey,
+} from "@connext/utils";
+import { constants, utils, Wallet, Contract, BigNumber } from "ethers";
 import { Argv } from "yargs";
 
 import { env } from "./env";
@@ -40,10 +47,7 @@ export const command = {
       });
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const ethProvider = new providers.JsonRpcProvider(
-      env.ethProviderUrl,
-      argv.chainId === 61 ? "classic" : argv.chainId,
-    );
+    const ethProvider = getEthProvider(env.ethProviderUrl, argv.chainId);
     const sugarDaddy = Wallet.fromMnemonic(argv.funderMnemonic).connect(ethProvider);
     const assetId = getAddress(argv.tokenAddress);
     const startEthBalance = await sugarDaddy.getBalance();
@@ -53,9 +57,10 @@ export const command = {
         : new Contract(assetId, Token.abi, sugarDaddy).balanceOf(addr);
     };
     const sendChainBalance = (addr: string, amount: BigNumber) => {
+      const gasPrice = getGasPrice(ethProvider, argv.chainId);
       return assetId === AddressZero
-        ? sugarDaddy.sendTransaction({ to: addr, value: amount })
-        : new Contract(assetId, Token.abi, sugarDaddy).transfer(addr, amount);
+        ? sugarDaddy.sendTransaction({ to: addr, value: amount, gasPrice })
+        : new Contract(assetId, Token.abi, sugarDaddy).transfer(addr, amount, { gasPrice });
     };
     const startingAssetBalance = await getChainBalance(sugarDaddy.address);
 
@@ -64,7 +69,7 @@ export const command = {
     const DEPOSIT_AMT = parseEther("0.001"); // Note: max amount in signer address is 1 eth
 
     if (startEthBalance.lt(TRANSFER_AMT)) {
-      throw new Error(`Account ${sugarDaddy.address} does not have sufficient eth for gas`);
+      console.log(`Warning: account ${sugarDaddy.address} might not have sufficient eth for gas`);
     }
 
     // Abort if sugarDaddy doesn't have enough gas + asset to fund all the bots

@@ -25,15 +25,15 @@
     "@connext/store": "7.1.2",
     "@connext/types": "7.1.2",
     "core-js": "3.6.5",
-    "ethers": "5.0.7",
-    "evt": "1.8.3",
+    "ethers": "5.0.8",
+    "evt": "1.8.4",
     "regenerator-runtime": "0.13.7",
     "ts-natsutil": "1.1.1",
     "uuid": "8.3.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.4",
-    "@types/uuid": "8.0.0",
+    "@types/uuid": "8.0.1",
     "typescript": "3.9.7"
   }
 }

@@ -12,7 +12,7 @@
   ],
   "main": "./dist/src.ts/index.js",
   "bin": {
-    "connext-contracts": "./dist/src.ts/cli.js"
+    "connext-contracts": "./dist/cli.js"
   },
   "keywords": [
     "ethereum",
@@ -21,21 +21,23 @@
     "solidity"
   ],
   "scripts": {
-    "build": "rm -rf ./dist/* && npm run compile && npm run transpile",
+    "build": "npm run clean && npm run compile && npm run transpile && npm run bundle",
+    "bundle": "webpack --config ops/webpack.config.js",
+    "clean": "rm -rf ./dist/*",
     "compile": "npx buidler compile",
     "lint": "npm run lint-ts && npm run lint-sol",
-    "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
     "lint-sol": "solium -d .",
+    "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
     "test": "npx buidler test",
-    "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
+    "transpile": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@connext/types": "7.1.2",
     "@connext/utils": "7.1.2",
     "@nomiclabs/buidler": "1.4.3",
     "@openzeppelin/contracts": "3.0.2",
-    "ethers": "5.0.7",
-    "ganache-cli": "6.9.1",
+    "ethers": "5.0.8",
+    "ganache-cli": "6.10.1",
     "keccak": "3.0.1",
     "yargs": "15.4.1"
   },
@@ -48,14 +50,18 @@
     "@types/node": "14.0.27",
     "@types/sinon-chai": "3.2.4",
     "@types/yargs": "15.0.5",
+    "babel-loader": "8.1.0",
     "chai": "4.2.0",
     "ethereum-waffle": "3.0.2",
     "ethlint": "1.2.5",
     "event-target-shim": "5.0.1",
-    "mocha": "8.1.0",
+    "mocha": "8.1.1",
     "solc": "0.6.9",
+    "ts-loader": "8.0.2",
     "ts-mocha": "7.0.0",
     "ts-node": "8.10.2",
-    "typescript": "3.9.7"
+    "typescript": "3.9.7",
+    "webpack": "4.44.1",
+    "webpack-cli": "3.3.12"
   }
 }
