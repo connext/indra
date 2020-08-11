@@ -15,7 +15,7 @@ const verifyApp = (app: DefaultApp): void => {
   expect(app.name).to.exist;
 };
 
-describe.only("Get App Registry", () => {
+describe("Get App Registry", () => {
   let client: IConnextClient;
 
   afterEach(async () => {
