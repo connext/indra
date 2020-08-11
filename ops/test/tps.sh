@@ -53,5 +53,5 @@ else
     $opts \
     --entrypoint=bash \
     --volume="$root:/root" \
-    ${project}_builder -c "cd modules/bot && node dist/src/index.js tps $args"
+    ${project}_builder -c "cd modules/bot && node dist/cli.js tps $args"
 fi

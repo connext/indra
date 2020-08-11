@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ScheduleModule } from "@nestjs/schedule";
 
 import { AdminModule } from "./admin/admin.module";
 import { AppRegistryModule } from "./appRegistry/appRegistry.module";
@@ -20,9 +21,11 @@ import { RedisModule } from "./redis/redis.module";
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
-import { ScheduleModule } from "@nestjs/schedule";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 
 @Module({
+  controllers: [AppController],
   exports: [ConfigModule, LoggerModule, AuthModule],
   imports: [
     AdminModule,
@@ -47,6 +50,6 @@ import { ScheduleModule } from "@nestjs/schedule";
     SwapRateModule,
     TransferModule,
   ],
-  providers: [],
+  providers: [AppService],
 })
 export class AppModule {}

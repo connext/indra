@@ -4,7 +4,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
   ConditionalTransferTypes,
-  getTransferTypeFromAppName,
+  RequireOnlineApps,
   LinkedTransferStatus,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -130,9 +130,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
     if (!data.paymentId || !data.conditionType) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
-    const transferType = getTransferTypeFromAppName(data.conditionType);
-    if (transferType !== "AllowOffline") {
-      throw new Error(`Only AllowOffline apps are able to be installed through node API`);
+
+    // TODO: what about linked transfer apps w a requireOnline flag in meta?
+    if (RequireOnlineApps.includes(data.conditionType)) {
+      throw new Error(`Apps that require an online recipient cannot be installed through node API`);
     }
     this.log.info(`Got installReceiverApp request with paymentId: ${data.paymentId}`);
 
