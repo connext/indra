@@ -31,23 +31,6 @@ export class ChallengeService implements OnModuleInit {
     this.log.setContext("ChallengeService");
   }
 
-  // TODO: if we want to make off-chain changes to how the disputes are
-  // handled (i.e. recover changes via new free balance), then we can delete
-  // this function
-  async disputeChannel(multisigAddress: string) {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    return Promise.all(
-      channel.appInstances.map((app) => {
-        this.watcher
-          .initiate(app.identityHash)
-          .then((res) => this.log.info(`Dispute started for ${app.identityHash}`))
-          .catch((e) =>
-            this.log.error(`Failed to initiate dispute for ${app.identityHash}: ${e.message}`),
-          );
-      }),
-    );
-  }
-
   async initiateChallenge(
     appIdentityHash: string,
     multisigAddress: string,
