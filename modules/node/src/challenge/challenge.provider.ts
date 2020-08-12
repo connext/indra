@@ -7,6 +7,7 @@ import { MessagingService } from "@connext/messaging";
 import { ConfigService } from "../config/config.service";
 import { FactoryProvider } from "@nestjs/common";
 import { ChallengeMessagingProviderId } from "../constants";
+import { TransactionReceipt } from "@connext/types";
 
 class ChallengeMessaging extends AbstractMessagingProvider {
   constructor(
@@ -24,7 +25,7 @@ class ChallengeMessaging extends AbstractMessagingProvider {
     pubId: string,
     chainId: number,
     data: { signature: string; appIdentityHash: string },
-  ) {
+  ): Promise<TransactionReceipt> {
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       pubId,
       chainId,
@@ -36,10 +37,33 @@ class ChallengeMessaging extends AbstractMessagingProvider {
     );
   }
 
+  // TODO: if we want to make off-chain changes to how the disputes are
+  // handled (i.e. recover changes via new free balance), then we can delete
+  // this function
+  async disputeChannel(pubId: string, chainId: number, data: { multisigAddress: string }) {
+    return this.challengeService.disputeChannel(data.multisigAddress);
+  }
+
+  // TODO: should this initiate challenges across all installed apps?
+  // FIXME: make this admin-only
+  async initiateChallenge(
+    pubId: string,
+    chainId: number,
+    data: { multisigAddress: string; appIdentityHash: string },
+  ) {
+    return this.challengeService.initiateChallenge(data.appIdentityHash, data.multisigAddress);
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.*.challenge.cancel`,
       this.authService.parseIdentifierAndChain(this.cancelChallenge.bind(this)),
+    );
+
+    // FIXME: make this an admin only endpoint!
+    await super.connectRequestReponse(
+      `*.${this.configService.getPublicIdentifier()}.*.challenge.initiate`,
+      this.authService.parseIdentifierAndChain(this.initiateChallenge.bind(this)),
     );
   }
 }
