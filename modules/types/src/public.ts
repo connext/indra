@@ -94,8 +94,8 @@ type ResolveHashLockTransferResponse = {
 
 type LinkedTransferParameters = {
   conditionType:
-    typeof ConditionalTransferTypes.LinkedTransfer |
-    typeof ConditionalTransferTypes.OnlineTransfer
+    | typeof ConditionalTransferTypes.LinkedTransfer
+    | typeof ConditionalTransferTypes.OnlineTransfer;
   amount: BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
@@ -111,7 +111,7 @@ type LinkedTransferResponse = {
 };
 
 type ResolveLinkedTransferParameters = {
-  conditionType: typeof ConditionalTransferTypes.LinkedTransfer
+  conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
   paymentId: Bytes32;
   preImage: Bytes32;
 };
@@ -398,7 +398,7 @@ export namespace PublicResults {
   export type Transfer = TransferResponse;
   export type Withdraw = WithdrawResponse;
   export type InitiateChallenge = ChallengeInitiatedResponse;
-  export type CancelChallenge = providers.TransactionReceipt;
+  export type CancelChallenge = providers.TransactionResponse;
 }
 
 export type PublicResult =
