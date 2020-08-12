@@ -37,7 +37,6 @@ class ChallengeMessaging extends AbstractMessagingProvider {
     );
   }
 
-  // FIXME: make this admin-only
   async initiateChallenge(
     pubId: string,
     chainId: number,
