@@ -21,7 +21,7 @@ describe("Challenges", () => {
   });
 
   beforeEach(async () => {
-    client = await createClient();
+    client = await createClient({ watcherEnabled: true });
     await fundChannel(client, ETH_AMOUNT_MD);
 
     // install an app with some value in sender channel
