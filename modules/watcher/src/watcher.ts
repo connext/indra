@@ -66,7 +66,7 @@ const getRandomJitter = (max: number = 500): number => {
 
 export class Watcher implements IWatcher {
   private log: ILoggerService;
-  private enabled: boolean = false;
+  public enabled: boolean = false;
   private registries: { [chainId: number]: Contract };
 
   private readonly evts: EvtContainer;

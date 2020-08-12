@@ -41,6 +41,9 @@ import {
   UnlockedGraphSignedTransferMeta,
   GraphBatchedTransferAppState,
   GraphBatchedTransferAppAction,
+  WatcherEvents,
+  WatcherEventData,
+  WatcherEvent,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -201,6 +204,38 @@ export class ConnextListener {
     WITHDRAWAL_STARTED_EVENT: (msg): void => {
       this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
+
+    // Watcher events
+    ChallengeUpdatedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeUpdatedEvent, msg);
+    },
+    StateProgressedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.StateProgressedEvent, msg);
+    },
+    ChallengeProgressedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeProgressedEvent, msg);
+    },
+    ChallengeProgressionFailedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeProgressionFailedEvent, msg);
+    },
+    ChallengeOutcomeFailedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeOutcomeFailedEvent, msg);
+    },
+    ChallengeOutcomeSetEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeOutcomeSetEvent, msg);
+    },
+    ChallengeCompletedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeCompletedEvent, msg);
+    },
+    ChallengeCompletionFailedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeCompletionFailedEvent, msg);
+    },
+    ChallengeCancelledEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeCancelledEvent, msg);
+    },
+    ChallengeCancellationFailedEvent: (msg) => {
+      this.emitAndLog(WatcherEvents.ChallengeCancellationFailedEvent, msg);
+    },
   };
 
   constructor(connext: ConnextClient) {
@@ -267,6 +302,10 @@ export class ConnextListener {
         ? (data as EventPayload[typeof PROTOCOL_MESSAGE_EVENT]).protocol
         : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
+    this.post(event, bigNumberifyJson(data));
+  }
+
+  private emitAndLogWatcher<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void {
     this.post(event, bigNumberifyJson(data));
   }
 

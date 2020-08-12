@@ -13,6 +13,7 @@ import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
 import { StateChannelJSON } from "./state";
+import { WatcherEventData, WatcherEvent, WatcherEvents } from "./watcher";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type GraphTransfer = typeof ConditionalTransferTypes.GraphTransfer;
@@ -217,16 +218,13 @@ type SyncFailedEventData = {
 
 interface EventPayloadMap {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: ConditionalTransferCreatedEventData<
-    HashLockTransfer | LinkedTransfer |
-    SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: ConditionalTransferUnlockedEventData<
-    HashLockTransfer | LinkedTransfer |
-    SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: ConditionalTransferFailedEventData<
-    HashLockTransfer | LinkedTransfer |
-    SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   [CREATE_CHANNEL_EVENT]: CreateMultisigEventData;
   [SETUP_FAILED_EVENT]: SetupFailedEventData;
@@ -253,6 +251,7 @@ interface EventPayloadMap {
 ////////////////////////////////////////
 // Exports
 export const EventNames = {
+  ...WatcherEvents,
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
@@ -277,10 +276,11 @@ export const EventNames = {
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
 } as const;
-export type EventName = keyof typeof EventNames;
-export type EventPayload = {
-  [P in keyof EventPayloadMap]: EventPayloadMap[P];
-};
+export type EventName = WatcherEvent & keyof typeof EventNames;
+export type EventPayload = WatcherEventData &
+  {
+    [P in keyof EventPayloadMap]: EventPayloadMap[P];
+  };
 
 // NOTE: this typing will restrict events and payloads to only those in the
 // EventName types
@@ -344,16 +344,13 @@ export namespace EventPayloads {
   export type GraphTransferFailed = ConditionalTransferFailedEventData<GraphTransfer>;
   export type GraphBatchedTransferFailed = ConditionalTransferFailedEventData<GraphBatchedTransfer>;
   export type ConditionalTransferCreated<T> = ConditionalTransferCreatedEventData<
-    HashLockTransfer | LinkedTransfer |
-    SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   export type ConditionalTransferUnlocked<T> = ConditionalTransferUnlockedEventData<
-    HashLockTransfer | LinkedTransfer |
-    SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   export type ConditionalTransferFailed<T> = ConditionalTransferFailedEventData<
-    HashLockTransfer | LinkedTransfer |
-    SignedTransfer | GraphTransfer | GraphBatchedTransfer
+    HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
   export type DepositStarted = DepositStartedEventData;
   export type DepositConfirmed = DepositConfirmedEventData;

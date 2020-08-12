@@ -81,7 +81,7 @@ export class ConnextClient implements IConnextClient {
   public signerAddress: string;
   public store: IStoreService;
   public token: Contract;
-  private watcher: IWatcher;
+  public watcher: IWatcher;
 
   private opts: InternalClientOptions;
 
