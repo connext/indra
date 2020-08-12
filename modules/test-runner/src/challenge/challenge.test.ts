@@ -34,7 +34,10 @@ describe("Challenges", () => {
     await client.messaging.disconnect();
   });
 
-  it("node should be able to initiate a dispute", async () => {});
+  it("node should be able to initiate a dispute", async () => {
+    // trigger node initiated dispute
+    // wait for challenge completion event from watcher
+  });
 
   it("client should be able to initiate a dispute", async () => {
     const { appChallenge, freeBalanceChallenge } = await client.initiateChallenge({
@@ -42,9 +45,23 @@ describe("Challenges", () => {
     });
     expect(appChallenge.hash).to.be.ok;
     expect(freeBalanceChallenge.hash).to.be.ok;
+
+    // wait for challenge completion event from watcher
   });
 
-  it("node and client should be able to cooperatively cancel a dispute", async () => {});
+  it("node and client should be able to cooperatively cancel a dispute", async () => {
+    // begin dispute
+    // wait for challenge event from watcher
+    // cancel the dispute
+  });
 
-  it("channel should not operate when it is in dispute", async () => {});
+  it("channel should not operate when it is in dispute (client initiated)", async () => {
+    // begin dispute from client
+    // try to deposit (should fail)
+  });
+
+  it("channel should not operate when it is in dispute (node initiated)", async () => {
+    // begin dispute from node
+    // try to deposit from client (should fail)
+  });
 });
