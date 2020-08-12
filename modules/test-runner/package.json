@@ -15,7 +15,7 @@
     "@connext/cf-core": "7.2.0",
     "@connext/channel-provider": "7.2.0",
     "@connext/client": "7.2.0",
-    "@connext/contracts": "3.4.1",
+    "@connext/contracts": "3.4.2",
     "@connext/messaging": "7.2.0",
     "@connext/pure-evm-wasm": "0.1.4",
     "@connext/store": "7.2.0",
