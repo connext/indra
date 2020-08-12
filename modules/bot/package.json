@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@connext/client": "7.2.0",
-    "@connext/contracts": "3.4.2",
+    "@connext/contracts": "3.4.3",
     "@connext/store": "7.2.0",
     "@connext/types": "7.2.0",
     "@connext/utils": "7.2.0",
