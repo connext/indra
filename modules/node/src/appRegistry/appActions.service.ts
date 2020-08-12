@@ -53,10 +53,6 @@ export class AppActionsService {
     if (senderApp.type !== AppType.INSTANCE) {
       return;
     }
-    await this.cfCoreService.uninstallApp(
-      senderApp.identityHash,
-      senderApp.channel.multisigAddress,
-      action,
-    );
+    await this.cfCoreService.uninstallApp(senderApp.identityHash, senderApp.channel, action);
   }
 }

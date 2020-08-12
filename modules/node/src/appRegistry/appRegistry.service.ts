@@ -140,23 +140,19 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.installApp(appIdentityHash, installerChannel);
       // any tasks that need to happen after install, i.e. DB writes
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(
-        appIdentityHash,
-        installerChannel.multisigAddress,
-        e.message,
-      );
+      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel, e.message);
       return;
     }
     try {
       await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
     } catch (e) {
       this.log.warn(`Run post install tasks failed: ${e.stack || e}`);
-      await this.cfCoreService.uninstallApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.uninstallApp(appIdentityHash, installerChannel);
     }
   }
 
@@ -298,10 +294,7 @@ export class AppRegistryService implements OnModuleInit {
         `Found receiver app ${receiverApp.identityHash} with type ${receiverApp.type}, attempting uninstall`,
       );
       try {
-        await this.cfCoreService.uninstallApp(
-          receiverApp.identityHash,
-          receiverApp.channel.multisigAddress,
-        );
+        await this.cfCoreService.uninstallApp(receiverApp.identityHash, receiverApp.channel);
         this.log.info(`Receiver app ${receiverApp.identityHash} uninstalled`);
       } catch (e) {
         this.log.error(

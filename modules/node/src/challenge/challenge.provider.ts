@@ -7,7 +7,7 @@ import { MessagingService } from "@connext/messaging";
 import { ConfigService } from "../config/config.service";
 import { FactoryProvider } from "@nestjs/common";
 import { ChallengeMessagingProviderId } from "../constants";
-import { TransactionReceipt } from "@connext/types";
+import { TransactionResponse } from "@connext/types";
 
 class ChallengeMessaging extends AbstractMessagingProvider {
   constructor(
@@ -25,7 +25,7 @@ class ChallengeMessaging extends AbstractMessagingProvider {
     pubId: string,
     chainId: number,
     data: { signature: string; appIdentityHash: string },
-  ): Promise<TransactionReceipt> {
+  ): Promise<TransactionResponse> {
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       pubId,
       chainId,
@@ -37,14 +37,6 @@ class ChallengeMessaging extends AbstractMessagingProvider {
     );
   }
 
-  // TODO: if we want to make off-chain changes to how the disputes are
-  // handled (i.e. recover changes via new free balance), then we can delete
-  // this function
-  async disputeChannel(pubId: string, chainId: number, data: { multisigAddress: string }) {
-    return this.challengeService.disputeChannel(data.multisigAddress);
-  }
-
-  // TODO: should this initiate challenges across all installed apps?
   // FIXME: make this admin-only
   async initiateChallenge(
     pubId: string,

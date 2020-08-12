@@ -94,7 +94,7 @@ export class WithdrawService {
         recipient: this.cfCoreService.cfCore.signerAddress,
         nonce: state.nonce,
       },
-      appInstance.multisigAddress,
+      channel,
     );
     await commitment.addSignatures(state.signatures[0], state.signatures[1]);
     const tx = await commitment.getSignedTransaction();
@@ -111,6 +111,9 @@ export class WithdrawService {
   */
   async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
     let state = appInstance.latestState as WithdrawAppState;
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(
+      appInstance.identityHash,
+    );
 
     // Create the same commitment from scratch
     const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
@@ -122,7 +125,7 @@ export class WithdrawService {
         recipient: state.transfers[0].to,
         nonce: state.nonce,
       } as PublicParams.Withdraw,
-      appInstance.multisigAddress,
+      channel,
     );
 
     const signer = this.configService.getSigner(
@@ -166,7 +169,7 @@ export class WithdrawService {
     }
     await this.cfCoreService.uninstallApp(
       appInstance.identityHash,
-      appInstance.multisigAddress,
+      channel,
       {
         signature: counterpartySignatureOnWithdrawCommitment,
       } as WithdrawAppAction,
@@ -275,7 +278,7 @@ export class WithdrawService {
         recipient: this.cfCoreService.cfCore.signerAddress,
         nonce,
       } as PublicParams.Withdraw,
-      channel.multisigAddress,
+      channel,
     );
 
     const signer = this.configService.getSigner(channel.chainId);

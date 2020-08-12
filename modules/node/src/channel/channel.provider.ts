@@ -1,7 +1,7 @@
 import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { providers, utils } from "ethers";
+import { utils } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -28,7 +28,6 @@ import {
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
-import { stringify } from "@connext/utils";
 
 const { getAddress } = utils;
 

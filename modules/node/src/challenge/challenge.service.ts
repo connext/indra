@@ -2,8 +2,8 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import {
   IWatcher,
   BigNumber,
-  TransactionReceipt,
   ChallengeInitiatedResponse,
+  TransactionResponse,
 } from "@connext/types";
 import { Watcher } from "@connext/watcher";
 import { LoggerService } from "../logger/logger.service";
@@ -45,7 +45,7 @@ export class ChallengeService implements OnModuleInit {
     userSignature: string,
     appIdentityHash: string,
     multisigAddress: string,
-  ): Promise<TransactionReceipt> {
+  ): Promise<TransactionResponse> {
     this.assertWatcher();
     // Verify the signature is on the proper nonce
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -71,7 +71,7 @@ export class ChallengeService implements OnModuleInit {
     };
 
     // Call cancel challenge
-    // FIXME: watcher should return a transaction response
+    // TODO: remove challenge from channel entry iff cancelled
     return this.watcher.cancel(appInstance.identityHash, req);
   }
 
