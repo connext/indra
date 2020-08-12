@@ -5,7 +5,6 @@ import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 import { NodeResponses } from "./node";
 import { ChallengeInitiatedResponse } from "./watcher";
-import { SignedCancelChallengeRequest } from "./contracts";
 
 ////////////////////////////////////////
 // disputes
@@ -15,7 +14,6 @@ type InitiateChallengeParameters = {
 
 type CancelChallengeParameters = {
   appIdentityHash: string;
-  req: SignedCancelChallengeRequest;
 };
 
 ////////////////////////////////////////

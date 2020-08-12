@@ -1,12 +1,19 @@
 import { providers } from "ethers";
 
-import { Address, BigNumber, Bytes32, DecString, Network, PublicIdentifier } from "./basic";
+import {
+  Address,
+  BigNumber,
+  Bytes32,
+  DecString,
+  Network,
+  PublicIdentifier,
+  TransactionResponse,
+} from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
-import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
@@ -101,6 +108,8 @@ type FetchedLinkedTransfer = {
 type GetLinkedTransferResponse = FetchedLinkedTransfer;
 type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
 
+type CancelChallengeResponse = TransactionResponse;
+
 ////////////////////////////////////
 // exports
 
@@ -120,4 +129,5 @@ export namespace NodeResponses {
   export type CreateChannel = CreateChannelResponse;
   export type RequestCollateral = RequestCollateralResponse;
   export type ChannelRestore = ChannelRestoreResponse;
+  export type CancelChallenge = CancelChallengeResponse;
 }

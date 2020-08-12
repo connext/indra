@@ -407,6 +407,16 @@ export class NodeApiClient implements INodeApiClient {
     );
   }
 
+  public async cancelChallenge(
+    appIdentityHash: string,
+    signature: string,
+  ): Promise<NodeResponses.CancelChallenge> {
+    return this.send(
+      `${this.userIdentifier}.${this.nodeIdentifier}.${this.chainId}.challenge.cancel`,
+      { signature, appIdentityHash },
+    );
+  }
+
   ////////////////////////////////////////
   // PRIVATE
 

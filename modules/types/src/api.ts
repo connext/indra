@@ -85,4 +85,8 @@ export interface INodeApiClient {
   restoreState(userAddress: Address): Promise<NodeResponses.ChannelRestore>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<void>;
   unsubscribeFromSwapRates(from: Address, to: Address): Promise<void>;
+  cancelChallenge(
+    appIdentityHash: string,
+    signature: string,
+  ): Promise<NodeResponses.CancelChallenge>;
 }

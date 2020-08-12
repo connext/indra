@@ -44,6 +44,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  computeCancelDisputeHash,
 } from "@connext/utils";
 import { BigNumber, Contract, providers, constants, utils } from "ethers";
 
@@ -286,10 +287,19 @@ export class ConnextClient implements IConnextClient {
     return this.watcher.initiate(params.appIdentityHash);
   };
 
-  public cancelChallenge = (
+  public cancelChallenge = async (
     params: PublicParams.CancelChallenge,
   ): Promise<PublicResults.CancelChallenge> => {
-    return this.watcher.cancel(params.appIdentityHash, params.req);
+    const { appInstance } = (await this.getAppInstance(params.appIdentityHash)) || {};
+    if (!appInstance) {
+      throw new Error(`Could not find record of app with hash ${params.appIdentityHash}`);
+    }
+    const cancelHash = computeCancelDisputeHash(
+      appInstance.identityHash,
+      appInstance.latestVersionNumber,
+    );
+    const signature = await this.channelProvider.signMessage(cancelHash);
+    return this.node.cancelChallenge(params.appIdentityHash, signature);
   };
 
   ///////////////////////////////////

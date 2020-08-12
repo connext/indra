@@ -51,9 +51,9 @@ class ChallengeMessaging extends AbstractMessagingProvider {
       this.authService.parseIdentifierAndChain(this.cancelChallenge.bind(this)),
     );
 
-    // FIXME: make this an admin only endpoint!
+    // FIXME: is this admin only
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.*.challenge.initiate`,
+      `${this.configService.getPublicIdentifier()}.*.challenge.initiate`,
       this.authService.parseIdentifierAndChain(this.initiateChallenge.bind(this)),
     );
   }
