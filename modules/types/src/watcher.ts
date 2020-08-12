@@ -130,8 +130,8 @@ export type WatcherEventData = {
 // Watcher interface
 
 export type ChallengeInitiatedResponse = {
-  freeBalanceChallenge: providers.TransactionReceipt;
-  appChallenge: providers.TransactionReceipt;
+  freeBalanceChallenge: providers.TransactionResponse;
+  appChallenge: providers.TransactionResponse;
 };
 
 export interface IWatcher {
@@ -161,7 +161,7 @@ export interface IWatcher {
   cancel(
     appIdentityHash: string,
     req: SignedCancelChallengeRequest,
-  ): Promise<providers.TransactionReceipt>;
+  ): Promise<providers.TransactionResponse>;
 }
 
 ////////////////////////////////////////

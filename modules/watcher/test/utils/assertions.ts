@@ -124,7 +124,8 @@ export const verifyChallengeProgressedEvent = (
     multisigAddress,
   };
   if (transaction) {
-    expected["transaction"] = transaction;
+    const { confirmations, ...res } = transaction;
+    expected["transaction"] = res;
   } else {
     expect(event.transaction).to.be.ok;
   }

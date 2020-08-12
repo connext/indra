@@ -29,7 +29,8 @@ export const cancelDispute = async (
     new Promise(async (resolve, reject) => {
       try {
         const ret = await watcher.cancel(app.identityHash, req);
-        resolve(ret);
+        const receipt = await ret.wait();
+        resolve(receipt);
       } catch (e) {
         if (failsWith) {
           resolve(e.message);

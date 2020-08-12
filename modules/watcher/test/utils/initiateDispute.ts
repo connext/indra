@@ -98,8 +98,8 @@ export const initiateDispute = async (
   await delay(1000);
 
   // Verify watcher return values
-  expect(watcherReturn.freeBalanceChallenge.transactionHash).to.be.ok;
-  expect(watcherReturn.appChallenge.transactionHash).to.be.ok;
+  expect(watcherReturn.freeBalanceChallenge.hash).to.be.ok;
+  expect(watcherReturn.appChallenge.hash).to.be.ok;
 
   const status = app.isStateTerminal()
     ? ChallengeStatus.EXPLICITLY_FINALIZED
@@ -154,7 +154,7 @@ export const initiateDispute = async (
       appId,
       freeBalance.multisigAddress,
       challengeProgressedEvents[appId],
-      transactions[appId],
+      await transactions[appId].wait(),
     );
 
     // Verify stored challenge
