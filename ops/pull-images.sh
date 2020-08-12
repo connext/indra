@@ -10,18 +10,7 @@ extra="$1"
 images="bot builder database ethprovider node proxy test_runner"
 
 commit="`git rev-parse HEAD | head -c 8`"
-git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-
-# Try to get the semver from git tag or commit message
-if [[ -z "$git_tag" ]]
-then
-  message="`git log --format=%B -n 1 HEAD`"
-  if [[ "$message" == "Deploy indra-"* ]]
-  then semver="${message#Deploy indra-}"
-  else semver=""
-  fi
-else semver="`echo $git_tag | sed 's/indra-//'`"
-fi
+semver="`cat package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
 
 for image in $images
 do

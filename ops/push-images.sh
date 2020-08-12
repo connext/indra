@@ -24,6 +24,11 @@ fi
 
 for image in $images
 do
+  if [[ -n "$semver" ]]
+  then
+    echo "Tagging image ${project}_$image:$commit as ${project}_$image:$semver"
+    docker tag ${project}_$image:$commit ${project}_$image:$semver  || true
+  fi
   for version in latest $commit $semver
   do
     echo "Tagging image ${project}_$image:$version as $registry/${project}_$image:$version"
