@@ -19,7 +19,7 @@ import { AppAction } from ".";
 // ethProvider and ethProviderUrl are both optional but one of them needs to be provided
 export interface ClientOptions {
   channelProvider?: IChannelProvider;
-  ethProvider?: providers.Provider;
+  ethProvider?: providers.JsonRpcProvider;
   ethProviderUrl?: string;
   chainId?: number;
   signer?: string | IChannelSigner;

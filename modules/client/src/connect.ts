@@ -82,7 +82,7 @@ export const connect = async (
     chainId = await getChainId(ethProviderUrl);
     ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
   } else {
-    chainId = (await ethProviderUrl.getNetwork()).chainId;
+    chainId = (await ethProvider.getNetwork()).chainId;
   }
 
   // setup messaging and node api
