@@ -11,7 +11,7 @@ import {
 
 const { AddressZero, One, Two } = constants;
 
-const name = "Multichain Clients";
+const name = "Linked Transfers";
 const { timeElapsed } = getTestLoggers(name);
 describe(name, () => {
   let clientA: IConnextClient;

@@ -25,7 +25,7 @@ const generatePaymentId = () => hexlify(randomBytes(32));
 const TRANSFER_AMOUNT = parseEther("0.00001");
 const DEPOSIT_AMOUNT = parseEther("0.1");
 
-const name = "Multichain Clients";
+const name = "Concurrent Transfers";
 const { log, timeElapsed } = getTestLoggers(name);
 describe(name, () => {
   let chainId: number;

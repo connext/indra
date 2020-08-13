@@ -44,7 +44,6 @@ describe(name, () => {
     };
     const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
-    timeElapsed("beforeEach + test complete", start);
   });
 
   it("throws error if collateralize upper bound is lower than higher bound", async () => {
@@ -56,7 +55,6 @@ describe(name, () => {
     };
     const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
-    timeElapsed("beforeEach + test complete", start);
   });
 
   it("throws error if reclaim upper bound is lower than higher bound", async () => {
@@ -68,6 +66,5 @@ describe(name, () => {
     };
     const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
-    timeElapsed("beforeEach + test complete", start);
   });
 });
