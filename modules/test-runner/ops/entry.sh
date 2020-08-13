@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 if [[ -d "modules/test-runner" ]]
 then cd modules/test-runner
@@ -56,13 +55,47 @@ then opts="--forbid-only"
 else opts="--bail"
 fi
 
+build_tests="webpack --config ops/webpack.config.js"
+run_tests="mocha --slow 1000 --timeout 180000 --check-leaks --exit $opts $bundle"
+test_pid=""
+
 if [[ "$cmd" == "watch" ]]
 then
   echo "Starting test-watcher"
-  webpack --watch --config ops/webpack.config.js &
-  sleep 5 # give webpack a sec to finish the first watch-mode build
-  mocha --slow 1000 --timeout 180000 --bail --check-leaks --watch $bundle
+  prev_checksum=""
+  while true
+  do
+    checksum="`find src -type f -not -name "*.swp" -exec sha256sum {} \; | sha256sum`"
+    if [[ "$checksum" != "$prev_checksum" ]]
+    then
+      echo
+      echo "Changes detected!"
+
+      if [[ -n "$test_pid" ]]
+      then
+        echo "Stopping previous test run"
+        kill $test_pid 2> /dev/null
+      fi
+
+      echo "Rebuilding tests.."
+      eval "$build_tests"
+      
+      if [[ "$?" != 0 ]]
+      then
+        echo "Tests did not build successfully! Waiting for changes.."
+        prev_checksum=$checksum
+      else
+        echo "Tests built successfully! Running tests..."
+        eval "$run_tests &"
+        test_pid=$!
+        prev_checksum=$checksum
+      fi
+    # If no changes, do nothing
+    else sleep 2
+    fi
+  done
+
 else
   echo "Starting test-runner"
-  mocha --slow 1000 --timeout 180000 --check-leaks --exit $opts $bundle
+  eval "$run_tests"
 fi
