@@ -63,6 +63,10 @@ test_pid=""
 if [[ "$cmd" == "watch" ]]
 then
   echo "Starting test-watcher"
+
+  # use ts-mocha here instead?
+  # mocha --slow 1000 --timeout 180000 --check-leaks --exit $opts $bundle
+
   prev_checksum=""
   while true
   do
@@ -71,17 +75,14 @@ then
     then
       echo
       echo "Changes detected!"
-
       if [[ -n "$test_pid" ]]
       then
         echo "Stopping previous test run"
         kill $test_pid 2> /dev/null
       fi
-
       echo "Rebuilding tests.."
       eval "$build_tests"
       echo
-      
       if [[ "$?" != 0 ]]
       then
         echo "Tests did not build successfully! Waiting for changes.."

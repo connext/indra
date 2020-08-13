@@ -111,14 +111,12 @@ describe(name, () => {
       amount: ZERO_ZERO_ZERO_FIVE_ETH,
       assetId: CONVENTION_FOR_ETH_ASSET_ID,
     };
-
     await sendFailingWithdrawalCall(
       client,
       withdrawParams,
       APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     );
-
     await recreateClientAndRetryWithdraw(client, withdrawParams);
   });
 

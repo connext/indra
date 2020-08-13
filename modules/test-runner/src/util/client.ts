@@ -92,7 +92,6 @@ export const createRemoteClient = async (
 };
 
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
-  // TODO: allow test-runner to access external urls
   const urlOptions = {
     ethProviderUrl: ethProviderUrl,
     nodeUrl: env.nodeUrl,

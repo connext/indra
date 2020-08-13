@@ -11,7 +11,7 @@ import {
 
 const { AddressZero } = constants;
 
-const name = "Concurrent Transfers";
+const name = "Multiclient Transfers";
 const { timeElapsed } = getTestLoggers(name);
 describe(name, () => {
   let gateway: IConnextClient;

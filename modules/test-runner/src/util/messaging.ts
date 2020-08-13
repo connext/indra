@@ -10,16 +10,16 @@ import {
   ProtocolName,
   ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, ColorfulLogger, stringify } from "@connext/utils";
+import { ChannelSigner, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { ethProviderUrl } from "./ethprovider";
-import { combineObjects } from "./misc";
+import { getTestLoggers, combineObjects } from "./misc";
 import { expect } from "./assertions";
 
-const log = new ColorfulLogger("Messaging", env.logLevel, false, "U");
+const { log } = getTestLoggers("Messaging");
 
 // set an artificially high limit to effectively prevent any
 // messaging limits by default (and easily allow for 0)
@@ -309,7 +309,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       } as MessagingEventData);
       // check if there is a high level limit on messages received
       if (!shouldContinue) {
-        log.warn(
+        log.info(
           `Reached API ceiling, refusing to process any more messages. Received ${this.apiCounter[RECEIVED]} total message`,
         );
         return Promise.resolve();
@@ -326,7 +326,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (received). ${stringify(
           this.protocolCounter[protocol],
         )}`;
-        log.warn(msg);
+        log.info(msg);
         return Promise.resolve();
       }
       // has params specified, but not included in this message.
@@ -342,7 +342,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     } as MessagingEventData);
     // check if there is a high level limit on messages received
     if (!shouldContinue) {
-      log.warn(
+      log.info(
         `Reached API ceiling, refusing to process any more messages. Sent ${this.apiCounter[SEND]} total messages`,
       );
       return Promise.resolve();
@@ -360,7 +360,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (send). ${stringify(
         this.protocolCounter[protocol],
       )}`;
-      log.warn(msg);
+      log.info(msg);
       return Promise.resolve();
     }
 
