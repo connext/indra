@@ -33,7 +33,7 @@ describe(name, () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: client A transfers eth to client B through node with an inflight swap", async () => {
+  it("client A transfers eth to client B through node with an inflight swap", async () => {
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);

@@ -40,7 +40,7 @@ describe(name, () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client swaps eth for tokens successfully", async () => {
+  it("client swaps eth for tokens successfully", async () => {
     const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
@@ -48,15 +48,15 @@ describe(name, () => {
     await swapAsset(client, input, output, nodeSignerAddress);
   });
 
-  it("happy case: client swaps tokens for eth successfully", async () => {
-    const input = { amount: ONE_ETH, assetId: tokenAddress };
-    const output = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
+  it("client swaps tokens for eth successfully (case-insensitive assetId)", async () => {
+    const input = { amount: ONE_ETH, assetId: tokenAddress.toUpperCase() };
+    const output = { amount: ETH_AMOUNT_MD, assetId: AddressZero.toUpperCase() };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
     await swapAsset(client, input, output, nodeSignerAddress);
   });
 
-  it("happy case: client tries to swap with insufficient collateral on node", async () => {
+  it("client tries to swap with insufficient collateral on node", async () => {
     const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);

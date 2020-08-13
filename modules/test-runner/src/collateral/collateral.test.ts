@@ -31,7 +31,7 @@ describe(name, () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: node should collateralize ETH", async () => {
+  it("should collateralize ETH", async () => {
     const response = (await client.requestCollateral(AddressZero))!;
     expect(response).to.be.ok;
     expect(response.completed).to.be.ok;
@@ -43,7 +43,7 @@ describe(name, () => {
     expect(freeBalance[nodeSignerAddress]).to.be.eq(ETH_AMOUNT_MD);
   });
 
-  it("happy case: node should collateralize tokens", async () => {
+  it("should collateralize tokens", async () => {
     const response = (await client.requestCollateral(tokenAddress))!;
     expect(response).to.be.ok;
     expect(response.completed).to.be.ok;

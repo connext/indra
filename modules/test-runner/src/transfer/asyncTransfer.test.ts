@@ -50,14 +50,14 @@ describe(name, () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: client A transfers eth to client B through node", async () => {
+  it("client A transfers eth to client B through node", async () => {
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
-  it("happy case: client A transfers eth to client B through node with localstorage", async () => {
+  it("client A transfers eth to client B through node with localstorage", async () => {
     const localStorageClient = await createClient({ store: getLocalStore() });
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(localStorageClient, transfer.amount, transfer.assetId);
@@ -65,14 +65,14 @@ describe(name, () => {
     await asyncTransferAsset(localStorageClient, clientB, transfer.amount, transfer.assetId);
   });
 
-  it("happy case: client A transfers tokens to client B through node", async () => {
-    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+  it("should transfer tokens to online peer (case-insensitive assetId)", async () => {
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress.toUpperCase() };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
-  it("happy case: client A transfers eth to offline client through node", async () => {
+  it("client A transfers eth to offline client through node", async () => {
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -109,7 +109,7 @@ describe(name, () => {
     expect(receiverFreeBalance).to.eq(transfer.amount);
   });
 
-  it("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
+  it("client A successfully transfers to an address that doesn’t have a channel", async () => {
     const receiverPk = getRandomPrivateKey();
     const receiverIdentifier = getPublicIdentifierFromPublicKey(
       getPublicKeyFromPrivateKey(receiverPk),

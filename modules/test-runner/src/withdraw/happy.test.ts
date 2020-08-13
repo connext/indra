@@ -32,14 +32,14 @@ describe(name, () => {
     timeElapsed("beforeEach finished", start);
   });
 
-  it("happy case: client successfully withdraws eth and node submits the tx", async () => {
+  it("should withdraw eth and node should submit the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
   });
 
   // Currently fails because of this: https://github.com/connext/indra/issues/1186
-  it.skip("happy case: client successfully withdraws same amount of eth twice", async () => {
+  it.skip("client successfully withdraws same amount of eth twice", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     const recipient = Wallet.createRandom().address;
@@ -47,10 +47,9 @@ describe(name, () => {
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
   });
 
-  it("happy case: client successfully withdraws tokens and node submits the tx", async () => {
-    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
-    // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
+  it("should withdraw tokens and node should submit the tx (case-insensitive assetId)", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress.toUpperCase());
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress.toUpperCase());
   });
 
   it("client tries to withdraw more than it has in free balance", async () => {

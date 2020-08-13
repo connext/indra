@@ -26,7 +26,7 @@ describe(name, () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should request deposit rights and deposit ETH", async () => {
+  it("should request deposit rights and deposit ETH", async () => {
     const assetId = CONVENTION_FOR_ETH_ASSET_ID;
     const depositAmount = One;
     client = await createClient();
@@ -65,9 +65,9 @@ describe(name, () => {
     timeElapsed("Test complete", start);
   });
 
-  it("happy case: client should request deposit rights and deposit token", async () => {
+  it("should request deposit rights and deposit token (case-insensitive assetId)", async () => {
     client = await createClient();
-    const assetId = client.config.contractAddresses[client.chainId].Token!;
+    const assetId = client.config.contractAddresses[client.chainId].Token!.toUpperCase();
     const depositAmount = One;
     await client.requestDepositRights({ assetId });
     const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(assetId);

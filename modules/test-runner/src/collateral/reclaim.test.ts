@@ -51,7 +51,7 @@ describe(name, () => {
     clientB.off();
   });
 
-  it("happy case: node should reclaim ETH with async transfer", async () => {
+  it("should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
       collateralizeThreshold: toBN("5"),
@@ -111,7 +111,7 @@ describe(name, () => {
     ).to.be.true;
   });
 
-  it("happy case: node should reclaim tokens after async transfer", async () => {
+  it("should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
       collateralizeThreshold: toBN("5"),
@@ -185,7 +185,7 @@ describe(name, () => {
     ).to.be.true;
   });
 
-  it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
+  it.skip("node should reclaim ETH after linked transfer", async () => {});
 
-  it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
+  it.skip("node should reclaim tokens after linked transfer", async () => {});
 });

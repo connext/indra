@@ -33,7 +33,7 @@ describe(name, () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA on chainA can deposit and transfer to clientB on chainB", async () => {
+  it("clientA on chainA can deposit and transfer to clientB on chainB", async () => {
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const receiverUnlock = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);

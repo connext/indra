@@ -212,7 +212,7 @@ describe(name, () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: client A hashlock transfers eth to client B through node", async () => {
+  it("client A hashlock transfers eth to client B through node", async () => {
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
@@ -227,7 +227,7 @@ describe(name, () => {
     await assertPostTransferBalances(clientA, clientB, opts);
   });
 
-  it("happy case: client A hashlock transfers tokens to client B through node", async () => {
+  it("client A hashlock transfers tokens to client B through node", async () => {
     const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();

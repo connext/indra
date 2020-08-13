@@ -168,7 +168,7 @@ describe(name, () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it("clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -196,7 +196,7 @@ describe(name, () => {
     expect(clientBPostTransferBal).to.eq(transfer.amount);
   });
 
-  it("happy case: clientA signed transfers tokens to clientB through node", async () => {
+  it("clientA signed transfers tokens to clientB through node", async () => {
     const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 

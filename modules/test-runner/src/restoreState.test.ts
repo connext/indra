@@ -58,7 +58,7 @@ describe(name, () => {
     await clientA.messaging.disconnect();
   });
 
-  it("happy case: client can delete its store and restore from a remote backup", async () => {
+  it("client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
 
@@ -104,7 +104,7 @@ describe(name, () => {
     expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 
-  it("happy case: client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
+  it("client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
     const transferAmount = TOKEN_AMOUNT_SM;
     const assetId = tokenAddress;
     const recipient = clientA.publicIdentifier;

@@ -8,12 +8,10 @@ import { EventName, EventPayload } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
-import { MethodResults, MethodParams } from "./methods";
+import { MethodResults as mR, MethodParams as mP } from "./methods";
 import { IStoreService } from "./store";
-import { PublicParams, PublicResults } from "./public";
+import { PublicParams as P, PublicResults as R } from "./public";
 import { AppAction } from ".";
-
-/////////////////////////////////
 
 // channelProvider / signer are both optional but one of them needs to be provided
 // ethProvider and ethProviderUrl are both optional but one of them needs to be provided
@@ -35,46 +33,30 @@ export interface ClientOptions {
 }
 
 export interface IConnextClient {
+
   ////////////////////////////////////////
   // Properties
-
   appRegistry: AppRegistry;
-  config: NodeResponses.GetConfig;
-  channelProvider: IChannelProvider;
-  ethProvider: providers.JsonRpcProvider;
   chainId: number;
-  signerAddress: Address;
+  channelProvider: IChannelProvider;
+  config: NodeResponses.GetConfig;
+  ethProvider: providers.JsonRpcProvider;
+  messaging: IMessagingService;
   multisigAddress: Address;
   nodeIdentifier: PublicIdentifier;
   nodeSignerAddress: Address;
   publicIdentifier: PublicIdentifier; // publicIdentifier?
-
-  ////////////////////////////////////////
-  // Methods
-
-  restart(): Promise<void>;
+  signerAddress: Address;
+  store: IStoreService;
 
   ///////////////////////////////////
-  // Core channel methods
-  channelProviderConfig(): Promise<ChannelProviderConfig>;
-  checkDepositRights(
-    params: PublicParams.CheckDepositRights,
-  ): Promise<PublicResults.CheckDepositRights>;
-  conditionalTransfer(
-    params: PublicParams.ConditionalTransfer,
-  ): Promise<PublicResults.ConditionalTransfer>;
-  deposit(params: PublicParams.Deposit): Promise<PublicResults.Deposit>;
-  requestDepositRights(
-    params: PublicParams.RequestDepositRights,
-  ): Promise<MethodResults.RequestDepositRights>;
-  rescindDepositRights(
-    params: PublicParams.RescindDepositRights,
-  ): Promise<PublicResults.RescindDepositRights>;
-  resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
-  restoreState(): Promise<void>;
-  swap(params: PublicParams.Swap): Promise<PublicResults.Swap>;
-  transfer(params: PublicParams.Transfer): Promise<PublicResults.ConditionalTransfer>;
-  withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
+  // High-level channel methods
+  conditionalTransfer(params: P.ConditionalTransfer): Promise<R.ConditionalTransfer>;
+  deposit(params: P.Deposit): Promise<R.Deposit>;
+  resolveCondition(params: P.ResolveCondition): Promise<R.ResolveCondition>;
+  swap(params: P.Swap): Promise<R.Swap>;
+  transfer(params: P.Transfer): Promise<R.ConditionalTransfer>;
+  withdraw(params: P.Withdraw): Promise<R.Withdraw>;
 
   ///////////////////////////////////
   // Listener methods
@@ -96,14 +78,17 @@ export interface IConnextClient {
   emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
   off(): void;
 
-  ////////////////////////////////////////
-  // Expose some internal machineary for easier debugging
-  messaging: IMessagingService;
-  store: IStoreService;
+  ///////////////////////////////////
+  // Low-level channel methods
+  channelProviderConfig(): Promise<ChannelProviderConfig>;
+  checkDepositRights(params: P.CheckDepositRights): Promise<R.CheckDepositRights>;
+  requestDepositRights(params: P.RequestDepositRights): Promise<mR.RequestDepositRights>;
+  rescindDepositRights(params: P.RescindDepositRights): Promise<R.RescindDepositRights>;
+  restart(): Promise<void>;
+  restoreState(): Promise<void>;
 
   ///////////////////////////////////
   // Node easy access methods
-  // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<NodeResponses.GetChannel>;
   getLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
@@ -125,29 +110,29 @@ export interface IConnextClient {
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   unsubscribeToSwapRates(from: Address, to: Address): Promise<void>;
-  requestCollateral(tokenAddress: Address): Promise<PublicResults.RequestCollateral>;
+  requestCollateral(tokenAddress: Address): Promise<R.RequestCollateral>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
   getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;
 
   ///////////////////////////////////
   // CF module easy access methods
-  deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
-  getStateChannel(): Promise<MethodResults.GetStateChannel>;
-  getFreeBalance(assetId?: Address): Promise<MethodResults.GetFreeBalanceState>;
+  deployMultisig(): Promise<mR.DeployStateDepositHolder>;
+  getStateChannel(): Promise<mR.GetStateChannel>;
+  getFreeBalance(assetId?: Address): Promise<mR.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstance(
     appIdentityHash: Bytes32,
-  ): Promise<MethodResults.GetAppInstanceDetails | undefined>;
+  ): Promise<mR.GetAppInstanceDetails | undefined>;
   getProposedAppInstances(
     multisigAddress?: Address,
-  ): Promise<MethodResults.GetProposedAppInstances | undefined>;
+  ): Promise<mR.GetProposedAppInstances | undefined>;
   getProposedAppInstance(
     appIdentityHash: Bytes32,
-  ): Promise<MethodResults.GetProposedAppInstance | undefined>;
-  proposeInstallApp(params: MethodParams.ProposeInstall): Promise<MethodResults.ProposeInstall>;
-  installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
-  rejectInstallApp(appIdentityHash: Bytes32, reason?: string): Promise<MethodResults.Uninstall>;
-  takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;
-  uninstallApp(appIdentityHash: Bytes32, action?: AppAction): Promise<MethodResults.Uninstall>;
+  ): Promise<mR.GetProposedAppInstance | undefined>;
+  proposeInstallApp(params: mP.ProposeInstall): Promise<mR.ProposeInstall>;
+  installApp(appIdentityHash: Bytes32): Promise<mR.Install>;
+  rejectInstallApp(appIdentityHash: Bytes32, reason?: string): Promise<mR.Uninstall>;
+  takeAction(appIdentityHash: Bytes32, action: any): Promise<mR.TakeAction>;
+  uninstallApp(appIdentityHash: Bytes32, action?: AppAction): Promise<mR.Uninstall>;
 }

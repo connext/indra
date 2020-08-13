@@ -69,7 +69,7 @@ describe(name, () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it("should deposit ETH", async () => {
     const expected = {
       node: Zero.toString(),
       client: ONE,
@@ -86,11 +86,11 @@ describe(name, () => {
     timeElapsed("beforeEach + test complete", start);
   });
 
-  it("happy case: client should deposit tokens", async () => {
+  it("should deposit tokens (case-insensitive assetId)", async () => {
     const expected = {
       node: Zero.toString(),
       client: One.toString(),
-      assetId: tokenAddress,
+      assetId: tokenAddress.toUpperCase(),
     };
     const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
     if (response.completed) {
@@ -99,31 +99,27 @@ describe(name, () => {
     }
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
-    timeElapsed("beforeEach + test complete", start);
   });
 
-  it("client should not be able to deposit with invalid token address", async () => {
+  it("should not be able to deposit with invalid token address", async () => {
     await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith(
       "invalid",
     );
-    timeElapsed("beforeEach + test complete", start);
   });
 
-  it("client should not be able to deposit with negative amount", async () => {
+  it("should not be able to deposit with negative amount", async () => {
     await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
       "Value (-1) is not greater than 0",
     );
-    timeElapsed("beforeEach + test complete", start);
   });
 
-  it("client should not be able to propose deposit with value it doesn't have", async () => {
+  it("should not be able to propose deposit with value it doesn't have", async () => {
     await expect(
       client.deposit({
         amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),
         assetId: client.config.contractAddresses[client.chainId].Token!,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
-    timeElapsed("beforeEach + test complete", start);
   });
 
   it("client has already requested deposit rights before calling deposit", async () => {
@@ -144,7 +140,6 @@ describe(name, () => {
       assetId: client.config.contractAddresses[client.chainId].Token!,
     });
     expect(appIdentityHash).to.be.undefined;
-    timeElapsed("beforeEach + test complete", start);
   });
 
   // TODO: move this test case to the node unit tests where the deposit app
@@ -203,7 +198,6 @@ describe(name, () => {
     await expect(receiver.deposit({ amount: ONE, assetId: expected.assetId })).to.be.rejectedWith(
       "Node has unfinalized deposit",
     );
-    timeElapsed("beforeEach + test complete", start);
   });
 
   it.skip("client proposes deposit but never sends tx to chain", async () => {});
@@ -240,7 +234,6 @@ describe(name, () => {
     });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
-    timeElapsed("beforeEach + test complete", start);
   });
 
   it("client deposits eth, withdraws, then successfully deposits tokens", async () => {
@@ -272,6 +265,5 @@ describe(name, () => {
     await assertClientFreeBalance(client, tokenExpected);
     await assertNodeFreeBalance(client, ethExpected);
     await assertNodeFreeBalance(client, tokenExpected);
-    timeElapsed("beforeEach + test complete", start);
   });
 });

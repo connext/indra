@@ -1,7 +1,7 @@
 import { ConfigService } from "./config.service";
 import { LoggerService } from "../logger/logger.service";
 
-describe.only("ConfigService", () => {
+describe("ConfigService", () => {
     const configService = new ConfigService(
       new LoggerService()
     );;

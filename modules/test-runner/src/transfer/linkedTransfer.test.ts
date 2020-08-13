@@ -30,7 +30,7 @@ describe(name, () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: a user can redeem their own link payment", async () => {
+  it("a user can redeem their own link payment", async () => {
     const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
@@ -52,7 +52,7 @@ describe(name, () => {
     expect(balBefore).to.be.equal(balAfter);
   });
 
-  it("happy case: a user can redeem someone else's link payment", async () => {
+  it("a user can redeem someone else's link payment", async () => {
     const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
@@ -74,7 +74,7 @@ describe(name, () => {
     expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
   });
 
-  it("happy case: linked transfers can be sent to an offline recipient", async () => {
+  it("linked transfers can be sent to an offline recipient", async () => {
     const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
@@ -95,7 +95,7 @@ describe(name, () => {
     expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
   });
 
-  it("happy case: linked transfers can require the recipient be online", async () => {
+  it("linked transfers can require the recipient be online", async () => {
     const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, Two, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
@@ -132,7 +132,7 @@ describe(name, () => {
     })).to.be.rejected;
   });
 
-  it("happy case: get linked transfer by payment id", async () => {
+  it("get linked transfer by payment id", async () => {
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
     const transfer = { amount: One, assetId: AddressZero };
@@ -154,7 +154,7 @@ describe(name, () => {
     });
   });
 
-  it("happy case: get linked transfer to recipient by payment id", async () => {
+  it("get linked transfer to recipient by payment id", async () => {
     const clientB = await createClient();
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
