@@ -276,10 +276,9 @@ export const EventNames = {
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
 } as const;
 export type EventName = keyof typeof EventNames | keyof typeof WatcherEvents;
-export type EventPayload = WatcherEventData &
-  {
-    [P in keyof EventPayloadMap]: EventPayloadMap[P];
-  };
+export type EventPayload = {
+  [P in keyof EventPayloadMap]: EventPayloadMap[P];
+};
 
 // NOTE: this typing will restrict events and payloads to only those in the
 // EventName types
