@@ -36,7 +36,7 @@ then
   then version="`echo $git_tag | sed 's/indra-//'`"
   else version="`git rev-parse HEAD | head -c 8`"
   fi
-  image="connextproject/${project}_ethprovider:$version"
+  image="${project}_ethprovider:$version"
 
 else
   image="${project}_builder"
