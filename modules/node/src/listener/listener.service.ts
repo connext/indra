@@ -72,11 +72,15 @@ export default class ListenerService implements OnModuleInit {
 
   // TODO: better typing
   logEvent<T extends EventName>(event: T, res: any): void {
-    this.log.debug(
-      `${event} event fired from ${res && res.from ? res.from : null}, data: ${
-        res ? JSON.stringify(res.data) : `event did not have a result`
-      }`,
-    );
+    if (Object.keys(WatcherEvents).includes(event)) {
+      this.log.debug(`${event} event caught, data: ${JSON.stringify(res)}`);
+    } else {
+      this.log.debug(
+        `${event} event fired from ${res && res.from ? res.from : null}, data: ${
+          res ? JSON.stringify(res.data) : `event did not have a result`
+        }`,
+      );
+    }
   }
 
   getEventListeners(): CallbackStruct {
