@@ -78,9 +78,15 @@ const {
   UPDATE_STATE_FAILED_EVENT,
 } = EventNames;
 
-type CallbackStruct = {
+type ProtocolCallback = {
   [index in keyof typeof EventNames]: (data: ProtocolEventMessage<index>) => Promise<any> | void;
 };
+
+type WatcherCallback = {
+  [index in keyof typeof WatcherEvents]: (data: WatcherEventData[index]) => Promise<any> | void;
+};
+
+type CallbackStruct = WatcherCallback | ProtocolCallback;
 
 export class ConnextListener {
   private log: ILoggerService;
@@ -206,35 +212,35 @@ export class ConnextListener {
     },
 
     // Watcher events
-    ChallengeUpdatedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeUpdatedEvent, msg);
+    CHALLENGE_UPDATED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_UPDATED_EVENT, msg);
     },
-    StateProgressedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.StateProgressedEvent, msg);
+    STATE_PROGRESSED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.STATE_PROGRESSED_EVENT, msg);
     },
-    ChallengeProgressedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeProgressedEvent, msg);
+    CHALLENGE_PROGRESSED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, msg);
     },
-    ChallengeProgressionFailedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeProgressionFailedEvent, msg);
+    CHALLENGE_PROGRESSION_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT, msg);
     },
-    ChallengeOutcomeFailedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeOutcomeFailedEvent, msg);
+    CHALLENGE_OUTCOME_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_OUTCOME_FAILED_EVENT, msg);
     },
-    ChallengeOutcomeSetEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeOutcomeSetEvent, msg);
+    CHALLENGE_OUTCOME_SET_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_OUTCOME_SET_EVENT, msg);
     },
-    ChallengeCompletedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeCompletedEvent, msg);
+    CHALLENGE_COMPLETED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_COMPLETED_EVENT, msg);
     },
-    ChallengeCompletionFailedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeCompletionFailedEvent, msg);
+    CHALLENGE_COMPLETION_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_COMPLETION_FAILED_EVENT, msg);
     },
-    ChallengeCancelledEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeCancelledEvent, msg);
+    CHALLENGE_CANCELLED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_CANCELLED_EVENT, msg);
     },
-    ChallengeCancellationFailedEvent: (msg) => {
-      this.emitAndLog(WatcherEvents.ChallengeCancellationFailedEvent, msg);
+    CHALLENGE_CANCELLATION_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT, msg);
     },
   };
 
