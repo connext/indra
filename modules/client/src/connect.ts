@@ -37,23 +37,24 @@ export const connect = async (
 
   const {
     channelProvider: providedChannelProvider,
-    logger: providedLogger,
     ethProviderUrl,
+    logLevel,
+    logger: providedLogger,
     loggerService,
     messagingUrl,
     nodeUrl,
-    logLevel,
-    skipSync,
     skipInitStore,
+    skipSync,
   } = opts;
-  let { messaging } = opts;
+  let { ethProvider, messaging } = opts;
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
     : new ConsoleLogger("ConnextConnect", logLevel, providedLogger);
 
+  const urls = stringify({ ethProviderUrl, nodeUrl, messagingUrl });
   logger.info(
-    `Called connect with ${stringify({ nodeUrl, ethProviderUrl, messagingUrl })}, and ${
+    `Called connect with ${urls}, and ${
       providedChannelProvider!!
         ? `provided channel provider`
         : `signer ${typeof opts.signer === "string" ? `using private key` : `with injected signer`}`
@@ -65,6 +66,7 @@ export const connect = async (
   if (!skipInitStore) {
     await store.init();
   }
+
   logger.info(
     `Using ${opts.store ? "given" : "local"} store containing ${
       (await store.getAllChannels()).length
@@ -72,9 +74,16 @@ export const connect = async (
   );
 
   // setup ethProvider
-  logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
-  const chainId = await getChainId(ethProviderUrl);
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
+  logger.debug(`ethProviderUrl=${ethProviderUrl} | ethProvider=${typeof ethProvider}`);
+  let chainId;
+  if (!ethProvider && !ethProviderUrl) {
+    throw new Error(`One of "ethProvider" or "ethProviderUrl" must be provided`);
+  } else if (!ethProvider) {
+    chainId = await getChainId(ethProviderUrl);
+    ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
+  } else {
+    chainId = (await ethProvider.getNetwork()).chainId;
+  }
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -112,7 +121,7 @@ export const connect = async (
 
     signer =
       typeof opts.signer === "string"
-        ? new ChannelSigner(opts.signer, ethProviderUrl)
+        ? new ChannelSigner(opts.signer, ethProvider)
         : opts.signer;
 
     node = await NodeApiClient.init({
