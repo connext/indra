@@ -16,7 +16,7 @@ import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
-const log = new ColorfulLogger("MultichannelStoreTest", env.logLevel, true);
+const log = new ColorfulLogger("ReclaimTest", env.logLevel, true, "T");
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;

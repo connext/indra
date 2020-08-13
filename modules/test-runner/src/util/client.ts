@@ -29,7 +29,7 @@ export const createClient = async (
   opts: Partial<ClientOptions & { id: string; logLevel: number }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
+  const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel, false, "U");
   const store = opts.store || getMemoryStore({ prefix: getRandomBytes32() });
   await store.init();
   const clientOpts: ClientOptions = {

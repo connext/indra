@@ -19,7 +19,7 @@ import { ethProviderUrl } from "./ethprovider";
 import { combineObjects } from "./misc";
 import { expect } from "./assertions";
 
-const log = new ColorfulLogger("Messaging", env.logLevel);
+const log = new ColorfulLogger("Messaging", env.logLevel, false, "U");
 
 // set an artificially high limit to effectively prevent any
 // messaging limits by default (and easily allow for 0)
