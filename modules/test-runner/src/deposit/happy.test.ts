@@ -4,16 +4,17 @@ import { ERC20 } from "@connext/contracts";
 import { BigNumber, Contract, constants } from "ethers";
 
 import {
+  createClient,
+  ethProvider,
   expect,
+  getOnchainBalance,
   NEGATIVE_ONE,
   ONE,
+  TOKEN_AMOUNT,
+  TOKEN_AMOUNT_SM,
   TWO,
   WRONG_ADDRESS,
-  TOKEN_AMOUNT_SM,
-  TOKEN_AMOUNT,
 } from "../util";
-import { createClient } from "../util/client";
-import { getOnchainBalance, ethProvider } from "../util/ethprovider";
 
 const { AddressZero, Zero, One } = constants;
 

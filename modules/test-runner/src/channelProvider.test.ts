@@ -13,7 +13,7 @@ import {
   swapAsset,
   TOKEN_AMOUNT,
   withdrawFromChannel,
-} from "../util";
+} from "./util";
 
 const { AddressZero, One } = constants;
 

@@ -19,8 +19,8 @@ import {
   getNatsClient,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
-} from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
+  addRebalanceProfile,
+} from "./util";
 
 const { AddressZero, Zero } = constants;
 

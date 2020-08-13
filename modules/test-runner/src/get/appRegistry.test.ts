@@ -1,7 +1,6 @@
 import { DefaultApp, IConnextClient, AppRegistry } from "@connext/types";
 
-import { env, expect } from "../util";
-import { createClient } from "../util/client";
+import { createClient, env, expect } from "../util";
 
 const expectedNetwork = {
   chainId: 1337,

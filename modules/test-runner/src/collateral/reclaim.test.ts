@@ -1,15 +1,22 @@
 import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
-import { getRandomBytes32, toBN } from "@connext/utils";
+import { ColorfulLogger, getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
-import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
+import {
+  createClient,
+  fundChannel,
+  asyncTransferAsset,
+  expect,
+  env,
+} from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
+const log = new ColorfulLogger("MultichannelStoreTest", env.logLevel, true);
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;
@@ -25,10 +32,10 @@ describe("Reclaim", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    console.log("senderId", clientA.publicIdentifier);
-    console.log("sender multisig", clientA.multisigAddress);
-    console.log("recipientId", clientB.publicIdentifier);
-    console.log("recipient multisig", clientB.multisigAddress);
+    log.info(`senderId: ${clientA.publicIdentifier}`);
+    log.info(`sender multisig: ${clientA.multisigAddress}`);
+    log.info(`recipientId: ${clientB.publicIdentifier}`);
+    log.info(`recipient multisig: ${clientB.multisigAddress}`);
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -87,7 +94,7 @@ describe("Reclaim", () => {
           recipient: clientB.publicIdentifier,
           paymentId,
         })
-        .then((t) => console.log("t: ", t))
+        .then((t) => log.info(`t: : ${t}`))
         .catch(rej);
     });
 
@@ -130,14 +137,14 @@ describe("Reclaim", () => {
 
     clientA.on("UNINSTALL_EVENT", (msg) => {
       const { multisigAddress, uninstalledApp } = msg;
-      console.log("sender uninstall event multisig", multisigAddress);
-      console.log("final app state", uninstalledApp.latestState);
+      log.info(`sender uninstall event multisig: ${multisigAddress}`);
+      log.info(`final app state: ${uninstalledApp.latestState}`);
     });
 
     clientB.on("UNINSTALL_EVENT", (msg) => {
       const { multisigAddress, uninstalledApp } = msg;
-      console.log("receiver uninstall event multisig", multisigAddress);
-      console.log("final app state", uninstalledApp.latestState);
+      log.info(`receiver uninstall event multisig: ${multisigAddress}`);
+      log.info(`final app state: ${uninstalledApp.latestState}`);
     });
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
@@ -160,7 +167,7 @@ describe("Reclaim", () => {
           recipient: clientB.publicIdentifier,
           paymentId,
         })
-        .then((t) => console.log("t: ", t))
+        .then((t) => log.info(`t: : ${t}`))
         .catch(rej);
     });
 
