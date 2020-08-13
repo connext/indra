@@ -8,12 +8,7 @@ import {
   PublicParams,
   ConditionalTransferCreatedEventData,
 } from "@connext/types";
-import {
-  getRandomBytes32,
-  getChainId,
-  delay,
-  stringify,
-} from "@connext/utils";
+import { getRandomBytes32, getChainId, delay, stringify } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -32,7 +27,7 @@ const { soliditySha256 } = utils;
 
 const TIMEOUT_BUFFER = 100; // This currently isn't exported by the node so must be hardcoded
 
-describe("HashLock Transfers", () => {
+describe.only("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
