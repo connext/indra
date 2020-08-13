@@ -16,6 +16,7 @@ import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { ethProviderUrl } from "./ethprovider";
+import { combineObjects } from "./misc";
 import { expect } from "./assertions";
 
 const log = new ColorfulLogger("Messaging", env.logLevel, false, "U");
@@ -205,8 +206,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     this.providedOptions = opts;
     const defaults = defaultOpts();
     this.options = {
-      ...defaults,
-      ...opts,
+      ...combineObjects(opts, defaults),
       signer:
         opts.signer && typeof opts.signer === "string"
           ? new ChannelSigner(opts.signer, ethProviderUrl)
