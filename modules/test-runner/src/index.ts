@@ -1,6 +1,7 @@
 import "./setup";
 // Run happy-path tests first
 import "./deposit/happy.test";
+import "./deposit/rights.test";
 import "./swap/happy.test";
 import "./transfer/linkedTransfer.test";
 import "./withdraw/happy.test";
@@ -9,7 +10,6 @@ import "./collateral/collateral.test";
 import "./collateral/profiles.test";
 import "./collateral/reclaim.test";
 import "./connect.test";
-import "./deposit/rights.test";
 import "./flows/multichain.test";
 import "./flows/multichannelStore.test";
 import "./flows/multiclientTransfer.test";

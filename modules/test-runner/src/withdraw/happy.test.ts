@@ -34,8 +34,18 @@ describe(name, () => {
 
   it("should withdraw eth and node should submit the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
-    // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+  });
+
+  it("should withdraw tokens & node should submit the tx (case-insensitive assetId)", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress.toUpperCase());
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress.toUpperCase());
+  });
+
+  it("should fail to withdraw eth if the recipient address has an invalid checksum", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH);
+    const recipient = Wallet.createRandom().address.toUpperCase();
+    expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient)).to.be.rejected;
   });
 
   // Currently fails because of this: https://github.com/connext/indra/issues/1186
@@ -45,11 +55,6 @@ describe(name, () => {
     const recipient = Wallet.createRandom().address;
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
-  });
-
-  it("should withdraw tokens and node should submit the tx (case-insensitive assetId)", async () => {
-    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress.toUpperCase());
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress.toUpperCase());
   });
 
   it("client tries to withdraw more than it has in free balance", async () => {

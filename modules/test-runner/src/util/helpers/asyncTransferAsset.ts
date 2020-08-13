@@ -1,5 +1,5 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { getRandomBytes32, stringify, delay } from "@connext/utils";
+import { getRandomBytes32, getAddressFromAssetId, stringify, delay } from "@connext/utils";
 import { BigNumber } from "ethers";
 
 import { expect } from "../assertions";
@@ -118,7 +118,7 @@ export const asyncTransferAsset = async (
   const paymentB = await clientB.getLinkedTransfer(paymentId);
   expect(paymentA).to.deep.include({
     amount: transferAmount,
-    assetId,
+    assetId: getAddressFromAssetId(assetId),
     paymentId,
     receiverIdentifier: clientB.publicIdentifier,
     senderIdentifier: clientA.publicIdentifier,
@@ -127,7 +127,7 @@ export const asyncTransferAsset = async (
       ...SENDER_INPUT_META,
       sender: clientA.publicIdentifier,
       paymentId,
-      senderAssetId: assetId,
+      senderAssetId: getAddressFromAssetId(assetId),
     },
   });
   expect(paymentA.encryptedPreImage).to.be.ok;
