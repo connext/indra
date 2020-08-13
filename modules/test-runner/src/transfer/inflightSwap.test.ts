@@ -1,20 +1,31 @@
 import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
-import { AssetOptions, createClient, ETH_AMOUNT_SM, fundChannel, requestCollateral } from "../util";
-import { expect } from "../util";
+import {
+  createClient,
+  ETH_AMOUNT_SM,
+  expect,
+  fundChannel,
+  getTestLoggers,
+  requestCollateral,
+} from "../util";
 
 const { AddressZero } = constants;
 
-describe("Inflight swap", () => {
+const name = "Inflight Swaps";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
+  let start: number;
   let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -23,7 +34,7 @@ describe("Inflight swap", () => {
   });
 
   it("happy case: client A transfers eth to client B through node with an inflight swap", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     const receiverTransfer = clientB.waitFor(

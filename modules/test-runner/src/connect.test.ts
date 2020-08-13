@@ -13,6 +13,7 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   RECEIVED,
   SEND,
   sendOnchainValue,
@@ -24,8 +25,16 @@ import {
 const { AddressZero, One, HashZero } = constants;
 const { hexlify, randomBytes } = utils;
 
-describe("Connect", () => {
+const name = "Connect";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
+  let start: number;
+
+  beforeEach(async () => {
+    start = Date.now();
+  });
+
   afterEach(async () => {
     client && (await client.messaging.disconnect());
   });
@@ -33,6 +42,7 @@ describe("Connect", () => {
   it("Happy case: user creates channel with mainnet network string", async () => {
     client = await createDefaultClient("mainnet");
     expect(client.multisigAddress).to.be.ok;
+    timeElapsed("Test complete", start);
   });
 
   it("Happy case: user creates channel with rinkeby network string", async () => {

@@ -30,6 +30,7 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   TOKEN_AMOUNT,
 } from "../util";
 
@@ -180,14 +181,19 @@ const resolveBatchedTransfer = async (
   expect(receiverClientPostTransferBal).to.eq(totalPaid);
 };
 
-describe("Graph Batched Transfers", () => {
-  let privateKeyA: PrivateKey;
+const name = "Graph Batched Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
-  let privateKeyB: PrivateKey;
   let clientB: IConnextClient;
-  let tokenAddress: Address;
+  let privateKeyA: PrivateKey;
+  let privateKeyB: PrivateKey;
   let provider: providers.JsonRpcProvider;
+  let start: number;
+  let tokenAddress: Address;
+
   before(async () => {
+    start = Date.now();
     provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
@@ -200,6 +206,7 @@ describe("Graph Batched Transfers", () => {
     for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
       await provider.send("evm_mine", []);
     }
+    timeElapsed("beforeEach complete", start);
   });
 
   beforeEach(async () => {
@@ -216,7 +223,7 @@ describe("Graph Batched Transfers", () => {
   });
 
   it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const { paymentId } = await createBatchedTransfer(clientA, clientB, transfer);
@@ -233,7 +240,7 @@ describe("Graph Batched Transfers", () => {
   });
 
   it("happy case: clientA signed transfers tokens to clientB through node", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const { paymentId } = await createBatchedTransfer(clientA, clientB, transfer);
@@ -252,7 +259,7 @@ describe("Graph Batched Transfers", () => {
   // TODO: figure out getters
 
   it("cannot resolve a signed transfer if attestation signature is wrong", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const { paymentId, receipt, chainId, verifyingContract } = await createBatchedTransfer(
@@ -286,7 +293,7 @@ describe("Graph Batched Transfers", () => {
   });
 
   it("cannot resolve a signed transfer if attestation signature is wrong", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const { paymentId, receipt, chainId, verifyingContract } = await createBatchedTransfer(
@@ -318,7 +325,7 @@ describe("Graph Batched Transfers", () => {
   });
 
   it("if sender uninstalls, node should force uninstall receiver first", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverPromise = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
@@ -342,7 +349,7 @@ describe("Graph Batched Transfers", () => {
   });
 
   it("sender cannot uninstall before receiver", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const { transferRes } = await createBatchedTransfer(clientA, clientB, transfer);
@@ -355,7 +362,7 @@ describe("Graph Batched Transfers", () => {
   });
 
   it("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const {

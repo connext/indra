@@ -10,44 +10,48 @@ import { getRandomChannelSigner, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
 import {
+  addRebalanceProfile,
   createClient,
   ETH_AMOUNT_SM,
-  ethProviderUrl,
   ethProvider,
+  ethProviderUrl,
   expect,
   fundChannel,
   getNatsClient,
+  getTestLoggers,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
-  addRebalanceProfile,
 } from "./util";
 
 const { AddressZero, Zero } = constants;
 
-describe("Restore State", () => {
+const name = "Restore State";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
-  let tokenAddress: string;
   let nodeSignerAddress: string;
   let signerA: IChannelSigner;
+  let start: number;
   let store: IStoreService;
+  let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     const nats = getNatsClient();
     signerA = getRandomChannelSigner(ethProviderUrl);
     store = getLocalStore();
     clientA = await createClient({ signer: signerA, store, id: "A" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
-
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
       collateralizeThreshold: toBN("0"),
       target: toBN("0"),
       reclaimThreshold: toBN("0"),
     };
-
     // set rebalancing profile to reclaim collateral
     await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

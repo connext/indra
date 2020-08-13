@@ -49,37 +49,13 @@ export interface IConnextClient {
   nodeSignerAddress: Address;
   publicIdentifier: PublicIdentifier; // publicIdentifier?
 
-  // Expose some internal machineary for easier debugging
-  messaging: IMessagingService;
-  store: IStoreService;
-
   ////////////////////////////////////////
   // Methods
 
   restart(): Promise<void>;
 
   ///////////////////////////////////
-  // LISTENER METHODS
-  on<T extends EventName>(
-    event: T,
-    callback: (payload: EventPayload[T]) => void | Promise<void>,
-    filter?: (payload: EventPayload[T]) => boolean,
-  ): void;
-  once<T extends EventName>(
-    event: T,
-    callback: (payload: EventPayload[T]) => void | Promise<void>,
-    filter?: (payload: EventPayload[T]) => boolean,
-  ): void;
-  waitFor<T extends EventName>(
-    event: T,
-    timeout: number,
-    filter?: (payload: EventPayload[T]) => boolean,
-  ): Promise<EventPayload[T]>;
-  emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
-  off(): void;
-
-  ///////////////////////////////////
-  // CORE CHANNEL METHODS
+  // Core channel methods
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   checkDepositRights(
     params: PublicParams.CheckDepositRights,
@@ -101,7 +77,32 @@ export interface IConnextClient {
   withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
 
   ///////////////////////////////////
-  // NODE EASY ACCESS METHODS
+  // Listener methods
+  on<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+  once<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+  waitFor<T extends EventName>(
+    event: T,
+    timeout: number,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): Promise<EventPayload[T]>;
+  emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
+  off(): void;
+
+  ////////////////////////////////////////
+  // Expose some internal machineary for easier debugging
+  messaging: IMessagingService;
+  store: IStoreService;
+
+  ///////////////////////////////////
+  // Node easy access methods
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<NodeResponses.GetChannel>;
@@ -130,7 +131,7 @@ export interface IConnextClient {
   reclaimPendingAsyncTransfers(): Promise<void>;
 
   ///////////////////////////////////
-  // CF MODULE EASY ACCESS METHODS
+  // CF module easy access methods
   deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
   getStateChannel(): Promise<MethodResults.GetStateChannel>;
   getFreeBalance(assetId?: Address): Promise<MethodResults.GetFreeBalanceState>;

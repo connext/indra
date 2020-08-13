@@ -1,19 +1,30 @@
 import { IConnextClient, EventNames } from "@connext/types";
-import { constants, BigNumber } from "ethers";
+import { constants } from "ethers";
 
-import { createClient, ETH_AMOUNT_MD, expect, TOKEN_AMOUNT } from "../util";
+import {
+  createClient,
+  ETH_AMOUNT_MD,
+  expect,
+  getTestLoggers,
+  TOKEN_AMOUNT,
+} from "../util";
 
 const { AddressZero, Zero } = constants;
 
-describe("Collateral", () => {
+const name = "Collateralization";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
+  let start: number;
 
   beforeEach(async () => {
+    start = Date.now();
     client = await createClient();
     tokenAddress = client.config.contractAddresses[client.chainId].Token!;
     nodeSignerAddress = client.nodeSignerAddress;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

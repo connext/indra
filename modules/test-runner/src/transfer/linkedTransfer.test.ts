@@ -2,17 +2,27 @@ import { IConnextClient, ConditionalTransferTypes, EventNames } from "@connext/t
 import { getRandomBytes32, getRandomChannelSigner } from "@connext/utils";
 import { constants } from "ethers";
 
-import { AssetOptions, createClient, expect, fundChannel } from "../util";
+import {
+  createClient,
+  expect,
+  fundChannel,
+  getTestLoggers,
+} from "../util";
 
 const { AddressZero, One, Two } = constants;
 
-describe("Linked Transfer", () => {
+const name = "Multichain Clients";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
+  let start: number;
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -21,7 +31,7 @@ describe("Linked Transfer", () => {
   });
 
   it("happy case: a user can redeem their own link payment", async () => {
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     const linkedTransfer = await clientA.conditionalTransfer({
@@ -43,7 +53,7 @@ describe("Linked Transfer", () => {
   });
 
   it("happy case: a user can redeem someone else's link payment", async () => {
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     const linkedTransfer = await clientA.conditionalTransfer({
@@ -65,7 +75,7 @@ describe("Linked Transfer", () => {
   });
 
   it("happy case: linked transfers can be sent to an offline recipient", async () => {
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     const offlineSigner = getRandomChannelSigner();
@@ -86,7 +96,7 @@ describe("Linked Transfer", () => {
   });
 
   it("happy case: linked transfers can require the recipient be online", async () => {
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, Two, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     // Transfer to online client succeeds
@@ -125,7 +135,7 @@ describe("Linked Transfer", () => {
   it("happy case: get linked transfer by payment id", async () => {
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -148,7 +158,7 @@ describe("Linked Transfer", () => {
     const clientB = await createClient();
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -172,7 +182,7 @@ describe("Linked Transfer", () => {
     const clientB = await createClient();
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
-    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({

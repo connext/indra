@@ -1,26 +1,8 @@
-export const combineObjects = (overrides: any, defaults: any): any => {
-  if (!overrides && defaults) {
-    return { ...defaults };
-  }
-  const ret = { ...defaults };
-  Object.entries(defaults).forEach(([key, value]) => {
-    // if there is non override, return without updating defaults
-    if (!overrides[key]) {
-      // no comparable value, return
-      return;
-    }
+import { ColorfulLogger, logTime } from "@connext/utils";
 
-    if (overrides[key] && typeof overrides[key] === "object") {
-      ret[key] = { ...(value as any), ...overrides[key] };
-      return;
-    }
+import { env } from "./env";
 
-    if (overrides[key] && typeof overrides[key] !== "object") {
-      ret[key] = overrides[key];
-    }
-
-    // otherwise leave as default
-    return;
-  });
-  return ret;
+export const getTestLoggers = (context: string, start = Date.now()) => {
+  const log = new ColorfulLogger(context.replace(" ", ""), env.logLevel, true, "Test");
+  return { log, timeElapsed: (msg: string, start: number): void => logTime(log, start, msg) };
 };

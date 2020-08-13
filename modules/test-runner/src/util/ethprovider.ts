@@ -32,21 +32,6 @@ export const fundEthWallet = async (chainId: number = env.defaultChain) => {
   return;
 };
 
-/**
- * EVM snapshot, returns hex string of snapshot ID.
- */
-export const takeEVMSnapshot = async (): Promise<string> => {
-  const res = await ethProvider.send("evm_snapshot", []);
-  return res;
-};
-
-export const revertEVMSnapshot = async (snapshotId: string): Promise<void> => {
-  const res = await ethProvider.send("evm_revert", [snapshotId]);
-  if (res !== true) {
-    throw new Error(`evm_revert failed, res: ${res}`);
-  }
-};
-
 export const sendOnchainValue = async (
   to: string,
   value: BigNumberish,

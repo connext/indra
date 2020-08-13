@@ -1,14 +1,14 @@
 import {
+  ConditionalTransferTypes,
+  EventName,
+  EventNames,
   IChannelSigner,
   IConnextClient,
-  ConditionalTransferTypes,
-  EventNames,
-  EventName,
-  ProtocolNames,
   IStoreService,
-  PublicParams,
-  ProtocolParams,
   PrivateKey,
+  ProtocolNames,
+  ProtocolParams,
+  PublicParams,
 } from "@connext/types";
 import {
   ChannelSigner,
@@ -33,6 +33,7 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   RECEIVED,
   SEND,
   TOKEN_AMOUNT,
@@ -40,18 +41,23 @@ import {
 
 const { Zero } = constants;
 
-describe("Graph Signed Transfer Offline", () => {
+const name = "Offline Graph Signed Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
+  let receiverPrivateKey: PrivateKey;
+  let receiverSigner: IChannelSigner;
+  let senderSigner: IChannelSigner;
+  let start: number;
+
   const tokenAddress = env.contractAddresses[1337].Token.address;
   const addr = env.contractAddresses[1337].GraphSignedTransferApp.address;
 
-  let senderSigner: IChannelSigner;
-  let receiverPrivateKey: PrivateKey;
-  let receiverSigner: IChannelSigner;
-
   beforeEach(async () => {
+    start = Date.now();
     senderSigner = getRandomChannelSigner(ethProviderUrl);
     receiverPrivateKey = getRandomPrivateKey();
     receiverSigner = new ChannelSigner(receiverPrivateKey, ethProviderUrl);
+    timeElapsed("beforeEach complete", start);
   });
 
   const createAndFundClients = async (

@@ -2,20 +2,29 @@ import { IConnextClient, EventNames } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 
-import { expect, createClient, fundChannel } from "../util";
+import {
+  createClient,
+  expect,
+  fundChannel,
+  getTestLoggers,
+} from "../util";
 
 const { AddressZero } = constants;
 
-// TODO: fix race condition
-describe.skip("Full Flow: Multi-client transfer", () => {
+const name = "Concurrent Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
+  let start: number;
 
   beforeEach(async () => {
+    start = Date.now();
     gateway = await createClient();
     indexerA = await createClient();
     indexerB = await createClient();
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

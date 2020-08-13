@@ -9,28 +9,33 @@ import {
 } from "@connext/types";
 import { getRandomChannelSigner, delay } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
+
 import {
+  APP_PROTOCOL_TOO_LONG,
+  CLIENT_INSTALL_FAILED,
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
   env,
   ETH_AMOUNT_SM,
   ethProvider,
+  ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
+  RECEIVED,
   SEND,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
-  ethProviderUrl,
-  APP_PROTOCOL_TOO_LONG,
-  CLIENT_INSTALL_FAILED,
-  RECEIVED,
 } from "../util";
 
 const { AddressZero } = constants;
 
-describe("Withdraw offline tests", () => {
+const name = "Offline Withdrawals";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let signer: IChannelSigner;
+  let start: number;
   const addr = env.contractAddresses[1337].WithdrawApp.address;
 
   const createAndFundChannel = async (
@@ -91,7 +96,9 @@ describe("Withdraw offline tests", () => {
   };
 
   beforeEach(async () => {
+    start = Date.now();
     signer = getRandomChannelSigner(ethProviderUrl);
+    timeElapsed("beforeEach complete", start);
   });
 
   it("client goes offline during withdrawal app proposal", async () => {

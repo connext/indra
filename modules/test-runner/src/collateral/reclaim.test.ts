@@ -1,35 +1,38 @@
+import { ERC20 } from "@connext/contracts";
 import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
-import { ColorfulLogger, getRandomBytes32, toBN } from "@connext/utils";
+import { getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
 import {
-  createClient,
-  fundChannel,
+  addRebalanceProfile,
   asyncTransferAsset,
+  createClient,
   expect,
-  env,
+  fundChannel,
+  getNatsClient,
+  getTestLoggers,
 } from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
-import { getNatsClient } from "../util/nats";
-import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
-const log = new ColorfulLogger("ReclaimTest", env.logLevel, true, "T");
 
-describe("Reclaim", () => {
+const name = "Reclaim Collateral";
+const { log, timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
   let nats: Client;
+  let start: number;
 
   before(async () => {
     nats = getNatsClient();
   });
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
     log.info(`senderId: ${clientA.publicIdentifier}`);
@@ -38,6 +41,7 @@ describe("Reclaim", () => {
     log.info(`recipient multisig: ${clientB.multisigAddress}`);
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

@@ -1,19 +1,18 @@
 import {
-  IConnextClient,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  EventNames,
-  PublicParams,
-  ConditionalTransferTypes,
   Address,
   Bytes32,
+  ConditionalTransferTypes,
+  CONVENTION_FOR_ETH_ASSET_ID,
+  EventNames,
   GraphReceipt,
+  IConnextClient,
+  PublicParams,
 } from "@connext/types";
 import { getFileStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
 import {
   abrv,
   ChannelSigner,
-  ColorfulLogger,
   getRandomBytes32,
   getRandomPrivateKey,
   getTestGraphReceiptToSign,
@@ -24,9 +23,15 @@ import {
 import { Sequelize } from "sequelize";
 import { BigNumber } from "ethers";
 
-import { createClient, ethProviderUrl, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
-
-const log = new ColorfulLogger("MultichannelStoreTest", env.logLevel, true);
+import {
+  createClient,
+  env,
+  ETH_AMOUNT_MD,
+  ethProviderUrl,
+  expect,
+  fundChannel,
+  getTestLoggers,
+} from "../util";
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -141,23 +146,27 @@ const performConditionalTransfer = async (params: {
   return [responsePaymentId, preImage] as [string, string];
 };
 
-describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
-  let senderKey: string;
-  let senderSigner: ChannelSigner;
-  let sender: ConnextClient;
+const name = "Multichannel Store";
+const { log, timeElapsed } = getTestLoggers(name);
+describe(name, () => {
+  let chainId: number;
+  let initialRecipientFb: { [x: string]: BigNumber };
+  let initialSenderFb: { [x: string]: string | BigNumber };
+  let receipt: GraphReceipt;
+  let recipient: ConnextClient;
   let recipientKey: string;
   let recipientSigner: ChannelSigner;
-  let recipient: ConnextClient;
-  let receipt: GraphReceipt;
-  let chainId: number;
+  let sender: ConnextClient;
+  let senderKey: string;
+  let senderSigner: ChannelSigner;
+  let start: number;
   let verifyingContract: Address;
-  let initialSenderFb: { [x: string]: string | BigNumber };
-  let initialRecipientFb: { [x: string]: BigNumber };
 
   const DEPOSIT_AMT = ETH_AMOUNT_MD;
   const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
 
   beforeEach(async () => {
+    start = Date.now();
     senderKey = getRandomPrivateKey();
     recipientKey = getRandomPrivateKey();
     senderSigner = new ChannelSigner(senderKey, ethProviderUrl);
@@ -189,6 +198,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
     initialSenderFb = await sender.getFreeBalance(ASSET);
     initialRecipientFb = await recipient.getFreeBalance(ASSET);
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

@@ -2,30 +2,36 @@ import { IConnextClient, EventNames } from "@connext/types";
 import { BigNumber, constants } from "ethers";
 
 import {
-  createClient,
   ETH_AMOUNT_SM,
-  fundChannel,
-  requestCollateral,
   TOKEN_AMOUNT_SM,
+  createClient,
   expect,
+  fundChannel,
+  getTestLoggers,
+  requestCollateral,
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 
 const { AddressZero } = constants;
 
-describe("Full Flow: Transfer", () => {
+const name = "Multiple Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let clientC: IConnextClient;
   let clientD: IConnextClient;
+  let start: number;
   let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
     clientC = await createClient({ id: "C" });
     clientD = await createClient({ id: "D" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

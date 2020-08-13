@@ -1,19 +1,25 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { ColorfulLogger, getRandomBytes32, stringify, delay } from "@connext/utils";
+import { getRandomBytes32, stringify, delay } from "@connext/utils";
 import { BigNumber } from "ethers";
 
-import { env } from "../env";
-import { expect } from "../";
-import { ExistingBalancesAsyncTransfer } from "../types";
+import { expect } from "../assertions";
+import { getTestLoggers } from "../misc";
 
-const log = new ColorfulLogger("AsyncTransfer", env.logLevel, false, "H");
+const { log } = getTestLoggers("AsyncTransfer");
 
-export async function asyncTransferAsset(
+interface ExistingBalancesAsyncTransfer {
+  freeBalanceClientA: BigNumber;
+  freeBalanceNodeA: BigNumber;
+  freeBalanceClientB: BigNumber;
+  freeBalanceNodeB: BigNumber;
+}
+
+export const asyncTransferAsset = async (
   clientA: IConnextClient,
   clientB: IConnextClient,
   transferAmount: BigNumber,
   assetId: Address,
-): Promise<ExistingBalancesAsyncTransfer> {
+): Promise<ExistingBalancesAsyncTransfer> => {
   const SENDER_INPUT_META = { hello: "world" };
   const nodeSignerAddress = clientA.nodeSignerAddress;
   const {
@@ -136,4 +142,4 @@ export async function asyncTransferAsset(
   };
 
   return postTransfer;
-}
+};

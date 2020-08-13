@@ -10,6 +10,7 @@ cmd="${1:-test}"
 export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
 export INDRA_CHAIN_PROVIDERS="$INDRA_CHAIN_PROVIDERS"
 export INDRA_CLIENT_LOG_LEVEL="$INDRA_CLIENT_LOG_LEVEL"
+export INDRA_LOG_LEVEL="$INDRA_LOG_LEVEL"
 export INDRA_CONTRACT_ADDRESSES="$INDRA_CONTRACT_ADDRESSES"
 export INDRA_NATS_URL="$INDRA_NATS_URL"
 export INDRA_NODE_URL="$INDRA_NODE_URL"
@@ -79,6 +80,7 @@ then
 
       echo "Rebuilding tests.."
       eval "$build_tests"
+      echo
       
       if [[ "$?" != 0 ]]
       then

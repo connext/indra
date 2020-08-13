@@ -3,33 +3,38 @@ import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@co
 import { constants } from "ethers";
 
 import {
-  AssetOptions,
+  ETH_AMOUNT_SM,
+  TOKEN_AMOUNT,
   createChannelProvider,
   createClient,
   createRemoteClient,
-  ETH_AMOUNT_SM,
   expect,
   fundChannel,
+  getTestLoggers,
   swapAsset,
-  TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "./util";
 
 const { AddressZero, One } = constants;
 
-describe("ChannelProvider", () => {
+const name = "Channel Provider";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
-  let remoteClient: IConnextClient;
-  let nodeSignerAddress: string;
   let nodeIdentifier: string;
+  let nodeSignerAddress: string;
+  let remoteClient: IConnextClient;
+  let start: number;
   let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
     nodeSignerAddress = client.nodeSignerAddress;
     tokenAddress = client.config.contractAddresses[client.chainId].Token!;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -46,8 +51,8 @@ describe("ChannelProvider", () => {
   });
 
   it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async () => {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
-    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const input = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
+    const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
@@ -60,7 +65,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
+    const transfer = { amount: One, assetId: tokenAddress };
     const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
@@ -79,7 +84,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
+    const withdraw = { amount: One, assetId: tokenAddress };
     await withdrawFromChannel(remoteClient, withdraw.amount, withdraw.assetId);
   });
 
