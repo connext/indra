@@ -13,13 +13,13 @@ export const cancelDispute = async (
   expect(existing).to.be.ok;
   const req = await app.getCancelDisputeRequest(existing!.versionNumber);
   const watcherPromise = failsWith
-    ? watcher.waitFor(WatcherEvents.ChallengeCancellationFailedEvent, 10_000)
-    : watcher.waitFor(WatcherEvents.ChallengeCancelledEvent, 10_000);
+    ? watcher.waitFor(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT, 10_000)
+    : watcher.waitFor(WatcherEvents.CHALLENGE_CANCELLED_EVENT, 10_000);
 
   const contractPromise = failsWith
     ? Promise.resolve()
     : watcher.waitFor(
-        WatcherEvents.ChallengeUpdatedEvent,
+        WatcherEvents.CHALLENGE_UPDATED_EVENT,
         10_000,
         (data) => data.identityHash === app.identityHash,
       );

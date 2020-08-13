@@ -27,7 +27,7 @@ export const waitForDisputeCompletion = async (
   const [completed] = await Promise.all([
     Promise.all(
       appIds.map((id) =>
-        watcher.waitFor(WatcherEvents.ChallengeCompletedEvent, 10_000, (data) =>
+        watcher.waitFor(WatcherEvents.CHALLENGE_COMPLETED_EVENT, 10_000, (data) =>
           matchesId(data, id),
         ),
       ),

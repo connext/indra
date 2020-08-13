@@ -8,6 +8,10 @@ import {
   ChallengeStatus,
   Address,
   ContractAddressBook,
+  STATE_PROGRESSED_EVENT,
+  CHALLENGE_UPDATED_EVENT,
+  ChallengeUpdatedEventPayload,
+  StateProgressedEventPayload,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { BigNumber, Contract, Event, providers, utils } from "ethers";
@@ -17,6 +21,22 @@ const { Interface } = utils;
 
 // While fetching historical data, we query this many blocks at a time
 const chunkSize = 30;
+
+// contract events are camel cased while offchain events are all caps
+// this type is generated to bridge the gap for the listener
+const ChainListenerEvents = {
+  [CHALLENGE_UPDATED_EVENT]: CHALLENGE_UPDATED_EVENT,
+  [STATE_PROGRESSED_EVENT]: STATE_PROGRESSED_EVENT,
+} as const;
+type ChainListenerEvent = keyof typeof ChainListenerEvents;
+
+interface ChainListenerEventsMap {
+  [CHALLENGE_UPDATED_EVENT]: ChallengeUpdatedEventPayload;
+  [STATE_PROGRESSED_EVENT]: StateProgressedEventPayload;
+}
+type ChainListenerEventData = {
+  [P in keyof ChainListenerEventsMap]: ChainListenerEventsMap[P];
+};
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -36,11 +56,11 @@ export class ChainListener implements IChainListener {
     private readonly context: ContractAddressBook,
     loggerService: ILoggerService,
     private readonly evtChallengeUpdated: Evt<
-      ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated]
-    > = Evt.create<ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated]>(),
+      ChainListenerEventData[typeof ChainListenerEvents.CHALLENGE_UPDATED_EVENT]
+    > = Evt.create<ChainListenerEventData[typeof ChainListenerEvents.CHALLENGE_UPDATED_EVENT]>(),
     private readonly evtStateProgressed: Evt<
-      ChallengeEventData[typeof ChallengeEvents.StateProgressed]
-    > = Evt.create<ChallengeEventData[typeof ChallengeEvents.StateProgressed]>(),
+      ChainListenerEventData[typeof ChainListenerEvents.STATE_PROGRESSED_EVENT]
+    > = Evt.create<ChainListenerEventData[typeof ChainListenerEvents.STATE_PROGRESSED_EVENT]>(),
   ) {
     this.log = loggerService.newContext("ChainListener");
     const registries = {};

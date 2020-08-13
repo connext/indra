@@ -342,7 +342,7 @@ export class Watcher implements IWatcher {
           await delay(getRandomJitter());
           await this.processChallengeUpdated(event);
           // parrot listener event
-          this.emit(WatcherEvents.ChallengeUpdatedEvent, event);
+          this.emit(WatcherEvents.CHALLENGE_UPDATED_EVENT, event);
         },
       );
       this.listener.attach(
@@ -351,7 +351,7 @@ export class Watcher implements IWatcher {
           // add events to store + process
           await this.processStateProgressed(event);
           // parrot listener event
-          this.emit(WatcherEvents.StateProgressedEvent, event);
+          this.emit(WatcherEvents.STATE_PROGRESSED_EVENT, event);
         },
       );
       this.providers[chainId].on("block", async (blockNumber: number) => {
@@ -662,7 +662,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT, {
         appInstanceId: commitment.appIdentityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -671,7 +671,7 @@ export class Watcher implements IWatcher {
       });
     } else {
       response.wait().then((receipt) => {
-        this.emit(WatcherEvents.ChallengeProgressedEvent, {
+        this.emit(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, {
           appInstanceId: commitment.appIdentityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,
@@ -701,7 +701,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeCompletionFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_COMPLETION_FAILED_EVENT, {
         appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -711,7 +711,7 @@ export class Watcher implements IWatcher {
     } else {
       response.wait().then(async (receipt) => {
         await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
-        this.emit(WatcherEvents.ChallengeCompletedEvent, {
+        this.emit(WatcherEvents.CHALLENGE_COMPLETED_EVENT, {
           appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,
@@ -735,7 +735,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeCompletionFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_COMPLETION_FAILED_EVENT, {
         appInstanceId: app.identityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -747,7 +747,7 @@ export class Watcher implements IWatcher {
         // update challenge of app and free balance
         const appChallenge = await this.store.getAppChallenge(app.identityHash);
         await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, appChallenge!);
-        this.emit(WatcherEvents.ChallengeCompletedEvent, {
+        this.emit(WatcherEvents.CHALLENGE_COMPLETED_EVENT, {
           appInstanceId: app.identityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,
@@ -789,7 +789,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT, {
         appInstanceId: app.identityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -798,7 +798,7 @@ export class Watcher implements IWatcher {
       });
     } else {
       response.wait().then((receipt) =>
-        this.emit(WatcherEvents.ChallengeProgressedEvent, {
+        this.emit(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, {
           appInstanceId: app.identityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,
@@ -840,7 +840,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT, {
         appInstanceId: app.identityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -849,7 +849,7 @@ export class Watcher implements IWatcher {
       });
     } else {
       response.wait().then((receipt) =>
-        this.emit(WatcherEvents.ChallengeProgressedEvent, {
+        this.emit(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, {
           appInstanceId: app.identityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,
@@ -913,7 +913,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeOutcomeFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_OUTCOME_FAILED_EVENT, {
         appInstanceId: app.identityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -922,7 +922,7 @@ export class Watcher implements IWatcher {
       });
     } else {
       response.wait().then((receipt) =>
-        this.emit(WatcherEvents.ChallengeOutcomeSetEvent, {
+        this.emit(WatcherEvents.CHALLENGE_OUTCOME_SET_EVENT, {
           appInstanceId: app.identityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,
@@ -957,7 +957,7 @@ export class Watcher implements IWatcher {
       channel.multisigAddress,
     );
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeCancellationFailedEvent, {
+      this.emit(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT, {
         appInstanceId: app.identityHash,
         error: response,
         multisigAddress: channel.multisigAddress,
@@ -966,7 +966,7 @@ export class Watcher implements IWatcher {
       });
     } else {
       response.wait().then((receipt) => {
-        this.emit(WatcherEvents.ChallengeCancelledEvent, {
+        this.emit(WatcherEvents.CHALLENGE_CANCELLED_EVENT, {
           appInstanceId: app.identityHash,
           transaction: receipt,
           multisigAddress: channel.multisigAddress,

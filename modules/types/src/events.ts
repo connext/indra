@@ -250,7 +250,6 @@ interface EventPayloadMap extends WatcherEventDataMap {
 
 ////////////////////////////////////////
 // Exports
-// @ts-ignore
 export const EventNames = {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,

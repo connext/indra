@@ -326,13 +326,13 @@ describe("Watcher responses", () => {
     await setState(app, setState0);
     const [appWatcherEvent, appContractEvent] = await Promise.all([
       new Promise((resolve, reject) => {
-        watcher.once(WatcherEvents.ChallengeProgressedEvent, async (data) => resolve(data));
+        watcher.once(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, async (data) => resolve(data));
         watcher.once(
-          WatcherEvents.ChallengeProgressionFailedEvent,
+          WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT,
           async (data: ChallengeProgressionFailedEventData) => reject(data),
         );
       }),
-      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
+      watcher.waitFor(WatcherEvents.CHALLENGE_UPDATED_EVENT, 10_000, (data) => {
         return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
       mineBlock(providers[chainId]),
@@ -356,16 +356,16 @@ describe("Watcher responses", () => {
 
     const [appWatcherEvent, appSetStateEvent, appProgressStateEvent] = await Promise.all([
       new Promise((resolve, reject) => {
-        watcher.once(WatcherEvents.ChallengeProgressedEvent, async (data) => resolve(data));
+        watcher.once(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, async (data) => resolve(data));
         watcher.once(
-          WatcherEvents.ChallengeProgressionFailedEvent,
+          WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT,
           async (data: ChallengeProgressionFailedEventData) => reject(data),
         );
       }),
-      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
+      watcher.waitFor(WatcherEvents.CHALLENGE_UPDATED_EVENT, 10_000, (data) => {
         return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
-      watcher.waitFor(WatcherEvents.StateProgressedEvent, 10_000, (data) => {
+      watcher.waitFor(WatcherEvents.STATE_PROGRESSED_EVENT, 10_000, (data) => {
         return data.identityHash === setState0.appIdentityHash;
       }),
       mineBlock(providers[chainId]),
@@ -389,16 +389,16 @@ describe("Watcher responses", () => {
     await setState(app, setState1);
     const [appWatcherEvent, appSetStateEvent, appActionEvent] = await Promise.all([
       new Promise((resolve, reject) => {
-        watcher.once(WatcherEvents.ChallengeProgressedEvent, async (data) => resolve(data));
+        watcher.once(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, async (data) => resolve(data));
         watcher.once(
-          WatcherEvents.ChallengeProgressionFailedEvent,
+          WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT,
           async (data: ChallengeProgressionFailedEventData) => reject(data),
         );
       }),
-      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, 10_000, (data) => {
+      watcher.waitFor(WatcherEvents.CHALLENGE_UPDATED_EVENT, 10_000, (data) => {
         return data.versionNumber.eq(toBN(expected.versionNumber));
       }),
-      watcher.waitFor(WatcherEvents.StateProgressedEvent, 10_000, (data) => {
+      watcher.waitFor(WatcherEvents.STATE_PROGRESSED_EVENT, 10_000, (data) => {
         return data.identityHash === setState1.appIdentityHash;
       }),
       mineBlock(providers[chainId]),

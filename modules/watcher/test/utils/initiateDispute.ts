@@ -57,7 +57,7 @@ export const initiateDispute = async (
       if (!callSetAndProgress) {
         // calls `setState` and should emit one ChallengeUpdated event
         const event = await watcher.waitFor(
-          WatcherEvents.ChallengeUpdatedEvent,
+          WatcherEvents.CHALLENGE_UPDATED_EVENT,
           EVENT_TIMEOUT,
           matchesId,
         );
@@ -67,30 +67,30 @@ export const initiateDispute = async (
       // as well as one StateProgressed event
       const events = await Promise.all([
         watcher.waitFor(
-          WatcherEvents.ChallengeUpdatedEvent,
+          WatcherEvents.CHALLENGE_UPDATED_EVENT,
           EVENT_TIMEOUT,
           (data) =>
             matchesId(data, app.identityHash) &&
             data.versionNumber.eq(toBN(appSetState.versionNumber)),
         ),
         watcher.waitFor(
-          WatcherEvents.ChallengeUpdatedEvent,
+          WatcherEvents.CHALLENGE_UPDATED_EVENT,
           EVENT_TIMEOUT,
           (data) =>
             matchesId(data, app.identityHash) &&
             data.versionNumber.eq(toBN(appSetState.versionNumber).sub(1)),
         ),
-        watcher.waitFor(WatcherEvents.StateProgressedEvent, EVENT_TIMEOUT, matchesId),
+        watcher.waitFor(WatcherEvents.STATE_PROGRESSED_EVENT, EVENT_TIMEOUT, matchesId),
       ]);
       const sorted = events.sort((a, b) => a.versionNumber.sub(b.versionNumber).toNumber());
       return resolve(sorted);
     }),
     // contract event for dispute initiation of free balance
-    watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, matchesFb),
+    watcher.waitFor(WatcherEvents.CHALLENGE_UPDATED_EVENT, EVENT_TIMEOUT, matchesFb),
     // watcher event for dispute initiation
-    watcher.waitFor(WatcherEvents.ChallengeProgressedEvent, EVENT_TIMEOUT, matchesId),
+    watcher.waitFor(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, EVENT_TIMEOUT, matchesId),
     // watcher event for dispute initiation
-    watcher.waitFor(WatcherEvents.ChallengeProgressedEvent, EVENT_TIMEOUT, matchesFb),
+    watcher.waitFor(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, EVENT_TIMEOUT, matchesFb),
     // watcher api ret
     watcher.initiate(app.identityHash),
   ]);

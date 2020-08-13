@@ -53,71 +53,71 @@ type BaseChallengeTransactionFailedEvent = {
 };
 
 ////////////////////////////////////////
-export const ChallengeProgressedEvent = "ChallengeProgressedEvent";
+export const CHALLENGE_PROGRESSED_EVENT = "CHALLENGE_PROGRESSED_EVENT";
 export type ChallengeProgressedEventData = BaseChallengeTransactionCompletedEvent;
 
 ////////////////////////////////////////
-export const ChallengeProgressionFailedEvent = "ChallengeProgressionFailedEvent";
+export const CHALLENGE_PROGRESSION_FAILED_EVENT = "CHALLENGE_PROGRESSION_FAILED_EVENT";
 export type ChallengeProgressionFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
-export const ChallengeCompletedEvent = "ChallengeCompletedEvent";
+export const CHALLENGE_COMPLETED_EVENT = "CHALLENGE_COMPLETED_EVENT";
 export type ChallengeCompletedEventData = BaseChallengeTransactionCompletedEvent;
 
 ////////////////////////////////////////
-export const ChallengeCompletionFailedEvent = "ChallengeCompletionFailedEvent";
+export const CHALLENGE_COMPLETION_FAILED_EVENT = "CHALLENGE_COMPLETION_FAILED_EVENT";
 export type ChallengeCompletionFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
-export const ChallengeOutcomeSetEvent = "ChallengeOutcomeSetEvent";
+export const CHALLENGE_OUTCOME_SET_EVENT = "CHALLENGE_OUTCOME_SET_EVENT";
 export type ChallengeOutcomeSetEventData = BaseChallengeTransactionCompletedEvent;
 
 ////////////////////////////////////////
-export const ChallengeOutcomeFailedEvent = "ChallengeOutcomeFailedEvent";
+export const CHALLENGE_OUTCOME_FAILED_EVENT = "CHALLENGE_OUTCOME_FAILED_EVENT";
 export type ChallengeOutcomeFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
-export const ChallengeCancelledEvent = "ChallengeCancelledEvent";
+export const CHALLENGE_CANCELLED_EVENT = "CHALLENGE_CANCELLED_EVENT";
 export type ChallengeCancelledEventData = BaseChallengeTransactionCompletedEvent;
 
 ////////////////////////////////////////
-export const ChallengeCancellationFailedEvent = "ChallengeCancellationFailedEvent";
+export const CHALLENGE_CANCELLATION_FAILED_EVENT = "CHALLENGE_CANCELLATION_FAILED_EVENT";
 export type ChallengeCancellationFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
 /// From contracts
-export const ChallengeUpdatedEvent = "ChallengeUpdatedEvent";
+export const CHALLENGE_UPDATED_EVENT = "CHALLENGE_UPDATED_EVENT";
 export type ChallengeUpdatedEventData = ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated];
 
-export const StateProgressedEvent = "StateProgressedEvent";
+export const STATE_PROGRESSED_EVENT = "STATE_PROGRESSED_EVENT";
 export type StateProgressedEventData = ChallengeEventData[typeof ChallengeEvents.StateProgressed];
 
 ////////////////////////////////////////
 export const WatcherEvents = {
-  [ChallengeUpdatedEvent]: ChallengeUpdatedEvent,
-  [StateProgressedEvent]: StateProgressedEvent,
-  [ChallengeProgressedEvent]: ChallengeProgressedEvent,
-  [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEvent,
-  [ChallengeOutcomeSetEvent]: ChallengeOutcomeSetEvent,
-  [ChallengeOutcomeFailedEvent]: ChallengeOutcomeFailedEvent,
-  [ChallengeCompletedEvent]: ChallengeCompletedEvent,
-  [ChallengeCompletionFailedEvent]: ChallengeCompletionFailedEvent,
-  [ChallengeCancelledEvent]: ChallengeCancelledEvent,
-  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEvent,
+  [CHALLENGE_UPDATED_EVENT]: CHALLENGE_UPDATED_EVENT,
+  [STATE_PROGRESSED_EVENT]: STATE_PROGRESSED_EVENT,
+  [CHALLENGE_PROGRESSED_EVENT]: CHALLENGE_PROGRESSED_EVENT,
+  [CHALLENGE_PROGRESSION_FAILED_EVENT]: CHALLENGE_PROGRESSION_FAILED_EVENT,
+  [CHALLENGE_OUTCOME_SET_EVENT]: CHALLENGE_OUTCOME_SET_EVENT,
+  [CHALLENGE_OUTCOME_FAILED_EVENT]: CHALLENGE_OUTCOME_FAILED_EVENT,
+  [CHALLENGE_COMPLETED_EVENT]: CHALLENGE_COMPLETED_EVENT,
+  [CHALLENGE_COMPLETION_FAILED_EVENT]: CHALLENGE_COMPLETION_FAILED_EVENT,
+  [CHALLENGE_CANCELLED_EVENT]: CHALLENGE_CANCELLED_EVENT,
+  [CHALLENGE_CANCELLATION_FAILED_EVENT]: CHALLENGE_CANCELLATION_FAILED_EVENT,
 } as const;
 export type WatcherEvent = keyof typeof WatcherEvents;
 
 export interface WatcherEventDataMap {
-  [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
-  [StateProgressedEvent]: StateProgressedEventData;
-  [ChallengeProgressedEvent]: ChallengeProgressedEventData;
-  [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEventData;
-  [ChallengeOutcomeFailedEvent]: ChallengeOutcomeFailedEventData;
-  [ChallengeOutcomeSetEvent]: ChallengeOutcomeSetEventData;
-  [ChallengeCompletedEvent]: ChallengeCompletedEventData;
-  [ChallengeCompletionFailedEvent]: ChallengeCompletionFailedEventData;
-  [ChallengeCancelledEvent]: ChallengeCancelledEventData;
-  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEventData;
+  [CHALLENGE_UPDATED_EVENT]: ChallengeUpdatedEventData;
+  [STATE_PROGRESSED_EVENT]: StateProgressedEventData;
+  [CHALLENGE_PROGRESSED_EVENT]: ChallengeProgressedEventData;
+  [CHALLENGE_PROGRESSION_FAILED_EVENT]: ChallengeProgressionFailedEventData;
+  [CHALLENGE_OUTCOME_FAILED_EVENT]: ChallengeOutcomeFailedEventData;
+  [CHALLENGE_OUTCOME_SET_EVENT]: ChallengeOutcomeSetEventData;
+  [CHALLENGE_COMPLETED_EVENT]: ChallengeCompletedEventData;
+  [CHALLENGE_COMPLETION_FAILED_EVENT]: ChallengeCompletionFailedEventData;
+  [CHALLENGE_CANCELLED_EVENT]: ChallengeCancelledEventData;
+  [CHALLENGE_CANCELLATION_FAILED_EVENT]: ChallengeCancellationFailedEventData;
 }
 export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];

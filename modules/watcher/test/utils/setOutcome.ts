@@ -26,12 +26,12 @@ export const waitForSetOutcome = async (
   // Get all outcome set and challenge updated events
   const events = ((await Promise.all([
     ...appIds.map((id) =>
-      watcher.waitFor(WatcherEvents.ChallengeOutcomeSetEvent, EVENT_TIMEOUT, (data) =>
+      watcher.waitFor(WatcherEvents.CHALLENGE_OUTCOME_SET_EVENT, EVENT_TIMEOUT, (data) =>
         matchesId(data, id),
       ),
     ),
     ...appIds.map((id) =>
-      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, (data) =>
+      watcher.waitFor(WatcherEvents.CHALLENGE_UPDATED_EVENT, EVENT_TIMEOUT, (data) =>
         matchesId(data, id),
       ),
     ),
