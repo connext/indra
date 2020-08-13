@@ -65,7 +65,7 @@ then
   echo "Starting test-watcher"
 
   # use ts-mocha here instead?
-  # mocha --slow 1000 --timeout 180000 --check-leaks --exit $opts $bundle
+  # ts-mocha $opts --slow 1000 --timeout 180000 --check-leaks --watch-files src/**/*.ts src/index.ts
 
   prev_checksum=""
   while true

@@ -33,7 +33,7 @@ import {
   getTestLoggers,
 } from "../util";
 
-// NOTE: only groups correct number of promises associated with a payment.
+// NOTE: group correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
 // or to ensure that the event payloads are correct.
 
@@ -382,6 +382,7 @@ describe(name, () => {
     // call transfers on interval
     const start = Date.now();
     const interval = setInterval(async () => {
+      log.warn("heartbeat thump thump thump");
       intervals += 1;
       if (intervals > MIN_TRANSFERS) {
         clearInterval(interval);

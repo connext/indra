@@ -11,8 +11,8 @@ import {
 
 const { AddressZero } = constants;
 
-const name = "Multiclient Transfers";
-const { timeElapsed } = getTestLoggers(name);
+const name = "Multiclient Pingpong";
+const { log, timeElapsed } = getTestLoggers(name);
 describe(name, () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
@@ -24,6 +24,8 @@ describe(name, () => {
     gateway = await createClient();
     indexerA = await createClient();
     indexerB = await createClient();
+    log.info(`Gateway ${gateway.publicIdentifier}`);
+    log.info(`Indexers A ${indexerA.publicIdentifier} | B ${indexerB.publicIdentifier}`);
     timeElapsed("beforeEach complete", start);
   });
 

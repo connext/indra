@@ -3,7 +3,7 @@
   "compilerOptions": {
     "declaration": false,
     "declarationMap": false,
-    "module": "ESNext",
+    "module": "commonjs",
     "outDir": "dist",
     "typeRoots": [
       "./node_modules/@types",

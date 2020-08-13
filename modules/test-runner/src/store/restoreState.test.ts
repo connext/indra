@@ -21,7 +21,7 @@ import {
   getTestLoggers,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
-} from "./util";
+} from "../util";
 
 const { AddressZero, Zero } = constants;
 
