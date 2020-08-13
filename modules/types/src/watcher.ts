@@ -107,7 +107,7 @@ export const WatcherEvents = {
 } as const;
 export type WatcherEvent = keyof typeof WatcherEvents;
 
-interface WatcherEventDataMap {
+export interface WatcherEventDataMap {
   [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
   [StateProgressedEvent]: StateProgressedEventData;
   [ChallengeProgressedEvent]: ChallengeProgressedEventData;

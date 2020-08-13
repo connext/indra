@@ -13,7 +13,7 @@ import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
 import { StateChannelJSON } from "./state";
-import { WatcherEventData, WatcherEvent, WatcherEvents } from "./watcher";
+import { WatcherEventData, WatcherEvents, WatcherEventDataMap } from "./watcher";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type GraphTransfer = typeof ConditionalTransferTypes.GraphTransfer;
@@ -216,7 +216,7 @@ type SyncFailedEventData = {
   error: string;
 };
 
-interface EventPayloadMap {
+interface EventPayloadMap extends WatcherEventDataMap {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: ConditionalTransferCreatedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphBatchedTransfer
   >;
@@ -250,8 +250,8 @@ interface EventPayloadMap {
 
 ////////////////////////////////////////
 // Exports
+// @ts-ignore
 export const EventNames = {
-  ...WatcherEvents,
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
@@ -276,7 +276,7 @@ export const EventNames = {
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
 } as const;
-export type EventName = WatcherEvent & keyof typeof EventNames;
+export type EventName = keyof typeof EventNames | keyof typeof WatcherEvents;
 export type EventPayload = WatcherEventData &
   {
     [P in keyof EventPayloadMap]: EventPayloadMap[P];
