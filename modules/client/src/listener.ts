@@ -297,8 +297,12 @@ export class ConnextListener {
 
   private registerProtocolCallbacks = (): void => {
     Object.entries(this.protocolCallbacks).forEach(([event, callback]: any): any => {
-      this.channelProvider.off(event);
-      this.channelProvider.on(event, callback);
+      if (Object.keys(WatcherEvents).includes(event)) {
+        this.connext.watcher.on(event, callback);
+      } else {
+        this.channelProvider.off(event);
+        this.channelProvider.on(event, callback);
+      }
     });
   };
 
