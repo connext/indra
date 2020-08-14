@@ -32,8 +32,8 @@
     "transpile": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/types": "7.2.1",
-    "@connext/utils": "7.2.1",
+    "@connext/types": "7.2.2",
+    "@connext/utils": "7.2.2",
     "@nomiclabs/buidler": "1.4.3",
     "@openzeppelin/contracts": "3.0.2",
     "ethers": "5.0.8",
