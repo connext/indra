@@ -47,26 +47,16 @@ wait_for "nats" "$INDRA_NATS_URL"
 
 bundle=dist/tests.bundle.js
 
-if [[ ! -f "$bundle" ]]
-then webpack --config ops/webpack.config.js
-fi
-
 if [[ "$NODE_ENV" == "production" ]]
 then opts="--forbid-only"
 else opts="--bail"
 fi
 
-build_tests="webpack --config ops/webpack.config.js"
-run_tests="mocha --slow 1000 --timeout 180000 --check-leaks --exit $opts $bundle"
-test_pid=""
-
 if [[ "$cmd" == "watch" ]]
 then
   echo "Starting test-watcher"
 
-  # use ts-mocha here instead?
-  # ts-mocha $opts --slow 1000 --timeout 180000 --check-leaks --watch-files src/**/*.ts src/index.ts
-
+  test_pid=""
   prev_checksum=""
   while true
   do
@@ -75,30 +65,30 @@ then
     then
       echo
       echo "Changes detected!"
+
       if [[ -n "$test_pid" ]]
       then
         echo "Stopping previous test run"
         kill $test_pid 2> /dev/null
+        sleep 2 # give prev tests a chance to shut down gracefully
       fi
-      echo "Rebuilding tests.."
-      eval "$build_tests"
-      echo
-      if [[ "$?" != 0 ]]
-      then
-        echo "Tests did not build successfully! Waiting for changes.."
-        prev_checksum=$checksum
-      else
-        echo "Tests built successfully! Running tests..."
-        eval "$run_tests &"
-        test_pid=$!
-        prev_checksum=$checksum
-      fi
+
+      echo "Re-running tests..."
+      ts-mocha $opts --slow 1000 --timeout 180000 --check-leaks --exit src/index.ts &
+      test_pid=$!
+      prev_checksum=$checksum
+
     # If no changes, do nothing
     else sleep 2
     fi
   done
 
 else
+
+  if [[ ! -f "$bundle" ]]
+  then webpack --config ops/webpack.config.js
+  fi
+
   echo "Starting test-runner"
-  eval "$run_tests"
+  mocha $opts --slow 1000 --timeout 180000 --check-leaks --exit $bundle
 fi
