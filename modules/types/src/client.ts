@@ -17,9 +17,11 @@ import { ChallengeInitiatedResponse } from "./watcher";
 /////////////////////////////////
 
 // channelProvider / signer are both optional but one of them needs to be provided
+// ethProvider and ethProviderUrl are both optional but one of them needs to be provided
 export interface ClientOptions {
   channelProvider?: IChannelProvider;
-  ethProviderUrl: string;
+  ethProvider?: providers.JsonRpcProvider;
+  ethProviderUrl?: string;
   chainId?: number;
   signer?: string | IChannelSigner;
   store?: IStoreService;
