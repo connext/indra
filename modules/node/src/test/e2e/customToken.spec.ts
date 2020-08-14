@@ -37,8 +37,9 @@ describe.skip("Custom token", () => {
     tokenContract = await factory.deploy("Test", "TST");
     expect(tokenContract.address).to.be.ok;
 
+    const chainId = env.defaultChain;
     configService = new MockConfigService({
-      extraSupportedTokens: [tokenContract.address],
+      extraSupportedTokens: { [chainId]: [tokenContract.address] },
     });
 
     moduleFixture = await Test.createTestingModule({
@@ -65,7 +66,7 @@ describe.skip("Custom token", () => {
     const balance: BigNumber = await tokenContract.balanceOf(nodeSignerAddress);
     expect(balance.gt(0)).to.be.true;
 
-    const decimals = await configService.getTokenDecimals();
+    const decimals = await configService.getTokenDecimals(chainId);
     expect(decimals.toString()).to.eq("9");
     const supportedTokens = configService.getSupportedTokens();
     expect(supportedTokens).to.include(tokenContract.address);
@@ -83,9 +84,10 @@ describe.skip("Custom token", () => {
   });
 
   it("should collateralize a client with a 9 decimal token", async () => {
+    const chainId = configService.getSupportedChains()[0];
     const clientA = await connect({
       store: getMemoryStore(),
-      signer: getRandomChannelSigner(configService.getEthProvider()),
+      signer: getRandomChannelSigner(configService.getEthProvider(chainId)),
       ethProviderUrl,
       messagingUrl: configService.getMessagingConfig().messagingUrl[0],
       nodeUrl: env.nodeUrl,

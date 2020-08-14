@@ -18,7 +18,7 @@
     "clean": "rm -rf ./dist"
   },
   "devDependencies": {
-    "@connext/contracts": "3.4.3",
+    "@connext/contracts": "3.4.5",
     "@connext/types": "7.2.1",
     "@connext/utils": "7.2.1",
     "@rollup/plugin-json": "4.1.0",

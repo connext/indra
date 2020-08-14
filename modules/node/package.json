@@ -17,7 +17,7 @@
   "dependencies": {
     "@connext/apps": "7.2.1",
     "@connext/cf-core": "7.2.1",
-    "@connext/contracts": "3.4.3",
+    "@connext/contracts": "3.4.5",
     "@connext/messaging": "7.2.1",
     "@connext/pure-evm-wasm": "0.1.4",
     "@connext/store": "7.2.1",
