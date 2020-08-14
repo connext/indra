@@ -11,9 +11,9 @@ import {
 
 const { AddressZero } = constants;
 
-const name = "Multiclient Pingpong";
+const name = "Multiclient Ping Pong";
 const { log, timeElapsed } = getTestLoggers(name);
-describe(name, () => {
+describe.skip(name, () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
@@ -36,7 +36,7 @@ describe(name, () => {
   });
 
   it("Clients transfer assets between themselves", async function () {
-    // how long the ping-pong transfers should last in s
+    // how long the ping-pong transfers should last in ms
     const DURATION = 15_000;
     const gatewayTransfers = {
       sent: 0,
