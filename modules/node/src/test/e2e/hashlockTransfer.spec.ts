@@ -53,7 +53,6 @@ const sendHashlockTransfer = async (
     recipient: receiver.publicIdentifier,
   });
   const receiverEvent = await receiverPromise;
-  console.log("receiverEvent: ", receiverEvent);
   const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
   const expectedVals = {
     amount: transfer.amount,
@@ -95,6 +94,15 @@ describe("Hashlock Transfer", () => {
 
   before(async () => {
     const start = Date.now();
+    const currBlock = await ethProvider.getBlockNumber();
+    if (currBlock > TIMEOUT_BUFFER) {
+      // no adjustment needed, return
+      return;
+    }
+    for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
+      await ethProvider.send("evm_mine", []);
+    }
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -111,10 +119,8 @@ describe("Hashlock Transfer", () => {
     log.info(`ethProviderUrl: ${ethProviderUrl}`);
 
     senderClient = await getClient("A");
-    console.log("senderClient: ", senderClient.publicIdentifier);
 
     receiverClient = await getClient("B");
-    console.log("receiverClient: ", receiverClient.publicIdentifier);
 
     logTime(log, start, "Done setting up test env");
     transferService = moduleFixture.get<TransferService>(TransferService);
@@ -132,19 +138,18 @@ describe("Hashlock Transfer", () => {
   it.only("cleans up expired hashlock transfers ", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
     const preImage = getRandomBytes32();
-    console.log("preImage: ", preImage);
     const timelock = (101).toString();
     const opts = { ...transfer, preImage, timelock };
 
     const { paymentId } = await sendHashlockTransfer(senderClient, receiverClient, opts);
 
-    console.log("paymentId: ", paymentId);
     expect(paymentId).to.be.ok;
 
-    const appsBeforePrune = await senderClient.getAppInstances();
-    console.log("appsBeforePrune: ", appsBeforePrune);
+    const appsBeforePrune = await receiverClient.getAppInstances();
+    expect(appsBeforePrune.length).to.eq(1);
     await transferService.pruneChannels();
-    const appsAfterPrune = await senderClient.getAppInstances();
-    console.log("appsAfterPrune: ", appsAfterPrune);
+    const appsAfterPrune = await receiverClient.getAppInstances();
+    console.log("receiverClientappsAfterPrune: ", appsAfterPrune[0]);
+    expect(appsAfterPrune.length).to.eq(0);
   });
 });

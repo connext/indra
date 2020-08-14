@@ -102,6 +102,16 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .getMany();
   }
 
+  async findInstalledAppsAcrossChannelsByAppDefinition(
+    appDefinition: string,
+  ): Promise<AppInstance[]> {
+    return this.createQueryBuilder("app_instances")
+      .leftJoinAndSelect("app_instances.channel", "channel")
+      .where("app_instances.type = :type", { type: AppType.INSTANCE })
+      .andWhere("app_instances.appDefinition = :appDefinition", { appDefinition })
+      .getMany();
+  }
+
   async findTransferAppsByAppDefinitionPaymentIdAndType(
     paymentId: string,
     appDefinition: string,

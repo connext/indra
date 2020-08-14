@@ -44,6 +44,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const { Zero, HashZero } = constants;
 const { parseUnits } = utils;
@@ -106,6 +107,7 @@ export class TransferService {
     private readonly configService: ConfigService,
     private readonly transferRepository: TransferRepository,
     private readonly channelRepository: ChannelRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("TransferService");
   }
@@ -114,6 +116,10 @@ export class TransferService {
   @Interval(3600_000)
   async pruneChannels() {
     const channels = await this.channelRepository.findAll();
+    const addresses = this.configService.getAddressBook();
+    Object.entries(addresses).map((addrs) => addrs);
+    const hashLockApps = await this.appInstanceRepository.findInstalledAppsByAppDefinition();
+    console.log("channels: ", channels);
     for (const channel of channels) {
       await this.pruneExpiredApps(channel);
     }
@@ -126,10 +132,11 @@ export class TransferService {
     );
     const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
     const expiredApps = channel.appInstances.filter(([, app]) => {
-      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
+      return app.latestState?.expiry && toBN(app.latestState.expiry).lte(current);
     });
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
     for (const [, app] of expiredApps) {
+      console.log("app: ", app);
       try {
         // Uninstall all expired apps without taking action
         await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
@@ -396,8 +403,9 @@ export class TransferService {
 
     // special case for expiry in initial state, receiver app must always expire first
     if ((initialState as HashLockTransferAppState).expiry) {
-      (initialState as HashLockTransferAppState).expiry =
-        (initialState as HashLockTransferAppState).expiry.sub(TIMEOUT_BUFFER);
+      (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
+        TIMEOUT_BUFFER,
+      );
     }
 
     if ((initialState as GraphBatchedTransferAppState).swapRate) {
@@ -531,18 +539,16 @@ export class TransferService {
   // sender comes back online, node can unlock transfer
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
-    const senderTransferApps =
-      await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
-        senderIdentifier,
-        this.cfCoreService.cfCore.signerAddress,
-      );
+    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+      senderIdentifier,
+      this.cfCoreService.cfCore.signerAddress,
+    );
 
     for (const senderApp of senderTransferApps) {
-      const correspondingReceiverApp =
-        await this.transferRepository.findTransferAppByPaymentIdAndSender(
-          senderApp.meta.paymentId,
-          this.cfCoreService.cfCore.signerAddress,
-        );
+      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+        senderApp.meta.paymentId,
+        this.cfCoreService.cfCore.signerAddress,
+      );
 
       if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
         continue;
