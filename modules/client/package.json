@@ -20,7 +20,7 @@
     "@connext/cf-core": "7.2.1",
     "@connext/channel-provider": "7.2.1",
     "@connext/utils": "7.2.1",
-    "@connext/contracts": "3.4.3",
+    "@connext/contracts": "3.4.5",
     "@connext/messaging": "7.2.1",
     "@connext/store": "7.2.1",
     "@connext/types": "7.2.1",
