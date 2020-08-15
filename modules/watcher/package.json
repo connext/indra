@@ -1,6 +1,6 @@
 {
   "name": "@connext/watcher",
-  "version": "7.3.0",
+  "version": "7.3.1",
   "description": "Responds to disputes on behalf of a channel participant.",
   "main": "dist/index.js",
   "types": "dist/src/index.d.ts",
@@ -15,11 +15,11 @@
     "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --exit --slow 1000 --timeout 150000 --bail"
   },
   "dependencies": {
-    "@connext/apps": "7.3.0",
-    "@connext/contracts": "3.4.5",
-    "@connext/store": "7.3.0",
-    "@connext/types": "7.3.0",
-    "@connext/utils": "7.3.0",
+    "@connext/apps": "7.3.1",
+    "@connext/contracts": "3.5.0",
+    "@connext/store": "7.3.1",
+    "@connext/types": "7.3.1",
+    "@connext/utils": "7.3.1",
     "@types/chai-as-promised": "7.1.3",
     "@types/chai-subset": "1.3.3",
     "@types/mocha": "8.0.1",
