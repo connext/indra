@@ -1,7 +1,7 @@
 import { MinimalTransaction, TransactionReceipt, StateChannelJSON } from "@connext/types";
-import { stringify } from "@connext/utils";
+import { getGasPrice, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { providers } from "ethers";
+import { providers, BigNumber } from "ethers";
 import PriorityQueue from "p-queue";
 
 import { Channel } from "../channel/channel.entity";
@@ -12,6 +12,7 @@ import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 
+const MIN_GAS_LIMIT = BigNumber.from(500_000);
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const INVALID_NONCE = "Invalid nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
@@ -115,21 +116,27 @@ export class OnchainTransactionService implements OnModuleInit {
     json: StateChannelJSON,
   ): Promise<TransactionReceipt> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
-    await this.queues
-      .get(channel.chainId)
-      .add(() => this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel));
-    const tx = await this.onchainTransactionRepository.findLatestTransactionToChannel(
-      channel.multisigAddress,
-      TransactionReason.MULTISIG_DEPLOY,
-    );
+    const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
+      this.queues.get(channel.chainId).add(() => {
+        this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
+    // make sure to wait for the transaction to be completed here, since
+    // the multisig deployment is followed by a call to `getOwners`.
+    // and since the cf-core transaction service expects the tx to be
+    // mined
+    await tx.completed();
+    const stored = await this.onchainTransactionRepository.findByHash(tx.hash);
     return {
-      to: tx.to,
-      from: tx.from,
-      gasUsed: tx.gasUsed,
-      logsBloom: tx.logsBloom,
-      blockHash: tx.blockHash,
-      transactionHash: tx.hash,
-      blockNumber: tx.blockNumber,
+      to: stored.to,
+      from: stored.from,
+      gasUsed: stored.gasUsed,
+      logsBloom: stored.logsBloom,
+      blockHash: stored.blockHash,
+      transactionHash: stored.hash,
+      blockNumber: stored.blockNumber,
     } as TransactionReceipt;
   }
 
@@ -153,14 +160,21 @@ export class OnchainTransactionService implements OnModuleInit {
         const chainNonce = await wallet.getTransactionCount();
         const memoryNonce = await this.nonces.get(channel.chainId);
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
-        const req = await wallet.populateTransaction({ ...transaction, nonce });
-        tx = await wallet.sendTransaction(req);
+        const populatedTx = await wallet.populateTransaction({ ...transaction, nonce });
+        tx = await wallet.sendTransaction({
+          ...populatedTx,
+          gasLimit: BigNumber.from(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
+            ? MIN_GAS_LIMIT
+            : populatedTx.gasLimit,
+          gasPrice: getGasPrice(wallet.provider, channel.chainId),
+        });
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
         // add fields from tx response
         await this.onchainTransactionRepository.addResponse(tx, reason, channel, appIdentityHash);
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
+        const start = Date.now();
         // eslint-disable-next-line no-loop-func
         const completed: Promise<void> = new Promise(async (resolve, reject) => {
           try {
@@ -173,7 +187,9 @@ export class OnchainTransactionService implements OnModuleInit {
         });
         tx.wait().then(async (receipt) => {
           this.log.info(
-            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${channel.chainId}: ${receipt.transactionHash}`,
+            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${
+              channel.chainId
+            }: ${receipt.transactionHash} in ${Date.now() - start}ms`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
           this.log.error(`added receipt, status should be success`);

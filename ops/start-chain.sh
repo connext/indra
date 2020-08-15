@@ -13,7 +13,6 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 
 chain_id="${1:-1337}"
 
-mode="${INDRA_CHAIN_MODE:-dev}"
 port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
@@ -30,7 +29,7 @@ chain_data="$root/.chaindata/$chain_id"
 mkdir -p $chain_data
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ "$mode" == "prod" ]]
+if [[ "$INDRA_ENV" == "prod" ]]
 then
   git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
   if [[ -n "$git_tag" ]]
@@ -45,7 +44,7 @@ else
   opts="--entrypoint bash --mount type=bind,source=$root,target=/root"
 fi
 
-echo "Running ${mode}-mode image for testnet ${chain_id}: ${image}"
+echo "Running ${INDRA_ENV}-mode image for testnet ${chain_id}: ${image}"
 
 docker run $opts \
   --detach \

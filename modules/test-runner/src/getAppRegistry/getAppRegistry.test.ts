@@ -1,14 +1,14 @@
-import { addressBook } from "@connext/contracts";
-import { DefaultApp, IConnextClient, AppRegistry, SupportedApplicationNames } from "@connext/types";
+import { DefaultApp, IConnextClient, AppRegistry } from "@connext/types";
 
-import { expect } from "../util";
+import { env, expect } from "../util";
 import { createClient } from "../util/client";
 
 const expectedNetwork = {
   chainId: 1337,
   name: "ganache",
 };
-const expectedAddresses = addressBook[expectedNetwork.chainId];
+const expectedAddresses = env.contractAddresses[env.defaultChain];
+
 
 const verifyApp = (app: DefaultApp): void => {
   expect(app.chainId).to.be.equal(expectedNetwork.chainId);
@@ -26,7 +26,6 @@ describe("Get App Registry", () => {
     client = await createClient();
     expect(client.multisigAddress).to.exist;
     const appRegistry = (await client.getAppRegistry()) as AppRegistry;
-    expect(appRegistry.length).to.equal(Object.keys(SupportedApplicationNames).length);
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
 

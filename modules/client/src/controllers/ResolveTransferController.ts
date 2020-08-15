@@ -1,16 +1,16 @@
 import {
+  AppInstanceJson,
   ConditionalTransferTypes,
   EventNames,
+  GenericConditionalTransferAppState,
+  GraphBatchedTransferAppAction,
+  GraphSignedTransferAppAction,
   HashLockTransferAppAction,
   PublicParams,
   PublicResults,
-  getTransferTypeFromAppName,
-  GenericConditionalTransferAppState,
-  SimpleSignedTransferAppAction,
+  RequireOnlineApps,
   SimpleLinkedTransferAppAction,
-  GraphBatchedTransferAppAction,
-  AppInstanceJson,
-  GraphSignedTransferAppAction,
+  SimpleSignedTransferAppAction,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
@@ -77,15 +77,16 @@ export class ResolveTransferController extends AbstractController {
       amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
         .coinTransfers[0].amount;
       assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
-      meta = existingReceiverApp.meta;
+      meta = existingReceiverApp.meta || {};
+
+    // Receiver app is not installed
     } else {
       try {
-        // App is not installed
-        const transferType = getTransferTypeFromAppName(conditionType);
-        // See note about fresh data
+        const requireOnline = RequireOnlineApps.includes(conditionType); // || meta.requireOnline?
+        // See NOTE about fresh data
         existingReceiverApp = findApp(await this.connext.getAppInstances());
         if (!existingReceiverApp) {
-          if (transferType === "RequireOnline") {
+          if (requireOnline) {
             throw new Error(
               `Receiver app has not been installed, channel: ${stringify(
                 await this.connext.getStateChannel(),
@@ -106,7 +107,7 @@ export class ResolveTransferController extends AbstractController {
             installRes.meta.recipient
           ) {
             // TODO: this is hacky
-            this.log.error(`Returning early from install, unlock will happen through listener`);
+            this.log.warn(`Returning early from install, unlock will happen through listener`);
             // @ts-ignore
             return;
           }

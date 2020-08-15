@@ -82,7 +82,7 @@ export class WithdrawalController extends AbstractController {
       const uninstallEvent: any = await Promise.race([
         this.listener.waitFor(
           EventNames.UNINSTALL_EVENT,
-          CF_METHOD_TIMEOUT * 3,
+          CF_METHOD_TIMEOUT * 5,
           (data) => data.uninstalledApp.identityHash === withdrawAppId,
         ),
         new Promise((resolve) =>

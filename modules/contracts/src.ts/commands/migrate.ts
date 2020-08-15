@@ -1,3 +1,4 @@
+import { getEthProvider } from "@connext/utils";
 import { Wallet, constants, providers, utils } from "ethers";
 
 import { Argv } from "yargs";
@@ -5,7 +6,6 @@ import { Argv } from "yargs";
 import { getAddressBook } from "../address-book";
 import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
-import { getProvider } from "../utils";
 
 const { EtherSymbol, Zero } = constants;
 const { formatEther } = utils;
@@ -41,10 +41,14 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   const providerUrl = (wallet.provider as providers.JsonRpcProvider).connection.url;
 
   console.log(`\nPreparing to migrate contracts to provider ${providerUrl} w chainId: ${chainId}`);
-  console.log(`Deployer address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`);
+  console.log(
+    `Deployer address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`,
+  );
 
   if (balance.eq(Zero)) {
-    throw new Error(`Account ${wallet.address} has zero balance on chain ${chainId}, aborting contract migration`);
+    throw new Error(
+      `Account ${wallet.address} has zero balance on chain ${chainId}, aborting contract migration`,
+    );
   }
 
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
@@ -84,8 +88,11 @@ export const migrateCommand = {
       .option("p", cliOpts.ethProvider);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
+    console.log(
+      `Migration started: ethprovider - ${argv.ethProvider} | addressBook - ${argv.addressBook}`,
+    );
     await migrate(
-      Wallet.fromMnemonic(argv.mnemonic).connect(getProvider(argv.ethProvider)),
+      Wallet.fromMnemonic(argv.mnemonic).connect(getEthProvider(argv.ethProvider)),
       argv.addressBook,
     );
   },
