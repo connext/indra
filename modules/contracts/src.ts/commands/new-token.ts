@@ -10,6 +10,10 @@ const initialSupply = utils.parseEther("100000000");
 
 const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean) => {
   const chainId = process?.env?.REAL_CHAIN_ID || (await wallet.provider.getNetwork()).chainId;
+  if (chainId === 1 && !force) {
+    console.log(`Will not deploy new token to mainnet`);
+    return;
+  }
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
   const savedAddress = addressBook.getEntry("Token").address;
   if (force || !(await isContractDeployed("Token", savedAddress, addressBook, wallet.provider))) {
@@ -20,15 +24,12 @@ const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean)
       { name: "version", value: "1.0" },
       { name: "chainId", value: chainId.toString() },
     ];
-    const token = await deployContract(
-      "Token",
-      constructorArgs,
-      wallet,
-      addressBook,
-    );
+    const token = await deployContract("Token", constructorArgs, wallet, addressBook);
     console.log(`Success!`);
     await token.ownerMint(wallet.address, initialSupply);
-    console.log(`Minted ${utils.formatEther(initialSupply)} tokens & gave them all to ${wallet.address}`);
+    console.log(
+      `Minted ${utils.formatEther(initialSupply)} tokens & gave them all to ${wallet.address}`,
+    );
   } else {
     console.log(`Token is up to date, no action required`);
     console.log(`Address: ${savedAddress}`);
