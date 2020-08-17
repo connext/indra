@@ -10,51 +10,55 @@ import { getRandomChannelSigner, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
 import {
+  addRebalanceProfile,
   createClient,
   ETH_AMOUNT_SM,
-  ethProviderUrl,
   ethProvider,
+  ethProviderUrl,
   expect,
   fundChannel,
   getNatsClient,
+  getTestLoggers,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
 } from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 const { AddressZero, Zero } = constants;
 
-describe("Restore State", () => {
+const name = "Restore State";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
-  let tokenAddress: string;
   let nodeSignerAddress: string;
   let signerA: IChannelSigner;
+  let start: number;
   let store: IStoreService;
+  let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     const nats = getNatsClient();
     signerA = getRandomChannelSigner(ethProviderUrl);
     store = getLocalStore();
     clientA = await createClient({ signer: signerA, store, id: "A" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
-
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
       collateralizeThreshold: toBN("0"),
       target: toBN("0"),
       reclaimThreshold: toBN("0"),
     };
-
     // set rebalancing profile to reclaim collateral
     await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
     await clientA.messaging.disconnect();
   });
 
-  it("happy case: client can delete its store and restore from a remote backup", async () => {
+  it("client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
 
@@ -100,7 +104,7 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 
-  it("happy case: client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
+  it("client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
     const transferAmount = TOKEN_AMOUNT_SM;
     const assetId = tokenAddress;
     const recipient = clientA.publicIdentifier;

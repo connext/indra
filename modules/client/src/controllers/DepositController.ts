@@ -35,12 +35,11 @@ export class DepositController extends AbstractController {
       : CONVENTION_FOR_ETH_ASSET_ID;
     this.throwIfAny(getAddressError(assetId));
     // NOTE: when the `walletDeposit` is not used, these parameters do not have to be validated
-    const tokenAddress = getAddressFromAssetId(assetId);
-    this.log.info(`Depositing ${amount.toString()} of ${tokenAddress} into channel`);
+    this.log.info(`Depositing ${amount.toString()} of ${assetId} into channel`);
     const startingBalance =
-      tokenAddress === AddressZero
+      assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).balanceOf(
+        : await new Contract(assetId, ERC20.abi, this.ethProvider).balanceOf(
             this.connext.signerAddress,
           );
     this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
@@ -48,7 +47,7 @@ export class DepositController extends AbstractController {
 
     const txHash = await this.connext.channelProvider.walletDeposit({
       amount: amount.toString(),
-      assetId: tokenAddress,
+      assetId,
     });
     const transaction = await this.ethProvider.getTransaction(txHash);
     const completed: Promise<PublicResults.RescindDepositRights> = new Promise(
@@ -57,7 +56,7 @@ export class DepositController extends AbstractController {
           this.log.debug(`Starting deposit`);
           this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
             amount: amount,
-            assetId: tokenAddress,
+            assetId,
             appIdentityHash,
             hash: txHash,
           });
@@ -67,14 +66,14 @@ export class DepositController extends AbstractController {
           this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
             hash: txHash,
             amount: amount,
-            assetId: tokenAddress,
+            assetId,
           } as EventPayloads.DepositConfirmed);
           this.log.info(`deposit complete for assetId ${assetId}: ${JSON.stringify(res)}`);
           resolve(res);
         } catch (e) {
           this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
             amount: amount,
-            assetId: tokenAddress,
+            assetId,
             error: e.stack || e.message,
           } as EventPayloads.DepositFailed);
           await this.rescindDepositRights({ appIdentityHash, assetId });
@@ -96,8 +95,7 @@ export class DepositController extends AbstractController {
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
     this.throwIfAny(getAddressError(assetId));
-    const tokenAddress = getAddressFromAssetId(assetId);
-    const depositApp = await this.getDepositApp({ assetId: tokenAddress });
+    const depositApp = await this.getDepositApp({ assetId });
 
     if (!depositApp) {
       this.log.debug(`No deposit app installed for ${assetId}. Installing.`);
@@ -159,12 +157,11 @@ export class DepositController extends AbstractController {
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
     this.throwIfAny(getAddressError(assetId));
-    const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
-    const app = await this.getDepositApp({ assetId: tokenAddress });
+    const app = await this.getDepositApp({ assetId });
     if (!app) {
       this.log.debug(`No deposit app found for assset: ${assetId}`);
-      const freeBalance = await this.connext.getFreeBalance(tokenAddress);
+      const freeBalance = await this.connext.getFreeBalance(assetId);
       this.log.info(`Successfully rescinded deposit rights for ${assetId}`);
       return { freeBalance };
     }
@@ -172,7 +169,7 @@ export class DepositController extends AbstractController {
     this.log.debug(`Uninstalling ${app.identityHash}`);
     await this.connext.uninstallApp(app.identityHash);
     this.log.debug(`Uninstalled deposit app`);
-    const freeBalance = await this.connext.getFreeBalance(tokenAddress);
+    const freeBalance = await this.connext.getFreeBalance(assetId);
     const result: PublicResults.RescindDepositRights = { freeBalance };
     this.log.info(`rescindDepositRights for assetId ${assetId} complete ${JSON.stringify(result)}`);
     return result;
@@ -203,7 +200,6 @@ export class DepositController extends AbstractController {
   ////// PRIVATE METHODS
 
   private proposeDepositInstall = async (assetId: string): Promise<string> => {
-    const tokenAddress = getAddressFromAssetId(assetId);
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(
@@ -214,7 +210,7 @@ export class DepositController extends AbstractController {
 
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
+      startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(assetId);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
@@ -228,9 +224,9 @@ export class DepositController extends AbstractController {
 
     // generate starting multisig balance
     const startingMultisigBalance =
-      tokenAddress === AddressZero
+      assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).balanceOf(
+        : await new Contract(assetId, ERC20.abi, this.ethProvider).balanceOf(
             this.connext.multisigAddress,
           );
 
@@ -246,7 +242,7 @@ export class DepositController extends AbstractController {
         },
       ],
       multisigAddress: this.connext.multisigAddress,
-      assetId: tokenAddress,
+      assetId,
       startingTotalAmountWithdrawn,
       startingMultisigBalance,
     };

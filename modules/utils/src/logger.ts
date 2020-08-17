@@ -1,6 +1,6 @@
 import { ILogger, ILoggerService } from "@connext/types";
 
-export const logTime = (log: ILogger, start: number, msg: string) => {
+export const logTime = (log: ILogger, start: number, msg: string): void => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
   if (diff < 2) {

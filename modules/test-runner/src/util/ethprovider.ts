@@ -1,4 +1,5 @@
 import { ERC20 } from "@connext/contracts";
+import { getAddressFromAssetId } from "@connext/utils";
 import { BigNumber, BigNumberish, Contract, Wallet, providers, constants, utils } from "ethers";
 
 import { env } from "./env";
@@ -32,21 +33,6 @@ export const fundEthWallet = async (chainId: number = env.defaultChain) => {
   return;
 };
 
-/**
- * EVM snapshot, returns hex string of snapshot ID.
- */
-export const takeEVMSnapshot = async (): Promise<string> => {
-  const res = await ethProvider.send("evm_snapshot", []);
-  return res;
-};
-
-export const revertEVMSnapshot = async (snapshotId: string): Promise<void> => {
-  const res = await ethProvider.send("evm_revert", [snapshotId]);
-  if (res !== true) {
-    throw new Error(`evm_revert failed, res: ${res}`);
-  }
-};
-
 export const sendOnchainValue = async (
   to: string,
   value: BigNumberish,
@@ -66,7 +52,7 @@ export const sendOnchainValue = async (
         await tx.wait();
         return;
       } else {
-        const tokenContract = new Contract(assetId, ERC20.abi, ethWallet);
+        const tokenContract = new Contract(getAddressFromAssetId(assetId), ERC20.abi, ethWallet);
         const tx = await tokenContract.transfer(to, value, { nonce });
         await tx.wait();
         return;
@@ -93,7 +79,7 @@ export const getOnchainBalance = async (
     }
   } else {
     try {
-      const tokenContract = new Contract(assetId, ERC20.abi, ethProvider);
+      const tokenContract = new Contract(getAddressFromAssetId(assetId), ERC20.abi, ethProvider);
       result = await tokenContract.balanceOf(address);
     } catch (e) {
       throw new Error(`Error getting token balance for ${address}: ${e.toString()}`);
