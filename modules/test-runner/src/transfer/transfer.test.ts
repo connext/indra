@@ -2,30 +2,36 @@ import { IConnextClient, EventNames } from "@connext/types";
 import { BigNumber, constants } from "ethers";
 
 import {
-  createClient,
   ETH_AMOUNT_SM,
-  fundChannel,
-  requestCollateral,
   TOKEN_AMOUNT_SM,
+  createClient,
   expect,
+  fundChannel,
+  getTestLoggers,
+  requestCollateral,
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 
 const { AddressZero } = constants;
 
-describe("Full Flow: Transfer", () => {
+const name = "Multiple Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let clientC: IConnextClient;
   let clientD: IConnextClient;
+  let start: number;
   let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
     clientC = await createClient({ id: "C" });
     clientD = await createClient({ id: "D" });
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -45,14 +51,14 @@ describe("Full Flow: Transfer", () => {
     await asyncTransferAsset(clientA, clientD, ETH_AMOUNT_SM, AddressZero);
   });
 
-  it("User transfers tokens to multiple clients", async () => {
+  it("User transfers tokens to multiple clients (case-insensitive assetId)", async () => {
     await fundChannel(clientA, TOKEN_AMOUNT_SM.mul(4), tokenAddress);
     await requestCollateral(clientB, tokenAddress);
     await requestCollateral(clientC, tokenAddress);
     await requestCollateral(clientD, tokenAddress);
-    await asyncTransferAsset(clientA, clientB, TOKEN_AMOUNT_SM, tokenAddress);
-    await asyncTransferAsset(clientA, clientC, TOKEN_AMOUNT_SM, tokenAddress);
-    await asyncTransferAsset(clientA, clientD, TOKEN_AMOUNT_SM, tokenAddress);
+    await asyncTransferAsset(clientA, clientB, TOKEN_AMOUNT_SM, tokenAddress.toUpperCase());
+    await asyncTransferAsset(clientA, clientC, TOKEN_AMOUNT_SM, tokenAddress.toUpperCase());
+    await asyncTransferAsset(clientA, clientD, TOKEN_AMOUNT_SM, tokenAddress.toUpperCase());
   });
 
   it("User receives multiple ETH transfers ", async () => {

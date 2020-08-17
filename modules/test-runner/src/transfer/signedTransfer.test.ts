@@ -1,23 +1,23 @@
 /* global before */
 import {
-  ConditionalTransferTypes,
-  EventNames,
-  NodeResponses,
-  IConnextClient,
-  PublicParams,
-  SignedTransferStatus,
-  EventPayloads,
-  PrivateKey,
   Address,
-  Receipt,
+  ConditionalTransferTypes,
   EIP712Domain,
+  EventNames,
+  EventPayloads,
+  IConnextClient,
+  NodeResponses,
+  PrivateKey,
+  PublicParams,
+  Receipt,
+  SignedTransferStatus,
 } from "@connext/types";
 import {
-  getTestEIP712Domain,
-  getRandomPrivateKey,
-  signReceiptMessage,
-  getRandomBytes32,
   getChainId,
+  getRandomBytes32,
+  getRandomPrivateKey,
+  getTestEIP712Domain,
+  signReceiptMessage,
 } from "@connext/utils";
 import { providers, constants, utils } from "ethers";
 
@@ -28,22 +28,26 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   TOKEN_AMOUNT,
 } from "../util";
 
 const { AddressZero } = constants;
 const { hexlify, randomBytes } = utils;
 
-describe("Signed Transfers", () => {
-  let privateKeyA: PrivateKey;
-  let clientA: IConnextClient;
-  let privateKeyB: PrivateKey;
-  let clientB: IConnextClient;
-  let receipt: Receipt;
+const name = "Signed Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let chainId: number;
+  let clientA: IConnextClient;
+  let clientB: IConnextClient;
   let domainSeparator: EIP712Domain;
-  let tokenAddress: Address;
+  let privateKeyA: PrivateKey;
+  let privateKeyB: PrivateKey;
   let provider: providers.JsonRpcProvider;
+  let receipt: Receipt;
+  let start: number;
+  let tokenAddress: Address;
 
   before(async () => {
     provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
@@ -145,6 +149,7 @@ describe("Signed Transfers", () => {
   };
 
   beforeEach(async () => {
+    start = Date.now();
     privateKeyA = getRandomPrivateKey();
     const paymentId = getRandomBytes32();
     const data = getRandomBytes32();
@@ -155,6 +160,7 @@ describe("Signed Transfers", () => {
     receipt = { paymentId, data };
     chainId = (await clientA.ethProvider.getNetwork()).chainId;
     domainSeparator = getTestEIP712Domain(chainId);
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -162,8 +168,8 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+  it("clientA signed transfers eth to clientB through node, clientB is online", async () => {
+    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await sendSignedTransfer(transfer);
@@ -190,8 +196,8 @@ describe("Signed Transfers", () => {
     expect(clientBPostTransferBal).to.eq(transfer.amount);
   });
 
-  it("happy case: clientA signed transfers tokens to clientB through node", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+  it("clientA signed transfers tokens to clientB through node", async () => {
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await sendSignedTransfer(transfer);
@@ -219,7 +225,7 @@ describe("Signed Transfers", () => {
   });
 
   it("gets a pending signed transfer by lock hash", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
@@ -250,7 +256,7 @@ describe("Signed Transfers", () => {
   });
 
   it("gets a completed signed transfer by lock hash", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
@@ -305,7 +311,7 @@ describe("Signed Transfers", () => {
   });
 
   it("cannot resolve a signed transfer if signature is wrong", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await sendSignedTransfer(transfer);
@@ -322,7 +328,7 @@ describe("Signed Transfers", () => {
   });
 
   it("if sender uninstalls, node should force uninstall receiver first", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const [senderAppId, receiverAppId] = await sendSignedTransfer(transfer);
@@ -344,7 +350,7 @@ describe("Signed Transfers", () => {
   });
 
   it("sender cannot uninstall before receiver", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const [senderAppId] = await sendSignedTransfer(transfer);
@@ -357,7 +363,7 @@ describe("Signed Transfers", () => {
   });
 
   it("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const signature = await signReceiptMessage(domainSeparator, receipt, privateKeyB);

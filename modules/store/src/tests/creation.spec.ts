@@ -25,7 +25,7 @@ const fileDir = "./.test-store";
 const testValue = "something";
 
 describe("Instantiation", () => {
-  describe("happy case: instantiate", () => {
+  describe("instantiate", () => {
     for (const type of storeTypes) {
       it(`should work for ${type}`, async () => {
         const store = await createStore(type as StoreTypes);
@@ -44,7 +44,7 @@ describe("Instantiation", () => {
     }
   });
 
-  describe("happy case: should be able to remove an item", async () => {
+  describe("should be able to remove an item", async () => {
     for (const type of storeTypes) {
       it(`should work for ${type}`, async () => {
         const store = await createStore(type as StoreTypes);
@@ -56,7 +56,7 @@ describe("Instantiation", () => {
     }
   });
 
-  it("happy case: memory storage should be able to support multiple stores", async () => {
+  it("memory storage should be able to support multiple stores", async () => {
     const store1 = await createStore(StoreTypes.Memory);
     await store1.setItem("test", "store1");
     const store2 = await createStore(StoreTypes.Memory);
@@ -68,7 +68,7 @@ describe("Instantiation", () => {
     await store1.clear();
   });
 
-  it("happy case: postgres storage should be able to create multiple stores with different prefixes", async () => {
+  it("postgres storage should be able to create multiple stores with different prefixes", async () => {
     const sharedSequelize = new Sequelize(postgresConnectionUri, { logging: false });
     const store1 = await createStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store1" });
     await store1.setItem("test", "store1");
@@ -81,7 +81,7 @@ describe("Instantiation", () => {
     await store1.clear();
   });
 
-  it("happy case: localStorage should include multiple keys", async () => {
+  it("localStorage should include multiple keys", async () => {
     const store = await createStore(StoreTypes.LocalStorage);
     const preInsert = await store.getEntries();
     await setAndGetMultiple(store, length);
@@ -90,7 +90,7 @@ describe("Instantiation", () => {
   });
 
   // TODO: fix test
-  it.skip("happy case: AsyncStorage should include a single key matching asyncStorageKey", async () => {
+  it.skip("AsyncStorage should include a single key matching asyncStorageKey", async () => {
     const store = await createStore(StoreTypes.AsyncStorage, { asyncStorageKey });
 
     await setAndGetMultiple(store, length);
@@ -101,14 +101,14 @@ describe("Instantiation", () => {
 
   // TODO: ask pedro about the spirit of this test, and if it still needs to
   // be included/if its still relevant
-  it.skip("happy case: FileStorage should include a single key matching asyncStorageKey", async () => {
+  it.skip("FileStorage should include a single key matching asyncStorageKey", async () => {
     const store = await createStore(StoreTypes.File, { asyncStorageKey });
     await setAndGetMultiple(store, length);
     await testAsyncStorageKey(store, asyncStorageKey);
     await store.clear();
   });
 
-  it("happy case: FileStorage should create a store directory after first request", async () => {
+  it("FileStorage should create a store directory after first request", async () => {
     const id = uuid();
     const isDirectoryBefore = await isDirectory(`${fileDir}/${id}`);
     expect(isDirectoryBefore).to.be.false;
@@ -122,7 +122,7 @@ describe("Instantiation", () => {
     await store.clear();
   });
 
-  it("happy case: FileStorage should create a single file for all keys inside directory", async () => {
+  it("FileStorage should create a single file for all keys inside directory", async () => {
     const store = await createStore(StoreTypes.File, { asyncStorageKey, fileDir });
     const key1 = uuid();
     const key2 = uuid();
@@ -137,7 +137,7 @@ describe("Instantiation", () => {
     await store.clear();
   });
 
-  it("happy case: FileStorage should create dirs with unique name", async () => {
+  it("FileStorage should create dirs with unique name", async () => {
     const fileDirA = `${fileDir}/somethingdifferent1`;
     const fileDirB = `${fileDir}/somethingdifferent2`;
     const storeA = await createStore(StoreTypes.File, {
@@ -164,7 +164,7 @@ describe("Instantiation", () => {
     await storeB.clear();
   });
 
-  describe("happy case: set & get the same path consecutively", async () => {
+  describe("set & get the same path consecutively", async () => {
     for (const type of storeTypes) {
       it(`${type} should work`, async () => {
         const store = await createStore(type as StoreTypes, { fileDir });
@@ -177,7 +177,7 @@ describe("Instantiation", () => {
     }
   });
 
-  describe("happy case: should join strings correctly", () => {
+  describe("should join strings correctly", () => {
     for (const type of storeTypes) {
       it(`${type} should work`, async () => {
         const store = await createStore(type as StoreTypes, { fileDir });

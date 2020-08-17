@@ -38,7 +38,8 @@ export const getSignerAddressFromPublicIdentifier = (
 };
 
 // makes sure all addresses are normalized
-export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(assetId);
+export const getAddressFromAssetId = (assetId: AssetId): Address =>
+  getAddress(assetId.toLowerCase());
 
 ////////////////////////////////////////
 // Generator

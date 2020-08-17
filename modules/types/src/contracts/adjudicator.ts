@@ -59,6 +59,7 @@ export type StateProgressedEventPayload = {
   timeout: BigNumber;
   turnTaker: Address; // eth addr
   signature: string; // of action taker
+  chainId: number;
 };
 
 // Emitted by the adjudicator contracts when fields in stored
@@ -70,6 +71,7 @@ export type ChallengeUpdatedEventPayload = {
   appStateHash: Bytes32; // latest app state
   versionNumber: BigNumber;
   finalizesAt: BigNumber;
+  chainId: number;
 };
 
 // events emitted by contracts

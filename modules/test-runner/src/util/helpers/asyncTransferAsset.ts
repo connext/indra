@@ -1,19 +1,25 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { ColorfulLogger, getRandomBytes32, stringify, delay } from "@connext/utils";
+import { getRandomBytes32, getAddressFromAssetId, stringify, delay } from "@connext/utils";
 import { BigNumber } from "ethers";
 
-import { env } from "../env";
-import { expect } from "../";
-import { ExistingBalancesAsyncTransfer } from "../types";
+import { expect } from "../assertions";
+import { getTestLoggers } from "../misc";
 
-const log = new ColorfulLogger("AsyncTransfer", 4);
+const { log } = getTestLoggers("AsyncTransfer");
 
-export async function asyncTransferAsset(
+interface ExistingBalancesAsyncTransfer {
+  freeBalanceClientA: BigNumber;
+  freeBalanceNodeA: BigNumber;
+  freeBalanceClientB: BigNumber;
+  freeBalanceNodeB: BigNumber;
+}
+
+export const asyncTransferAsset = async (
   clientA: IConnextClient,
   clientB: IConnextClient,
   transferAmount: BigNumber,
   assetId: Address,
-): Promise<ExistingBalancesAsyncTransfer> {
+): Promise<ExistingBalancesAsyncTransfer> => {
   const SENDER_INPUT_META = { hello: "world" };
   const nodeSignerAddress = clientA.nodeSignerAddress;
   const {
@@ -112,7 +118,7 @@ export async function asyncTransferAsset(
   const paymentB = await clientB.getLinkedTransfer(paymentId);
   expect(paymentA).to.deep.include({
     amount: transferAmount,
-    assetId,
+    assetId: getAddressFromAssetId(assetId),
     paymentId,
     receiverIdentifier: clientB.publicIdentifier,
     senderIdentifier: clientA.publicIdentifier,
@@ -121,7 +127,7 @@ export async function asyncTransferAsset(
       ...SENDER_INPUT_META,
       sender: clientA.publicIdentifier,
       paymentId,
-      senderAssetId: assetId,
+      senderAssetId: getAddressFromAssetId(assetId),
     },
   });
   expect(paymentA.encryptedPreImage).to.be.ok;
@@ -136,4 +142,4 @@ export async function asyncTransferAsset(
   };
 
   return postTransfer;
-}
+};

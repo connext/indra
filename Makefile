@@ -269,7 +269,7 @@ apps: types utils contracts cf-core $(shell find modules/apps $(find_options))
 	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/client $(find_options))
+client: types utils channel-provider messaging store contracts cf-core apps watcher $(shell find modules/client $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -289,7 +289,7 @@ bot-bundle: types utils channel-provider messaging store contracts cf-core apps 
 	$(docker_run) "cd modules/bot && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-node-bundle: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
+node-bundle: types utils messaging store contracts cf-core apps watcher client $(shell find modules/node $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
