@@ -1,7 +1,7 @@
 import { EntityRepository, Repository } from "typeorm";
 import { GenericConditionalTransferAppName, ConditionalTransferAppNames } from "@connext/types";
 
-import { AppInstance, AppType } from "../appInstance/appInstance.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
 @EntityRepository(AppInstance)
 export class TransferRepository extends Repository<AppInstance> {
