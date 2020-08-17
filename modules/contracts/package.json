@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "3.4.3",
+  "version": "3.5.0",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": [
@@ -12,7 +12,7 @@
   ],
   "main": "./dist/src.ts/index.js",
   "bin": {
-    "connext-contracts": "./dist/cli.js"
+    "connext-contracts": "./dist/src.ts/cli.js"
   },
   "keywords": [
     "ethereum",
@@ -32,8 +32,8 @@
     "transpile": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/types": "7.2.1",
-    "@connext/utils": "7.2.1",
+    "@connext/types": "7.3.2",
+    "@connext/utils": "7.3.2",
     "@nomiclabs/buidler": "1.4.3",
     "@openzeppelin/contracts": "3.0.2",
     "ethers": "5.0.8",

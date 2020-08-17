@@ -3,7 +3,6 @@ pragma solidity ^0.6.4;
 pragma experimental ABIEncoderV2;
 
 import "./MultisigData.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title MultisigTransfer - Inherit from this contract
 /// for transfers out of the multisig.
@@ -32,8 +31,16 @@ contract MultisigTransfer is MultisigData {
             // solium-disable-next-line security/no-send
             recipient.send(amount);
         } else {
-            IERC20(assetId).transfer(recipient, amount);
+            safeTransfer(assetId, recipient, amount);
         }
+    }
+
+    // uses uniswap transfer helper for non-confirming ERC20 tokens
+    // https://github.com/Uniswap/uniswap-lib/blob/master/contracts/libraries/TransferHelper.sol
+    function safeTransfer(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'MultisigTransfer: TRANSFER_FAILED');
     }
 
 }

@@ -19,12 +19,14 @@ import {
   SimpleLinkedTransferAppAction,
   SimpleSignedTransferAppAction,
   SupportedApplicationNames,
+  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   stringify,
   getSignerAddressFromPublicIdentifier,
   calculateExchangeWad,
   toBN,
+  delayAndThrow,
 } from "@connext/utils";
 import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
@@ -187,18 +189,26 @@ export class TransferService {
     this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
 
     try {
-      receiverProposeRes = await this.proposeReceiverAppByPaymentId(
-        from,
-        senderChannel.chainId,
-        proposeInstallParams.meta.recipient,
-        receiverChainId,
-        paymentId,
-        proposeInstallParams.initiatorDepositAssetId,
-        proposeInstallParams.initialState as AppStates[typeof transferType],
-        proposeInstallParams.meta,
-        transferType,
-        receiverChannel,
-      );
+      receiverProposeRes = await Promise.race([
+        this.proposeReceiverAppByPaymentId(
+          from,
+          senderChannel.chainId,
+          proposeInstallParams.meta.recipient,
+          receiverChainId,
+          paymentId,
+          proposeInstallParams.initiatorDepositAssetId,
+          proposeInstallParams.initialState as AppStates[typeof transferType],
+          proposeInstallParams.meta,
+          transferType,
+          receiverChannel,
+        ),
+        // the sender client will time out after waiting for CF_METHOD_TIMEOUT * 3. do not continue installing sender app.
+        // collateralization may still complete even after this error occurs.
+        delayAndThrow(
+          CF_METHOD_TIMEOUT * 3,
+          `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
+        ),
+      ]);
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (requireOnline) {
@@ -396,8 +406,10 @@ export class TransferService {
 
     // special case for expiry in initial state, receiver app must always expire first
     if ((initialState as HashLockTransferAppState).expiry) {
-      (initialState as HashLockTransferAppState).expiry =
-        (initialState as HashLockTransferAppState).expiry.sub(TIMEOUT_BUFFER);
+      // eslint-disable-next-line max-len
+      (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
+        TIMEOUT_BUFFER,
+      );
     }
 
     if ((initialState as GraphBatchedTransferAppState).swapRate) {
@@ -531,18 +543,18 @@ export class TransferService {
   // sender comes back online, node can unlock transfer
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
-    const senderTransferApps =
-      await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
-        senderIdentifier,
-        this.cfCoreService.cfCore.signerAddress,
-      );
+    // eslint-disable-next-line max-len
+    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+      senderIdentifier,
+      this.cfCoreService.cfCore.signerAddress,
+    );
 
     for (const senderApp of senderTransferApps) {
-      const correspondingReceiverApp =
-        await this.transferRepository.findTransferAppByPaymentIdAndSender(
-          senderApp.meta.paymentId,
-          this.cfCoreService.cfCore.signerAddress,
-        );
+      // eslint-disable-next-line max-len
+      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+        senderApp.meta.paymentId,
+        this.cfCoreService.cfCore.signerAddress,
+      );
 
       if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
         continue;
