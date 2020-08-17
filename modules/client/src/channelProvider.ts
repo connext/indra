@@ -353,6 +353,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         channel,
       );
     }
+
+    // recreate state channel now to update the fields purely based on the restored state
+    // TODO: should probably have a method in the store specifically to do this
+    await this.store.createStateChannel(channel, setupCommitment, freeBalanceSetStates[0][1]);
   };
 
   private restoreState = async (): Promise<void> => {
