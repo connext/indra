@@ -40,6 +40,7 @@ use(require("chai-subset"));
 export { expect } from "chai";
 
 const env = {
+  defaultChain: parseInt(process.env.INDRA_DEFAULT_CHAIN || "1337", 10),
   database: process.env.INDRA_PG_DATABASE || "",
   host: process.env.INDRA_PG_HOST || "",
   password: process.env.INDRA_PG_PASSWORD || "",
@@ -229,7 +230,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceJson = {
 export const TEST_STORE_CHANNEL: StateChannelJSON = {
   schemaVersion: 1,
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  chainId: 1337,
+  chainId: env.defaultChain,
   addresses: {
     MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
     ProxyFactory: TEST_STORE_ETH_ADDRESS,
@@ -285,6 +286,7 @@ export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
   status: StoredAppChallengeStatus.IN_DISPUTE,
+  chainId: env.defaultChain,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
@@ -294,6 +296,7 @@ export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
   timeout: toBN(3),
   turnTaker: TEST_STORE_CHANNEL.userIdentifiers[0],
   signature: getRandomBytes32(),
+  chainId: env.defaultChain,
 };
 
 export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = {
@@ -302,4 +305,5 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
   status: ChallengeStatus.IN_DISPUTE,
+  chainId: env.defaultChain,
 };
