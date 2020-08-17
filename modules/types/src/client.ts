@@ -10,6 +10,7 @@ import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
 import { MethodResults as mR, MethodParams as mP } from "./methods";
 import { IStoreService } from "./store";
+import { MiddlewareMap } from "./middleware";
 import { PublicParams as P, PublicResults as R } from "./public";
 import { AppAction } from ".";
 
@@ -25,6 +26,7 @@ export interface ClientOptions {
   logger?: ILogger;
   loggerService?: ILoggerService;
   logLevel?: number;
+  middlewareMap?: MiddlewareMap;
   messaging?: IMessagingService;
   nodeUrl?: string; // node's HTTP endpoint
   messagingUrl?: string; // optional override for messaging endpoint
@@ -33,7 +35,6 @@ export interface ClientOptions {
 }
 
 export interface IConnextClient {
-
   ////////////////////////////////////////
   // Properties
   appRegistry: AppRegistry;
@@ -121,15 +122,11 @@ export interface IConnextClient {
   getStateChannel(): Promise<mR.GetStateChannel>;
   getFreeBalance(assetId?: Address): Promise<mR.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstance(
-    appIdentityHash: Bytes32,
-  ): Promise<mR.GetAppInstanceDetails | undefined>;
+  getAppInstance(appIdentityHash: Bytes32): Promise<mR.GetAppInstanceDetails | undefined>;
   getProposedAppInstances(
     multisigAddress?: Address,
   ): Promise<mR.GetProposedAppInstances | undefined>;
-  getProposedAppInstance(
-    appIdentityHash: Bytes32,
-  ): Promise<mR.GetProposedAppInstance | undefined>;
+  getProposedAppInstance(appIdentityHash: Bytes32): Promise<mR.GetProposedAppInstance | undefined>;
   proposeInstallApp(params: mP.ProposeInstall): Promise<mR.ProposeInstall>;
   installApp(appIdentityHash: Bytes32): Promise<mR.Install>;
   rejectInstallApp(appIdentityHash: Bytes32, reason?: string): Promise<mR.Uninstall>;
