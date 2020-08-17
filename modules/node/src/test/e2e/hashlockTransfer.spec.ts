@@ -95,12 +95,11 @@ describe("Hashlock Transfer", () => {
   before(async () => {
     const start = Date.now();
     const currBlock = await ethProvider.getBlockNumber();
-    if (currBlock > TIMEOUT_BUFFER) {
-      // no adjustment needed, return
-      return;
-    }
-    for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
-      await ethProvider.send("evm_mine", []);
+    if (currBlock <= TIMEOUT_BUFFER) {
+      log.warn(`Mining until there are at least ${TIMEOUT_BUFFER} blocks`);
+      for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
+        await ethProvider.send("evm_mine", []);
+      }
     }
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -124,6 +123,7 @@ describe("Hashlock Transfer", () => {
 
     logTime(log, start, "Done setting up test env");
     transferService = moduleFixture.get<TransferService>(TransferService);
+    log.warn(`Finished before() in ${Date.now() - start}ms`);
   });
 
   after(async () => {
@@ -141,7 +141,6 @@ describe("Hashlock Transfer", () => {
     const timelock = (101).toString();
     const opts = { ...transfer, preImage, timelock };
 
-    log.warn(`Sender client is a ${typeof senderClient}`);
     const { paymentId } = await sendHashlockTransfer(senderClient, receiverClient, opts);
 
     expect(paymentId).to.be.ok;
