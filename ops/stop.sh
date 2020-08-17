@@ -25,6 +25,7 @@ function stop_stack {
 stack_name="`docker stack ls --format '{{.Name}}' | grep "$target"`"
 if [[ -n "$stack_name" ]]
 then
+  echo "Stopping stack $stack_name"
   stop_stack $stack_name
   exit
 fi
@@ -38,6 +39,7 @@ service_id="`docker service ls --format '{{.ID}} {{.Name}}' |\
 # If a service matches, restart it instead of stopping
 if [[ -n "$service_id" ]]
 then
+  echo "Restarting service $service_id"
   docker service scale $service_id=0
   docker service scale $service_id=1
   exit
