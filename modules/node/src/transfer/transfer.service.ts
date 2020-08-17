@@ -156,10 +156,12 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
-    const existing = await this.transferRepository.findTransferAppsByPaymentId(paymentId);
-    this.log.debug(`Found ${existing.length} apps with payment id ${paymentId}`);
-    if (existing.length > 0) {
-      throw new Error(`Duplicate payment id ${paymentId} was used in apps: ${stringify(existing)}`);
+    const existing = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+      paymentId,
+      getSignerAddressFromPublicIdentifier(senderChannel.userIdentifier),
+    );
+    if (existing.type !== AppType.PROPOSAL) {
+      throw new Error(`Duplicate payment id ${paymentId} has already been used to send a transfer`);
     }
 
     const requireOnline =

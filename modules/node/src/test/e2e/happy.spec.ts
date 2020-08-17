@@ -1,11 +1,12 @@
 import { connect } from "@connext/client";
 import {
   ColorfulLogger,
-  getRandomPrivateKey,
+  delay,
   getRandomBytes32,
+  getRandomChannelSigner,
+  getRandomPrivateKey,
   logTime,
   stringify,
-  getRandomChannelSigner,
 } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
 import { getMemoryStore } from "@connext/store";
@@ -49,7 +50,7 @@ describe("Mostly happy paths", () => {
 
     chainId = configService.getSupportedChains()[0];
     ethProvider = configService.getEthProvider(chainId);
-    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(ethProvider);
+    const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     log.info(`ethProviderUrl: ${ethProviderUrl}`);
 
@@ -85,6 +86,7 @@ describe("Mostly happy paths", () => {
   after(async () => {
     try {
       log.info(`Test finished, shutting app down`);
+      await delay(2000); // Give the node a sec to stop making db queries
       await app.close();
       log.info(`Application was shutdown successfully`);
     } catch (e) {
@@ -132,16 +134,13 @@ describe("Mostly happy paths", () => {
       recipient: clientB.publicIdentifier,
     });
     log.info(`First transfer was successful: ${stringify(transferRes)}`);
-    try {
-      const res = await clientA.transfer({
+    expect(
+      clientA.transfer({
         amount: parseEther("0.01"),
         assetId: AddressZero,
         paymentId,
         recipient: clientB.publicIdentifier,
-      });
-      throw new Error(`Oh no, transfer wasn't supposed to succeed: ${stringify(res)}`);
-    } catch (e) {
-      expect(e.message).to.include("Duplicate payment id");
-    }
+      }),
+    ).to.be.rejectedWith(/Duplicate payment id/);
   });
 });
