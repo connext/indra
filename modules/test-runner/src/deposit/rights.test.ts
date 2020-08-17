@@ -1,18 +1,32 @@
 import { IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import { constants } from "ethers";
 
-import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
+import {
+  createClient,
+  ethProvider,
+  expect,
+  getOnchainBalance,
+  getTestLoggers,
+  sendOnchainValue,
+} from "../util";
 
 const { One, Zero } = constants;
 
-describe("Deposit Rights", () => {
+const name = "Deposits Rights";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
+  let start: number;
+
+  beforeEach(async () => {
+    start = Date.now();
+  });
 
   afterEach(async () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should request deposit rights and deposit ETH", async () => {
+  it("should request deposit rights and deposit ETH", async () => {
     const assetId = CONVENTION_FOR_ETH_ASSET_ID;
     const depositAmount = One;
     client = await createClient();
@@ -48,11 +62,12 @@ describe("Deposit Rights", () => {
         }
       },
     );
+    timeElapsed("Test complete", start);
   });
 
-  it("happy case: client should request deposit rights and deposit token", async () => {
+  it("should request deposit rights and deposit token (case-insensitive assetId)", async () => {
     client = await createClient();
-    const assetId = client.config.contractAddresses[client.chainId].Token!;
+    const assetId = client.config.contractAddresses[client.chainId].Token!.toUpperCase();
     const depositAmount = One;
     await client.requestDepositRights({ assetId });
     const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(assetId);
@@ -85,5 +100,6 @@ describe("Deposit Rights", () => {
         }
       },
     );
+    timeElapsed("Test complete", start);
   });
 });

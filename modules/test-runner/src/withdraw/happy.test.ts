@@ -6,46 +6,55 @@ import {
   createClient,
   expect,
   fundChannel,
+  getTestLoggers,
   NEGATIVE_ZERO_ZERO_ONE_ETH,
+  requestCollateral,
   requestDepositRights,
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
   ZERO_ZERO_TWO_ETH,
   ZERO_ZERO_ZERO_ONE_ETH,
-  requestCollateral,
 } from "../util";
 
 const { AddressZero } = constants;
 
-// TODO: some withdrawal tests are skipped because of this issue: https://github.com/connext/indra/issues/1186
-describe("Withdrawal", () => {
+const name = "Happy Withdrawals";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
+  let start: number;
   let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     client = await createClient({ id: "A" });
     tokenAddress = client.config.contractAddresses[client.chainId].Token!;
+    timeElapsed("beforeEach finished", start);
   });
 
-  it("happy case: client successfully withdraws eth and node submits the tx", async () => {
+  it("should withdraw eth and node should submit the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
-    // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
   });
 
+  it("should withdraw tokens & node should submit the tx (case-insensitive assetId)", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress.toUpperCase());
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress.toUpperCase());
+  });
+
+  it("should fail to withdraw eth if the recipient address has an invalid checksum", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH);
+    const recipient = Wallet.createRandom().address.toUpperCase();
+    expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient)).to.be.rejected;
+  });
+
   // Currently fails because of this: https://github.com/connext/indra/issues/1186
-  it.skip("happy case: client successfully withdraws same amount of eth twice", async () => {
+  it.skip("client successfully withdraws same amount of eth twice", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     const recipient = Wallet.createRandom().address;
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
-  });
-
-  it("happy case: client successfully withdraws tokens and node submits the tx", async () => {
-    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
-    // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
   });
 
   it("client tries to withdraw more than it has in free balance", async () => {
@@ -177,17 +186,17 @@ describe("Withdrawal", () => {
       await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
       await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
 
-      const totalAmountWithdrawnAfter: BigNumberish = await multisigContract.totalAmountWithdrawn(
+      const totalAmountWithdrawnAfter = await multisigContract.totalAmountWithdrawn(
         tokenAddress,
       );
       expect(totalAmountWithdrawnAfter).to.be.eq(ZERO_ZERO_ONE_ETH.add(totalAmountWithdrawnBefore));
     });
 
     it.skip("successfully updates eth and token multiple times", async () => {
-      const totalAmountWithdrawnBeforeEth: BigNumberish = await multisigContract.totalAmountWithdrawn(
+      const totalAmountWithdrawnBeforeEth = await multisigContract.totalAmountWithdrawn(
         AddressZero,
       );
-      const totalAmountWithdrawnBeforeToken: BigNumberish = await multisigContract.totalAmountWithdrawn(
+      const totalAmountWithdrawnBeforeToken = await multisigContract.totalAmountWithdrawn(
         tokenAddress,
       );
 
@@ -197,13 +206,13 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
       await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
 
-      const totalAmountWithdrawnAfterEth: BigNumberish = await multisigContract.totalAmountWithdrawn(
+      const totalAmountWithdrawnAfterEth = await multisigContract.totalAmountWithdrawn(
         AddressZero,
       );
       expect(totalAmountWithdrawnAfterEth).to.be.eq(
         ZERO_ZERO_TWO_ETH.add(totalAmountWithdrawnBeforeEth),
       );
-      const totalAmountWithdrawnAfterToken: BigNumberish = await multisigContract.totalAmountWithdrawn(
+      const totalAmountWithdrawnAfterToken = await multisigContract.totalAmountWithdrawn(
         tokenAddress,
       );
       expect(totalAmountWithdrawnAfterToken).to.be.eq(

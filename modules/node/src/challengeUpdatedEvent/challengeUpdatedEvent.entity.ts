@@ -27,6 +27,7 @@ export const entityToChallengeUpdatedPayload = (
     finalizesAt,
     status,
     identityHash: challenge.app.identityHash,
+    chainId: challenge.channel.chainId,
   };
 };
 
