@@ -1,20 +1,27 @@
 import { IConnextClient, PublicParams } from "@connext/types";
 import { calculateExchangeWad, getAddressFromAssetId, inverse } from "@connext/utils";
-import { constants } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { expect } from "../";
-import { AssetOptions, ExistingBalancesSwap } from "../types";
+import { AssetOptions } from "../types";
 
 const { AddressZero, Zero } = constants;
 
-export async function swapAsset(
+interface ExistingBalancesSwap {
+  freeBalanceClientEth: BigNumber;
+  freeBalanceNodeEth: BigNumber;
+  freeBalanceClientToken: BigNumber;
+  freeBalanceNodeToken: BigNumber;
+}
+
+export const swapAsset = async (
   client: IConnextClient,
   input: AssetOptions,
   output: AssetOptions,
   nodeSignerAddress: string,
   preExistingBalances?: Partial<ExistingBalancesSwap>,
   resultingBalances?: Partial<ExistingBalancesSwap>,
-): Promise<ExistingBalancesSwap> {
+): Promise<ExistingBalancesSwap> => {
   const ethToToken = getAddressFromAssetId(input.assetId) === AddressZero;
   const ethAssetId = ethToToken ? input.assetId : output.assetId;
   const tokenAssetId = ethToToken ? output.assetId : input.assetId;
@@ -93,4 +100,4 @@ export async function swapAsset(
   expect(postSwapFreeBalanceNodeToken).to.be.at.least(postSwap.freeBalanceNodeToken);
 
   return postSwap;
-}
+};

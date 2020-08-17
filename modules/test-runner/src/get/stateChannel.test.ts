@@ -10,7 +10,12 @@ import {
 import { toBN, toBNJson } from "@connext/utils";
 import { constants, utils } from "ethers";
 
-import { createClient, ETH_AMOUNT_SM, expect } from "../util";
+import {
+  createClient,
+  ETH_AMOUNT_SM,
+  expect,
+  getTestLoggers,
+} from "../util";
 
 const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
@@ -72,15 +77,20 @@ const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
-describe("Get State Channel", () => {
+const name = "Get State Channel";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
+  let start: number;
   let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

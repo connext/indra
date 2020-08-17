@@ -1,17 +1,17 @@
 /* global before */
 import {
+  ConditionalTransferCreatedEventData,
   ConditionalTransferTypes,
   EventNames,
   HashLockTransferStatus,
   IConnextClient,
   NodeResponses,
   PublicParams,
-  ConditionalTransferCreatedEventData,
 } from "@connext/types";
 import {
-  getRandomBytes32,
-  getChainId,
   delay,
+  getChainId,
+  getRandomBytes32,
   stringify,
 } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
@@ -23,6 +23,7 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   requestCollateral,
   TOKEN_AMOUNT,
 } from "../util";
@@ -32,13 +33,17 @@ const { soliditySha256 } = utils;
 
 const TIMEOUT_BUFFER = 100; // This currently isn't exported by the node so must be hardcoded
 
-describe("HashLock Transfers", () => {
+const name = "HashLock Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
-  let tokenAddress: string;
   let provider: providers.JsonRpcProvider;
+  let start: number;
+  let tokenAddress: string;
 
   before(async () => {
+    start = Date.now();
     provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     if (currBlock > TIMEOUT_BUFFER) {
@@ -48,6 +53,7 @@ describe("HashLock Transfers", () => {
     for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
       await provider.send("evm_mine", []);
     }
+    timeElapsed("beforeEach complete", start);
   });
 
   // Define helper functions
@@ -206,8 +212,8 @@ describe("HashLock Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: client A hashlock transfers eth to client B through node", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+  it("client A hashlock transfers eth to client B through node", async () => {
+    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -221,8 +227,8 @@ describe("HashLock Transfers", () => {
     await assertPostTransferBalances(clientA, clientB, opts);
   });
 
-  it("happy case: client A hashlock transfers tokens to client B through node", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+  it("client A hashlock transfers tokens to client B through node", async () => {
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -237,7 +243,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("transfer is cancelled if receiver is offline", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
 
@@ -268,7 +274,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("gets a pending hashlock transfer by lock hash", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -290,7 +296,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("gets a completed hashlock transfer by lock hash", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -316,8 +322,8 @@ describe("HashLock Transfers", () => {
   });
 
   it("can send two hashlock transfers with different assetIds and the same lock hash", async () => {
-    const transferToken: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-    const transferEth: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const transferToken = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transferEth = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
 
@@ -335,7 +341,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("cannot resolve a hashlock transfer if pre image is wrong", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -361,7 +367,7 @@ describe("HashLock Transfers", () => {
   // this test, it will likely pass due to the 1 block margin of error in the
   // timelock variable
   it("cannot resolve a hashlock if timelock is expired", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (101).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -380,7 +386,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("cannot install receiver app without sender app installed", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
@@ -410,7 +416,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("receiver should be able to cancel an active payment", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -439,7 +445,7 @@ describe("HashLock Transfers", () => {
   });
 
   it("receiver should be able to cancel an expired payment", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (101).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -468,7 +474,7 @@ describe("HashLock Transfers", () => {
   });
 
   it.skip("sender should be able to refund an expired payment", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (1).toString();
     const opts = { ...transfer, preImage, timelock };
@@ -526,7 +532,7 @@ describe("HashLock Transfers", () => {
   // FIXME: may not work depending on collateral, will expect some payment
   // errors even with a small number of payments until this is handled better
   it.skip("can send concurrent hashlock transfers", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT.div(5), assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT.div(5), assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount.mul(5), transfer.assetId);
     await fundChannel(clientB, transfer.amount.mul(5), transfer.assetId);
     await requestCollateral(clientA, transfer.assetId, true);

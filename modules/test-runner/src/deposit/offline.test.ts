@@ -18,6 +18,7 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   RECEIVED,
   SEND,
   TestMessagingService,
@@ -78,14 +79,19 @@ const recreateClientAndRetryDepositCall = async (
  * point in the protocol.
  */
 
-describe("Deposit offline tests", () => {
+const name = "Offline Deposits";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
   let signer: IChannelSigner;
   let store: IStoreService;
+  let start: number;
 
   beforeEach(() => {
+    start = Date.now();
     signer = getRandomChannelSigner(ethProviderUrl);
     store = getMemoryStore();
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
