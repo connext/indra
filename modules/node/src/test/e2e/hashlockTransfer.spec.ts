@@ -1,4 +1,4 @@
-import { ColorfulLogger, logTime, getRandomBytes32, delay } from "@connext/utils";
+import { ColorfulLogger, logTime, getRandomBytes32 } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import {
@@ -135,12 +135,13 @@ describe("Hashlock Transfer", () => {
     }
   });
 
-  it.only("cleans up expired hashlock transfers ", async () => {
+  it("cleans up expired hashlock transfers ", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
     const preImage = getRandomBytes32();
     const timelock = (101).toString();
     const opts = { ...transfer, preImage, timelock };
 
+    log.warn(`Sender client is a ${typeof senderClient}`);
     const { paymentId } = await sendHashlockTransfer(senderClient, receiverClient, opts);
 
     expect(paymentId).to.be.ok;
