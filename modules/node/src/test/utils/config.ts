@@ -13,7 +13,7 @@ export const env = {
   messagingUrl: "nats://indra_nats_node_tester:4222",
   mnemonic: process.env.INDRA_MNEMONIC,
   nodeUrl: "http://localhost:8080",
-  serverLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
+  serverLogLevel: parseInt(process.env.SERVER_LOG_LEVEL || "0", 10),
 };
 
 export const ethProviderUrl = env.chainProviders[env.defaultChain];

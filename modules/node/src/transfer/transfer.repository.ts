@@ -5,13 +5,22 @@ import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 
 @EntityRepository(AppInstance)
 export class TransferRepository extends Repository<AppInstance> {
+  findTransferAppsByPaymentId<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string): Promise<AppInstance<T>[]> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .getMany() as Promise<AppInstance<T>[]>;
+  }
+
   findInstalledTransferAppsByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
   >(paymentId: string): Promise<AppInstance<T>[]> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_instance.type = :type", { type: AppType.INSTANCE })
-      .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .getMany() as Promise<AppInstance<T>[]>;
   }
 

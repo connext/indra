@@ -127,9 +127,9 @@ export class TransferService {
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
     const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
-    const expiredApps = channel.appInstances.filter(([, app]) => {
-      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
-    });
+    const expiredApps = channel.appInstances.filter(([, app]) =>
+      app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
+    );
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
     for (const [, app] of expiredApps) {
       try {
@@ -145,7 +145,7 @@ export class TransferService {
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
-  // receivers are online if needed
+  // receivers are online if needed or that payment ids are unique, etc
   async transferAppInstallFlow(
     senderAppIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
@@ -156,6 +156,11 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
+    const existing = await this.transferRepository.findTransferAppsByPaymentId(paymentId);
+    this.log.debug(`Found ${existing.length} apps with payment id ${paymentId}`);
+    if (existing.length > 0) {
+      throw new Error(`Duplicate payment id ${paymentId} was used in apps: ${stringify(existing)}`);
+    }
 
     const requireOnline =
       RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];

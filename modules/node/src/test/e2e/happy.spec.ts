@@ -22,8 +22,8 @@ import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-describe("Happy path", () => {
-  const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
+describe("Mostly happy paths", () => {
+  const log = new ColorfulLogger("MostlyHappy", env.logLevel, true, "Test");
 
   let app: INestApplication;
   let configService: ConfigService;
@@ -84,6 +84,7 @@ describe("Happy path", () => {
 
   after(async () => {
     try {
+      log.info(`Test finished, shutting app down`);
       await app.close();
       log.info(`Application was shutdown successfully`);
     } catch (e) {
@@ -120,8 +121,10 @@ describe("Happy path", () => {
       assetId: AddressZero,
       amount: parseEther("0.03"),
     });
+    log.info(`Deposit was successful: ${stringify(depositRes)}`);
     await depositRes.completed();
     const paymentId = getRandomBytes32();
+    log.info(`Sending first transfer with paymentId ${paymentId}`);
     const transferRes = await clientA.transfer({
       amount: parseEther("0.01"),
       assetId: AddressZero,
@@ -129,11 +132,16 @@ describe("Happy path", () => {
       recipient: clientB.publicIdentifier,
     });
     log.info(`First transfer was successful: ${stringify(transferRes)}`);
-    expect(await clientA.transfer({
-      amount: parseEther("0.01"),
-      assetId: AddressZero,
-      paymentId,
-      recipient: clientB.publicIdentifier,
-    })).to.be.rejected;
+    try {
+      const res = await clientA.transfer({
+        amount: parseEther("0.01"),
+        assetId: AddressZero,
+        paymentId,
+        recipient: clientB.publicIdentifier,
+      });
+      throw new Error(`Oh no, transfer wasn't supposed to succeed: ${stringify(res)}`);
+    } catch (e) {
+      expect(e.message).to.include("Duplicate payment id");
+    }
   });
 });
