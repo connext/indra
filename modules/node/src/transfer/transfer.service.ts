@@ -120,7 +120,7 @@ export class TransferService {
     const channels = await this.channelRepository.findAll();
     const addresses = this.configService.getAddressBook();
     Object.entries(addresses).map((addrs) => addrs);
-    const hashLockApps = await this.appInstanceRepository.findInstalledAppsByAppDefinition();
+    // const hashLockApps = await this.appInstanceRepository.findInstalledAppsByAppDefinition();
     console.log("channels: ", channels);
     for (const channel of channels) {
       await this.pruneExpiredApps(channel);
@@ -420,10 +420,7 @@ export class TransferService {
 
     // special case for expiry in initial state, receiver app must always expire first
     if ((initialState as HashLockTransferAppState).expiry) {
-<<<<<<< HEAD
-=======
       // eslint-disable-next-line max-len
->>>>>>> staging
       (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
         TIMEOUT_BUFFER,
       );
@@ -560,20 +557,14 @@ export class TransferService {
   // sender comes back online, node can unlock transfer
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
-<<<<<<< HEAD
-=======
     // eslint-disable-next-line max-len
->>>>>>> staging
     const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
       senderIdentifier,
       this.cfCoreService.cfCore.signerAddress,
     );
 
     for (const senderApp of senderTransferApps) {
-<<<<<<< HEAD
-=======
       // eslint-disable-next-line max-len
->>>>>>> staging
       const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
         senderApp.meta.paymentId,
         this.cfCoreService.cfCore.signerAddress,
