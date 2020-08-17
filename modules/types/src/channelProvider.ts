@@ -16,6 +16,7 @@ import {
   SetStateCommitmentJSON,
   ConditionalTransactionCommitmentJSON,
 } from "./commitments";
+import { MiddlewareMap } from "./middleware";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -46,8 +47,9 @@ export interface CFChannelProviderOptions {
   ethProvider: providers.JsonRpcProvider;
   signer: IChannelSigner;
   node: INodeApiClient;
-  logger?: ILoggerService;
   store: IStoreService;
+  middlewareMap?: MiddlewareMap;
+  logger?: ILoggerService;
   skipSync?: boolean;
 }
 
