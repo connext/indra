@@ -2,6 +2,7 @@ import { connect } from "@connext/client";
 import {
   ColorfulLogger,
   getRandomPrivateKey,
+  getRandomBytes32,
   logTime,
   stringify,
   getRandomChannelSigner,
@@ -112,5 +113,27 @@ describe("Happy path", () => {
     await ethProvider.waitForTransaction(withdrawRes.transaction.hash);
     const receipt = await ethProvider.getTransactionReceipt(withdrawRes.transaction.hash);
     expect(receipt.status).to.equal(1);
+  });
+
+  it("should fail if client tries to re-use the same payment Id", async () => {
+    const depositRes = await clientA.deposit({
+      assetId: AddressZero,
+      amount: parseEther("0.03"),
+    });
+    await depositRes.completed();
+    const paymentId = getRandomBytes32();
+    const transferRes = await clientA.transfer({
+      amount: parseEther("0.01"),
+      assetId: AddressZero,
+      paymentId,
+      recipient: clientB.publicIdentifier,
+    });
+    log.info(`First transfer was successful: ${stringify(transferRes)}`);
+    expect(await clientA.transfer({
+      amount: parseEther("0.01"),
+      assetId: AddressZero,
+      paymentId,
+      recipient: clientB.publicIdentifier,
+    })).to.be.rejected;
   });
 });
