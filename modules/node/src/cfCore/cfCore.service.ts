@@ -46,6 +46,9 @@ import { ChannelSerializer } from "../channel/channel.repository";
 const { Zero } = constants;
 
 export const assertNoChallenges = (channel: Channel) => {
+  if (!channel.challenges) {
+    return;
+  }
   const uncancelled = channel.challenges.filter(
     (c) => c.status !== StoredAppChallengeStatus.NO_CHALLENGE,
   );
