@@ -23,7 +23,7 @@ import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-describe("Mostly happy paths", () => {
+describe.only("Mostly happy paths", () => {
   const log = new ColorfulLogger("MostlyHappy", env.logLevel, true, "Test");
 
   let app: INestApplication;

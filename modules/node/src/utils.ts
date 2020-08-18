@@ -7,7 +7,7 @@ import {
   HashLockTransferAppState,
   GenericConditionalTransferAppState,
 } from "@connext/types";
-import { bigNumberifyJson, toBN, stringify } from "@connext/utils";
+import { bigNumberifyJson, toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 
 import { AppInstance, AppType } from "./appInstance/appInstance.entity";
@@ -78,7 +78,7 @@ export function appStatusesToTransferStatus<T extends AppName>(
     }
     case AppType.FREE_BALANCE:
     default: {
-      throw new Error(`Cannot determine status, invalid sender app type: ${receiverApp.type}`);
+      throw new Error(`Cannot determine status, invalid sender app type: ${receiverApp?.type}`);
     }
   }
 }

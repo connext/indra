@@ -4,7 +4,6 @@ import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
-import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
@@ -15,7 +14,6 @@ import { AdminService } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
-    private readonly authService: AuthService,
     public readonly log: LoggerService,
     messaging: MessagingService,
     private readonly adminService: AdminService,
@@ -44,10 +42,13 @@ class AdminMessaging extends AbstractMessagingProvider {
     return this.adminService.getNoFreeBalance();
   }
 
-  async getStateChannelByUserPublicIdentifierAndChain(data: {
-    userIdentifier: string;
-    chainId: number;
-  }): Promise<StateChannelJSON> {
+  async getStateChannelByUserPublicIdentifierAndChain(
+    subject: string,
+    data: {
+      userIdentifier: string;
+      chainId: number;
+    },
+  ): Promise<StateChannelJSON | undefined> {
     const { userIdentifier, chainId } = data;
     if (!userIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
@@ -74,7 +75,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     return this.adminService.getAllLinkedTransfers();
   }
 
-  async getLinkedTransferByPaymentId(data: { paymentId: string }): Promise<any> {
+  async getLinkedTransferByPaymentId(subject: string, data: { paymentId: string }): Promise<any> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`No paymentId supplied: ${stringify(data)}`);
@@ -135,16 +136,15 @@ class AdminMessaging extends AbstractMessagingProvider {
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, AdminService, ChannelService],
+  inject: [LoggerService, MessagingProviderId, AdminService, ChannelService],
   provide: AdminMessagingProviderId,
   useFactory: async (
-    authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
     adminService: AdminService,
     channelService: ChannelService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(authService, log, messaging, adminService, channelService);
+    const admin = new AdminMessaging(log, messaging, adminService, channelService);
     await admin.setupSubscriptions();
   },
 };
