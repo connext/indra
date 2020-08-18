@@ -5,6 +5,14 @@ import { StateChannelJSON } from "./state";
 
 // Note: these are also used in the node so shouldn't be moved into cf-core
 
+export type MiddlewareMap = {
+  // TODO: fix type string
+  [protocolName: string]: (
+    protocol: ProtocolName,
+    middlewareContext: MiddlewareContext,
+  ) => Promise<void>;
+};
+
 export type GenericMiddleware = {
   (args: any): any;
 };

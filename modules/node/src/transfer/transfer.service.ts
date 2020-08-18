@@ -235,7 +235,7 @@ export class TransferService {
         }
       }
       this.log.warn(
-        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver was offline`,
+        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver app not installed`,
       );
       return;
     }

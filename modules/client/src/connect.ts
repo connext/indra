@@ -43,6 +43,7 @@ export const connect = async (
     loggerService,
     messagingUrl,
     nodeUrl,
+    middlewareMap,
     skipInitStore,
     skipSync,
   } = opts;
@@ -109,6 +110,7 @@ export const connect = async (
       logger,
       nodeUrl: channelProvider.config.nodeUrl,
       channelProvider,
+      middlewareMap,
       skipSync,
       chainId,
     });
@@ -120,9 +122,7 @@ export const connect = async (
     }
 
     signer =
-      typeof opts.signer === "string"
-        ? new ChannelSigner(opts.signer, ethProvider)
-        : opts.signer;
+      typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProvider) : opts.signer;
 
     node = await NodeApiClient.init({
       store,

@@ -133,7 +133,13 @@ export abstract class MethodController {
           },
           preProtocolStateChannel,
         );
-        log.debug(`Channel synced, retrying ${this.methodName} with ${channel.toJson()}`);
+        log.debug(
+          `Channel synced, retrying ${this.methodName} with ${stringify(
+            channel.toJson(),
+            true,
+            0,
+          )}`,
+        );
         result = await this.beforeExecution(requestHandler, params, channel);
         // if result exists, the operation is a no-op (i.e. already been done)
         result =
