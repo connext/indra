@@ -38,9 +38,6 @@ then
       checksum="`find src -type f -not -name "*.swp" -exec sha256sum {} \; | sha256sum`"
       ts-mocha --bail --check-leaks --exit --timeout 60000 'src/**/*.spec.ts' &
       prev_checksum=$checksum
-      sleep 1
-      echo "Tests are running:"
-      ps
 
     # If no changes, do nothing
     else sleep 2
