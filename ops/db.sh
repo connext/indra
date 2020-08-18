@@ -8,7 +8,18 @@ username=$project
 database=$project
 service=${project}_database
 service_id="`docker service ps -q $service | head -n 1`"
-container_id="`docker inspect --format '{{.Status.ContainerStatus.ContainerID}}' $service_id`"
+
+if [[ -x "$service_id" ]]
+then container_id="`docker inspect --format '{{.Status.ContainerStatus.ContainerID}}' $service_id`"
+else
+  container_id="`docker container ls --filter 'status=running' --format '{{.ID}} {{.Names}}' |\
+    cut -d "." -f 1 |\
+    grep "_database" |\
+    sort |\
+    head -n 1 |\
+    cut -d " " -f 1
+  `"
+fi
 
 if [[ -z "$1" ]]
 then docker exec -it $container_id bash -c "psql $database --username=$username"
