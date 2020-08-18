@@ -59,10 +59,8 @@ type EvtContainer = {
   [event in WatcherEvent]: Evt<WatcherEventData[WatcherEvent]>;
 };
 
-const getRandomJitter = (max: number = 500): number => {
-  // returns jitter between 0 and max
-  return Math.floor(Math.random() * (max + 1));
-};
+const jitter = async (maxDelay: number = 500): Promise<void> =>
+  delay(Math.floor(Math.random() * (maxDelay + 1)));
 
 export class Watcher implements IWatcher {
   private log: ILoggerService;
@@ -339,7 +337,7 @@ export class Watcher implements IWatcher {
       this.listener.attach(
         ChallengeEvents.ChallengeUpdated,
         async (event: ChallengeUpdatedEventPayload) => {
-          await delay(getRandomJitter());
+          await jitter();
           await this.processChallengeUpdated(event);
           // parrot listener event
           this.emit(WatcherEvents.CHALLENGE_UPDATED_EVENT, event);

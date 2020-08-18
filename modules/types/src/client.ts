@@ -84,17 +84,15 @@ export interface IConnextClient {
   // Low-level channel methods
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   checkDepositRights(params: P.CheckDepositRights): Promise<R.CheckDepositRights>;
-  requestDepositRights(params: P.RequestDepositRights): Promise<mR.RequestDepositRights>;
+  requestDepositRights(params: P.RequestDepositRights): Promise<R.RequestDepositRights>;
   rescindDepositRights(params: P.RescindDepositRights): Promise<R.RescindDepositRights>;
   restart(): Promise<void>;
   restoreState(): Promise<void>;
 
   ///////////////////////////////////
   // Dispute methods
-  initiateChallenge(
-    params: PublicParams.InitiateChallenge,
-  ): Promise<PublicResults.InitiateChallenge>;
-  cancelChallenge(params: PublicParams.CancelChallenge): Promise<PublicResults.CancelChallenge>;
+  initiateChallenge(params: P.InitiateChallenge): Promise<R.InitiateChallenge>;
+  cancelChallenge(params: P.CancelChallenge): Promise<R.CancelChallenge>;
 
   ///////////////////////////////////
   // Node easy access methods
