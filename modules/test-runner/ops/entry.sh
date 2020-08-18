@@ -56,7 +56,6 @@ if [[ "$cmd" == "watch" ]]
 then
   echo "Starting test-watcher"
 
-  test_pid=""
   prev_checksum=""
   while true
   do
@@ -66,16 +65,17 @@ then
       echo
       echo "Changes detected!"
 
-      if [[ -n "$test_pid" ]]
+      mocha_pids="`ps | grep [m]ocha | awk '{print $1}'`"
+      if [[ -n "$mocha_pids" ]]
       then
-        echo "Stopping previous test run"
-        kill $test_pid 2> /dev/null
-        sleep 2 # give prev tests a chance to shut down gracefully
+        echo "Stopping previous test run.."
+        for pid in $mocha_pids
+        do kill $pid 2> /dev/null
+        done
       fi
 
       echo "Re-running tests..."
       ts-mocha $opts --slow 1000 --timeout 180000 --check-leaks --exit src/index.ts &
-      test_pid=$!
       prev_checksum=$checksum
 
     # If no changes, do nothing
