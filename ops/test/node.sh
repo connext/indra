@@ -129,9 +129,4 @@ docker run \
   --network="$network" \
   --rm \
   --volume="$root:/root" \
-  ${project}_builder -c '
-    echo "Node Tester Container launched!";echo
-    shopt -s globstar
-    cd modules/node
-    npm run '"$cmd"' -- '"$@"'
-  '
+  ${project}_builder -c "bash modules/node/ops/test.sh $cmd"
