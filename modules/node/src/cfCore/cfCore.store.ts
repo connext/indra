@@ -506,7 +506,7 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getFreeBalance(multisigAddress);
   }
 
-  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
 

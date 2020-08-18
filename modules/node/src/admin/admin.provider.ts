@@ -59,7 +59,7 @@ class AdminMessaging extends AbstractMessagingProvider {
   async getStateChannelByMultisig(
     subject: string,
     data: { multisigAddress: string },
-  ): Promise<StateChannelJSON> {
+  ): Promise<StateChannelJSON | undefined> {
     const { multisigAddress } = data;
     if (!multisigAddress) {
       throw new RpcException(`No multisig address supplied: ${stringify(data)}`);

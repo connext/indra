@@ -41,7 +41,7 @@ export class AdminService implements OnApplicationBootstrap {
   }
 
   /**  Get channels by multisig */
-  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     return this.cfCoreStore.getStateChannel(multisigAddress);
   }
 

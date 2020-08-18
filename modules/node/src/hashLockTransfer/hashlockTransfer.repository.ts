@@ -28,7 +28,7 @@ export class HashlockTransferRepository extends Repository<
     nodeSignerAddress: Address,
     assetId: Address,
     appDefinition: Address,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance | undefined> {
     return (
       this.createQueryBuilder("app_instance")
         .leftJoinAndSelect("app_instance.channel", "channel")

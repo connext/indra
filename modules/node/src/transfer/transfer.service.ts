@@ -132,7 +132,7 @@ export class TransferService {
     this.log.info(
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
-    const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
+    const current = await this.configService.getEthProvider(channel.chainId)!.getBlockNumber();
     const expiredApps = channel.appInstances.filter(
       ([, app]) =>
         app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),

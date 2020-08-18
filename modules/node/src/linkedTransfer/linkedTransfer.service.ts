@@ -27,14 +27,11 @@ export class LinkedTransferService {
   async findSenderAndReceiverAppsWithStatusOnChain(
     paymentId: string,
     chainId: number,
-  ): Promise<
-    | {
-        status?: LinkedTransferStatus;
-        senderApp?: AppInstance;
-        receiverApp?: AppInstance;
-      }
-    | undefined
-  > {
+  ): Promise<{
+    status?: LinkedTransferStatus;
+    senderApp?: AppInstance;
+    receiverApp?: AppInstance;
+  }> {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     // eslint-disable-next-line max-len
     const senderApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndReceiver(

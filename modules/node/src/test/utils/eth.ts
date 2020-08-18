@@ -36,7 +36,7 @@ export const getTestTransactionResponse = (
     gasLimit: BigNumber.from(100),
     gasPrice: BigNumber.from(100),
     nonce: 1,
-    wait: () => undefined,
+    wait: () => undefined as any,
     ...overrides,
   };
 };

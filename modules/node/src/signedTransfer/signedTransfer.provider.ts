@@ -33,7 +33,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     paymentId: string,
     chainId: number,
     name: typeof SimpleSignedTransferAppName | typeof GraphSignedTransferAppName,
-  ): Promise<NodeResponses.GetSignedTransfer> {
+  ): Promise<NodeResponses.GetSignedTransfer | undefined> {
     const {
       senderApp,
       status,
@@ -58,7 +58,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
       assetId: senderApp.initiatorDepositAssetId,
       amount: amount.toString(),
       paymentId,
-      status,
+      status: status!,
       meta,
     };
   }
@@ -67,7 +67,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     chainId: number,
     data: { paymentId: string },
-  ): Promise<NodeResponses.GetSignedTransfer> {
+  ): Promise<NodeResponses.GetSignedTransfer | undefined> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
@@ -83,7 +83,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     chainId: number,
     data: { paymentId: string },
-  ): Promise<NodeResponses.GetSignedTransfer> {
+  ): Promise<NodeResponses.GetSignedTransfer | undefined> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
