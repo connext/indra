@@ -146,7 +146,6 @@ export const connect = async (
 
   // create watcher, which is enabled by default
   const watcher = await Watcher.init({
-    logLevel,
     logger,
     signer,
     providers: { [chainId]: ethProvider },

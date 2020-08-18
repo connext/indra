@@ -30,7 +30,7 @@ import {
   IOnchainTransactionService,
 } from "@connext/types";
 import {
-  ConsoleLogger,
+  // ConsoleLogger,
   ChannelSigner,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
@@ -105,7 +105,6 @@ export class Watcher implements IWatcher {
   public static init = async (opts: WatcherInitOptions): Promise<Watcher> => {
     const {
       logger,
-      logLevel,
       signer: providedSigner,
       providers: givenProviders,
       context,
@@ -116,8 +115,6 @@ export class Watcher implements IWatcher {
     const log =
       logger && typeof (logger as ILoggerService).newContext === "function"
         ? (logger as ILoggerService).newContext("WatcherInit")
-        : logger
-        ? new ConsoleLogger("WatcherInit", logLevel, logger)
         : nullLogger;
 
     log.debug(`Creating new Watcher`);
@@ -390,7 +387,7 @@ export class Watcher implements IWatcher {
     const active = (await this.store.getActiveChallenges()).filter(
       (c) => c.status !== StoredAppChallengeStatus.PENDING_TRANSITION,
     );
-    this.log.info(`Found ${active.length} active challenges: ${stringify(active)}`);
+    this.log.debug(`Found ${active.length} active challenges: ${stringify(active)}`);
     for (const challenge of active) {
       await this.updateChallengeStatus(StoredAppChallengeStatus.PENDING_TRANSITION, challenge);
       this.log.debug(`Advancing ${challenge.identityHash} dispute`);

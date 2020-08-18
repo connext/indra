@@ -32,7 +32,6 @@ export type WatcherInitOptions = {
   context: ContractAddressBook;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
-  logLevel?: number;
   transactionService?: IOnchainTransactionService;
 };
 
