@@ -93,6 +93,7 @@ describe(name, () => {
     ).to.be.rejectedWith(`invalid address`);
   });
 
+  // TODO: fix race condition
   it("client successfully withdraws tokens and eth concurrently", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);

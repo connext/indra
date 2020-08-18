@@ -209,7 +209,7 @@ describe(name, () => {
     await recipient.store.clear();
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (1 linked payment sent)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (single payment)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
 
@@ -232,7 +232,7 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (1 signed transfer payment sent)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (single payment)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
 
@@ -244,7 +244,6 @@ describe(name, () => {
         verifyingContract,
         recipientKey,
       );
-
       await recipient.resolveCondition({
         conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId: payload.paymentId,
@@ -276,165 +275,81 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (many linked payments sent)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (concurrent payments)", async () => {
     // establish tests constants
-    const TRANSFER_AMT = toBN(100);
-    const MIN_TRANSFERS = 25;
-    const TRANSFER_INTERVAL = 1000; // ms between consecutive transfer calls
+    const TRANSFER_AMT = toBN(10);
+    const reps = 3;
 
-    let receivedTransfers = 0;
-    let intervals = 0;
-    let pollerError: string | undefined;
-
-    // call transfers on interval
-    const start = Date.now();
-    const interval = setInterval(async () => {
-      intervals += 1;
-      if (intervals > MIN_TRANSFERS) {
-        clearInterval(interval);
-        return;
-      }
-      let error: any = undefined;
-      try {
-        const [, preImage] = await performConditionalTransfer({
-          conditionType: ConditionalTransferTypes.LinkedTransfer,
-          sender,
-          recipient,
-          ASSET,
-          TRANSFER_AMT,
-        });
-        log.info(`[${intervals}/${MIN_TRANSFERS}] preImage: ${preImage}`);
-      } catch (e) {
-        error = e;
-      }
-      if (error) {
-        clearInterval(interval);
-        throw error;
-      }
-    }, TRANSFER_INTERVAL);
-
-    // setup promise to properly wait out the transfers / stop interval
-    // will also periodically check if a poller error has been set and reject
-    await new Promise((resolve, reject) => {
-      registerFailureListeners(reject, sender, recipient);
-      // setup listeners (increment on reclaim)
-      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
-        receivedTransfers += 1;
-        log.info(`[${receivedTransfers}/${MIN_TRANSFERS}] redeemed`);
-        if (receivedTransfers >= MIN_TRANSFERS) {
-          resolve();
-        }
+    for (let i = 0; i < reps; i++) {
+      log.info(`Sending linked transfer #${i}`);
+      await performConditionalTransfer({
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
+        sender,
+        recipient,
+        ASSET,
+        TRANSFER_AMT,
       });
-      recipient.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
-      sender.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
+    }
 
-      // register a check to see if the poller has been cleared
-      setInterval(() => {
-        if (pollerError) {
-          reject(pollerError);
-        }
-      }, 250);
-    });
-    const end = Date.now();
-    log.info(
-      `Average latency of ${MIN_TRANSFERS} transfers: ${(end - start) / MIN_TRANSFERS}ms`,
-    );
-
-    expect(receivedTransfers).to.be.eq(MIN_TRANSFERS);
+    // verify transfer amounts
     const finalSenderFb = await sender.getFreeBalance(ASSET);
     const finalRecipientFb = await recipient.getFreeBalance(ASSET);
     expect(finalSenderFb[sender.signerAddress]).to.be.eq(
-      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(receivedTransfers)),
+      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(toBN(reps))),
     );
     expect(finalRecipientFb[recipient.signerAddress]).to.be.eq(
-      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(receivedTransfers)),
+      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(toBN(reps))),
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (many payments sent)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (concurrent payments)", async () => {
     // establish tests constants
-    const TRANSFER_AMT = toBN(100);
-    const MIN_TRANSFERS = 25;
-    const TRANSFER_INTERVAL = 1000; // ms between consecutive transfer calls
+    const TRANSFER_AMT = toBN(10);
+    const reps = 3;
 
-    let receivedTransfers = 0;
-    let intervals = 0;
-
-    const { chainId } = await sender.ethProvider.getNetwork();
-
-    recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      log.info(`[${receivedTransfers}/${MIN_TRANSFERS}] Received transfer ${abrv(payload.paymentId)}`);
-      const signature = await signGraphReceiptMessage(
-        receipt,
+    for (let i = 0; i < reps; i++) {
+      log.info(`Sending signed transfer #${i}`);
+      // idk what a loop func even is
+      // eslint-disable-next-line no-loop-func
+      const finished = new Promise((resolve, reject) => {
+        recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+          const signature = await signGraphReceiptMessage(
+            receipt,
+            chainId,
+            verifyingContract,
+            recipientKey,
+          );
+          await recipient.resolveCondition({
+            conditionType: ConditionalTransferTypes.GraphTransfer,
+            paymentId: payload.paymentId,
+            responseCID: receipt.responseCID,
+            signature,
+          } as PublicParams.ResolveGraphTransfer);
+          resolve();
+        });
+      });
+      await performConditionalTransfer({
+        conditionType: ConditionalTransferTypes.GraphTransfer,
+        sender,
         chainId,
         verifyingContract,
-        recipientKey,
-      );
-      await recipient.resolveCondition({
-        conditionType: ConditionalTransferTypes.GraphTransfer,
-        paymentId: payload.paymentId,
-        responseCID: receipt.responseCID,
-        signature,
-      } as PublicParams.ResolveGraphTransfer);
-      log.info(`Resolved signed transfer: ${payload.paymentId}`);
-    });
-
-    // call transfers on interval
-    const start = Date.now();
-    const interval = setInterval(async () => {
-      log.warn("heartbeat thump thump thump");
-      intervals += 1;
-      if (intervals > MIN_TRANSFERS) {
-        clearInterval(interval);
-        return;
-      }
-      try {
-        const paymentId = getRandomBytes32();
-        await sender.conditionalTransfer({
-          amount: TRANSFER_AMT,
-          paymentId,
-          conditionType: ConditionalTransferTypes.GraphTransfer,
-          signerAddress: recipient.signerAddress,
-          chainId,
-          verifyingContract,
-          requestCID: receipt.requestCID,
-          subgraphDeploymentID: receipt.subgraphDeploymentID,
-          assetId: ASSET,
-          recipient: recipient.publicIdentifier,
-        } as PublicParams.GraphTransfer);
-        log.info(`[${intervals}/${MIN_TRANSFERS}] Sent transfer with paymentId ${abrv(paymentId)}`);
-      } catch (e) {
-        clearInterval(interval);
-        throw e;
-      }
-    }, TRANSFER_INTERVAL);
-
-    // setup promise to properly wait out the transfers / stop interval
-    // will also periodically check if a poller error has been set and reject
-    await new Promise((resolve, reject) => {
-      registerFailureListeners(reject, sender, recipient);
-      // setup listeners (increment on reclaim)
-      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (msg) => {
-        receivedTransfers += 1;
-        log.info(`[${receivedTransfers}/${MIN_TRANSFERS}] Unlocked transfer with payment Id: ${abrv(msg.paymentId)}`);
-        if (receivedTransfers >= MIN_TRANSFERS) {
-          resolve();
-        }
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+        recipient,
+        ASSET,
+        TRANSFER_AMT,
       });
-    });
-    const end = Date.now();
-    log.info(
-      `Average latency of ${MIN_TRANSFERS} transfers: ${(end - start) / MIN_TRANSFERS}ms`,
-    );
+      await finished;
+    }
 
-    expect(receivedTransfers).to.be.eq(MIN_TRANSFERS);
+    // verify transfer amounts
     const finalSenderFb = await sender.getFreeBalance(ASSET);
     const finalRecipientFb = await recipient.getFreeBalance(ASSET);
     expect(finalSenderFb[sender.signerAddress]).to.be.eq(
-      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(receivedTransfers)),
+      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(toBN(reps))),
     );
     expect(finalRecipientFb[recipient.signerAddress]).to.be.eq(
-      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(receivedTransfers)),
+      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(toBN(reps))),
     );
   });
 });
