@@ -133,7 +133,7 @@ export class ChannelRepository extends Repository<Channel> {
       return undefined;
     }
     return this.findOne(channel.multisigAddress, {
-      relations: ["appInstances"],
+      relations: ["appInstances", "challenges"],
     });
   }
 
