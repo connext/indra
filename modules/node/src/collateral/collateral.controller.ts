@@ -9,7 +9,7 @@ export class CollateralController {
 
   @Get("anonymized")
   async getAnonymizedTransfers(@Query() query: GetAnonymizedCollateralDataDto): Promise<any> {
-    const start = query.start ? parseInt(query.start) : undefined;
+    const start = query.start ? parseInt(query.start) : 0;
     const end = query.end ? parseInt(query.end) : undefined;
     return this.collateralService.getAnonymizedCollateralData(start, end);
   }

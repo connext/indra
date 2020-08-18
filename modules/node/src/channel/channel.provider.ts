@@ -1,7 +1,7 @@
 import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { providers, utils } from "ethers";
+import { utils, constants } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -28,7 +28,6 @@ import {
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
-import { stringify } from "@connext/utils";
 
 const { getAddress } = utils;
 
@@ -43,6 +42,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
+    // eslint-disable-next-line max-len
     private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
@@ -73,13 +73,13 @@ class ChannelMessaging extends AbstractMessagingProvider {
     try {
       const response = await this.channelService.rebalance(
         channel.multisigAddress,
-        getAddress(data.assetId),
+        getAddress(data.assetId || constants.AddressZero),
         RebalanceType.COLLATERALIZE,
       );
       return (
         response && {
-          transaction: response.transaction,
-          depositAppIdentityHash: response.appIdentityHash,
+          transaction: response.transaction!,
+          depositAppIdentityHash: response.appIdentityHash!,
         }
       );
     } catch (e) {

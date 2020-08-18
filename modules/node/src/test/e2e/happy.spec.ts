@@ -50,7 +50,7 @@ describe.only("Mostly happy paths", () => {
 
     chainId = configService.getSupportedChains()[0];
     ethProvider = configService.getEthProvider(chainId);
-    const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
+    const sugarDaddy = Wallet.fromMnemonic(env.mnemonic!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     log.info(`ethProviderUrl: ${ethProviderUrl}`);
 

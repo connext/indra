@@ -63,9 +63,9 @@ export class DepositService {
       DepositAppName,
       channel.chainId,
     );
-    const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
+    const depositApp: AppInstance<"DepositApp"> | undefined = channel.appInstances.find(
       (app) =>
-        app.appDefinition === depositRegistry.appDefinitionAddress &&
+        app.appDefinition === depositRegistry!.appDefinitionAddress &&
         app.latestState.assetId === assetId,
     );
     if (depositApp) {
@@ -186,7 +186,7 @@ export class DepositService {
   async requestDepositRights(
     channel: Channel,
     tokenAddress: string = AddressZero,
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
       throw new Error(
@@ -199,6 +199,9 @@ export class DepositService {
   async rescindDepositRights(appIdentityHash: string, multisigAddress: string): Promise<void> {
     this.log.debug(`Uninstalling deposit app for ${multisigAddress} with ${appIdentityHash}`);
     const onchain = await this.onchainTransactionService.findByAppId(appIdentityHash);
+    if (!onchain) {
+      throw new Error(`Onchain tx doesn't exist for app ${appIdentityHash}`);
+    }
     if (onchain.appUninstalled) {
       return;
     }

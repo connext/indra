@@ -18,7 +18,7 @@ export const transformBN = {
 };
 
 export function appStatusesToTransferStatus<T extends AppName>(
-  senderApp: AppInstance<T>,
+  senderApp?: AppInstance<T>,
   receiverApp?: AppInstance<T>,
 ): TransferStatus | undefined {
   if (!senderApp) {

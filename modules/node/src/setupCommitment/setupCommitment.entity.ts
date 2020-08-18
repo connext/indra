@@ -15,7 +15,7 @@ export class SetupCommitment {
 
   @Column("text")
   @IsEthAddress()
-  to: string;
+  to!: string;
 
   @Column("text")
   @IsBytes32()

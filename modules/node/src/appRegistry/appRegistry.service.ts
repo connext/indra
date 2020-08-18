@@ -65,12 +65,12 @@ export class AppRegistryService implements OnModuleInit {
     let registryAppInfo: DefaultApp;
 
     // if error, reject install
-    let installerChannel: Channel;
+    let installerChannel: Channel | undefined;
     try {
       installerChannel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
       registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
-      );
+      )!;
 
       if (!registryAppInfo.allowNodeInstall) {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
@@ -147,7 +147,7 @@ export class AppRegistryService implements OnModuleInit {
       this.log.warn(`App install failed: ${e.message || e}`);
       await this.cfCoreService.rejectInstallApp(
         appIdentityHash,
-        installerChannel.multisigAddress,
+        installerChannel!.multisigAddress,
         e.message,
       );
       return;
@@ -349,7 +349,7 @@ export class AppRegistryService implements OnModuleInit {
     );
     const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       channel.multisigAddress,
-      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)!
         .appDefinitionAddress,
     );
     const signerAddr = await this.configService.getSignerAddress();
@@ -374,11 +374,11 @@ export class AppRegistryService implements OnModuleInit {
 
     const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
 
-    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
+    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo!.name)) {
       return this.uninstallTransferMiddleware(appInstance, role);
     }
 
-    if (appRegistryInfo.name === DepositAppName) {
+    if (appRegistryInfo!.name === DepositAppName) {
       return this.uninstallDepositMiddleware(appInstance, role);
     }
   };

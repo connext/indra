@@ -50,11 +50,11 @@ export class ChallengeUpdatedEvent<T extends AppName = any> {
   finalizesAt!: BigNumber;
 
   @Column({ type: "enum", enum: ChallengeStatus })
-  status: ChallengeStatus;
+  status!: ChallengeStatus;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

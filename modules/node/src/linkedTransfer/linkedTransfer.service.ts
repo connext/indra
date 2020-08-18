@@ -28,7 +28,12 @@ export class LinkedTransferService {
     paymentId: string,
     chainId: number,
   ): Promise<
-    { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
+    | {
+        status?: LinkedTransferStatus;
+        senderApp?: AppInstance;
+        receiverApp?: AppInstance;
+      }
+    | undefined
   > {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     // eslint-disable-next-line max-len
@@ -46,7 +51,7 @@ export class LinkedTransferService {
         .appDefinitionAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
-    const status = appStatusesToLinkedTransferStatus(senderApp, receiverApp);
+    const status = appStatusesToLinkedTransferStatus(senderApp!, receiverApp);
 
     return { senderApp, receiverApp, status };
   }
@@ -87,11 +92,9 @@ export class LinkedTransferService {
     )
       // remove nulls
       .filter((transfer) => !!transfer);
-    const alreadyRedeemedPaymentIds = existingReceiverApps.map(
-      (app) => app.latestState["paymentId"],
-    );
+    const alreadyRedeemedPaymentIds = existingReceiverApps.map((app) => app!.latestState.paymentId);
     const redeemableTransfers = transfersFromNodeToUser.filter(
-      (transfer) => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
+      (transfer) => !alreadyRedeemedPaymentIds.includes(transfer.latestState.paymentId),
     );
     this.log.info(
       `getLinkedTransfersForReceiverUnlock for ${userIdentifier} on ${chainId} complete: ${JSON.stringify(

@@ -13,7 +13,7 @@ export class WithdrawCommitment {
   value!: BigNumber;
 
   @Column("text")
-  to: string;
+  to!: string;
 
   @Column("text")
   data!: string;

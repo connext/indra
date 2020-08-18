@@ -52,7 +52,7 @@ export class OnchainTransactionService implements OnModuleInit {
     appIdentityHash: string,
   ): Promise<OnchainTransactionResponse> {
     return new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId).add(() => {
+      this.queues.get(channel.chainId)!.add(() => {
         this.sendTransaction(
           transaction,
           TransactionReason.USER_WITHDRAWAL,
@@ -71,7 +71,7 @@ export class OnchainTransactionService implements OnModuleInit {
     appIdentityHash: string,
   ): Promise<OnchainTransactionResponse> {
     return new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId).add(() => {
+      this.queues.get(channel.chainId)!.add(() => {
         this.sendTransaction(
           transaction,
           TransactionReason.NODE_WITHDRAWAL,
@@ -90,7 +90,7 @@ export class OnchainTransactionService implements OnModuleInit {
     appIdentityHash: string,
   ): Promise<OnchainTransactionResponse> {
     return new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId).add(() => {
+      this.queues.get(channel.chainId)!.add(() => {
         this.sendTransaction(
           transaction,
           TransactionReason.COLLATERALIZATION,
@@ -117,7 +117,7 @@ export class OnchainTransactionService implements OnModuleInit {
   ): Promise<TransactionReceipt> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
     const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId).add(() => {
+      this.queues.get(channel.chainId)!.add(() => {
         this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
           .then((result) => resolve(result))
           .catch((error) => reject(error.message));
@@ -129,6 +129,9 @@ export class OnchainTransactionService implements OnModuleInit {
     // mined
     await tx.completed();
     const stored = await this.onchainTransactionRepository.findByHash(tx.hash);
+    if (!stored) {
+      throw new Error(`No stored tx found for hash ${tx.hash}`);
+    }
     return {
       to: stored.to,
       from: stored.from,
@@ -153,12 +156,12 @@ export class OnchainTransactionService implements OnModuleInit {
       } on chain ${channel.chainId}`,
     );
     const errors: { [k: number]: string } = [];
-    let tx: providers.TransactionResponse;
+    let tx: providers.TransactionResponse | undefined;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const chainNonce = await wallet.getTransactionCount();
-        const memoryNonce = await this.nonces.get(channel.chainId);
+        const memoryNonce = (await this.nonces.get(channel.chainId))!;
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         const populatedTx = await wallet.populateTransaction({ ...transaction, nonce });
         tx = await wallet.sendTransaction({
@@ -166,7 +169,7 @@ export class OnchainTransactionService implements OnModuleInit {
           gasLimit: BigNumber.from(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
             ? MIN_GAS_LIMIT
             : populatedTx.gasLimit,
-          gasPrice: getGasPrice(wallet.provider, channel.chainId),
+          gasPrice: getGasPrice(wallet.provider!, channel.chainId),
         });
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
@@ -178,7 +181,7 @@ export class OnchainTransactionService implements OnModuleInit {
         // eslint-disable-next-line no-loop-func
         const completed: Promise<void> = new Promise(async (resolve, reject) => {
           try {
-            const receipt = await tx.wait();
+            const receipt = await tx!.wait();
             await this.onchainTransactionRepository.addReceipt(receipt);
             resolve();
           } catch (e) {
@@ -209,7 +212,9 @@ export class OnchainTransactionService implements OnModuleInit {
         );
       }
     }
-    await this.onchainTransactionRepository.markFailed(tx, errors);
+    if (tx) {
+      await this.onchainTransactionRepository.markFailed(tx, errors);
+    }
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
   }
 
