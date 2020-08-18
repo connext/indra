@@ -58,6 +58,7 @@ export class NodeApiClient implements INodeApiClient {
       logger,
       messaging: providedMessaging,
       chainId,
+      middlewareMap,
     } = opts;
     // Don't sync channel on startup by default
     const skipSync = typeof opts.skipSync === "boolean" ? opts.skipSync : true;
@@ -131,6 +132,7 @@ export class NodeApiClient implements INodeApiClient {
         ethProvider,
         signer,
         node,
+        middlewareMap,
         logger: log,
         store: opts.store,
         skipSync,

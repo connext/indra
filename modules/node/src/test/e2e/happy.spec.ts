@@ -1,10 +1,12 @@
 import { connect } from "@connext/client";
 import {
   ColorfulLogger,
+  delay,
+  getRandomBytes32,
+  getRandomChannelSigner,
   getRandomPrivateKey,
   logTime,
   stringify,
-  getRandomChannelSigner,
 } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
 import { getMemoryStore } from "@connext/store";
@@ -21,8 +23,8 @@ import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-describe("Happy path", () => {
-  const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
+describe("Mostly happy paths", () => {
+  const log = new ColorfulLogger("MostlyHappy", env.logLevel, true, "Test");
 
   let app: INestApplication;
   let configService: ConfigService;
@@ -48,7 +50,7 @@ describe("Happy path", () => {
 
     chainId = configService.getSupportedChains()[0];
     ethProvider = configService.getEthProvider(chainId);
-    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(ethProvider);
+    const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     log.info(`ethProviderUrl: ${ethProviderUrl}`);
 
@@ -83,6 +85,8 @@ describe("Happy path", () => {
 
   after(async () => {
     try {
+      log.info(`Test finished, shutting app down`);
+      await delay(2000); // Give the node a sec to stop making db queries
       await app.close();
       log.info(`Application was shutdown successfully`);
     } catch (e) {
@@ -112,5 +116,31 @@ describe("Happy path", () => {
     await ethProvider.waitForTransaction(withdrawRes.transaction.hash);
     const receipt = await ethProvider.getTransactionReceipt(withdrawRes.transaction.hash);
     expect(receipt.status).to.equal(1);
+  });
+
+  it("should fail if client tries to re-use the same payment Id", async () => {
+    const depositRes = await clientA.deposit({
+      assetId: AddressZero,
+      amount: parseEther("0.03"),
+    });
+    log.info(`Deposit was successful: ${stringify(depositRes)}`);
+    await depositRes.completed();
+    const paymentId = getRandomBytes32();
+    log.info(`Sending first transfer with paymentId ${paymentId}`);
+    const transferRes = await clientA.transfer({
+      amount: parseEther("0.01"),
+      assetId: AddressZero,
+      paymentId,
+      recipient: clientB.publicIdentifier,
+    });
+    log.info(`First transfer was successful: ${stringify(transferRes)}`);
+    expect(
+      clientA.transfer({
+        amount: parseEther("0.01"),
+        assetId: AddressZero,
+        paymentId,
+        recipient: clientB.publicIdentifier,
+      }),
+    ).to.be.rejectedWith(/Duplicate payment id/);
   });
 });

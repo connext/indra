@@ -13,7 +13,7 @@ export const env = {
   messagingUrl: "nats://indra_nats_node_tester:4222",
   mnemonic: process.env.INDRA_MNEMONIC,
   nodeUrl: "http://localhost:8080",
-  serverLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
+  indraLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
 };
 
 export const ethProviderUrl = env.chainProviders[env.defaultChain];
@@ -46,7 +46,7 @@ export class MockConfigService extends ConfigService {
   }
   getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
   getProviderUrls = () => [ethProviderUrl!];
-  getLogLevel = (): number => env.serverLogLevel;
+  getLogLevel = (): number => env.indraLogLevel;
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;
   getSignerAddress = async () => this.getSigner().address;

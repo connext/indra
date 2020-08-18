@@ -26,6 +26,13 @@ import {
   WalletDepositParams,
   WithdrawalMonitorObject,
   ConditionalTransactionCommitmentJSON,
+  ValidationMiddleware,
+  ProtocolName,
+  MiddlewareContext,
+  ProtocolNames,
+  ProposeMiddlewareContext,
+  UninstallMiddlewareContext,
+  InstallMiddlewareContext,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -46,6 +53,7 @@ export const createCFChannelProvider = async ({
   logger,
   store,
   skipSync,
+  middlewareMap,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   let config: NodeResponses.GetConfig;
   if (!node.config) {
@@ -97,20 +105,27 @@ export const createCFChannelProvider = async ({
 
   const getLatestSwapRate = (from: string, to: string) => node.getLatestSwapRate(from, to);
 
-  // register any default middlewares
-  cfCore.injectMiddleware(
-    Opcode.OP_VALIDATE,
-    await generateValidationMiddleware(
-      {
-        [network.chainId]: {
-          contractAddresses,
-          provider: ethProvider,
-        },
+  const defaultMiddleware = await generateValidationMiddleware(
+    {
+      [network.chainId]: {
+        contractAddresses,
+        provider: ethProvider,
       },
-      { [network.chainId]: supportedTokenAddresses[network.chainId] },
-      getLatestSwapRate,
-    ),
+    },
+    { [network.chainId]: supportedTokenAddresses[network.chainId] },
+    getLatestSwapRate,
   );
+  const validationMiddleware: ValidationMiddleware = async (
+    protocol: ProtocolName,
+    middlewareContext: MiddlewareContext,
+  ) => {
+    await defaultMiddleware(protocol, middlewareContext);
+    if (middlewareMap) {
+      await middlewareMap[protocol](protocol, middlewareContext);
+    }
+  };
+  // register any default middlewares
+  cfCore.injectMiddleware(Opcode.OP_VALIDATE, validationMiddleware);
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);
   const channelProvider = new ChannelProvider(connection);
@@ -353,6 +368,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         channel,
       );
     }
+
+    // recreate state channel now to update the fields purely based on the restored state
+    // TODO: should probably have a method in the store specifically to do this
+    await this.store.createStateChannel(channel, setupCommitment, freeBalanceSetStates[0][1]);
   };
 
   private restoreState = async (): Promise<void> => {

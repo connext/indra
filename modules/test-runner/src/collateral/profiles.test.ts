@@ -4,22 +4,31 @@ import { constants } from "ethers";
 import { before } from "mocha";
 import { Client } from "ts-nats";
 
-import { createClient, expect } from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
-import { getNatsClient } from "../util/nats";
+import {
+  addRebalanceProfile,
+  createClient,
+  expect,
+  getNatsClient,
+  getTestLoggers,
+} from "../util";
 
 const { AddressZero } = constants;
 
-describe("Profiles", () => {
+const name = "Collateralization Profiles";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
   let nats: Client;
+  let start: number;
 
   before(async () => {
     nats = getNatsClient();
   });
 
   beforeEach(async () => {
+    start = Date.now();
     client = await createClient();
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

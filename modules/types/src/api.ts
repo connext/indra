@@ -17,6 +17,7 @@ import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
 import { IStoreService } from "./store";
 import { ConditionalTransferTypes } from "./transfers";
+import { MiddlewareMap } from "./middleware";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
   ethProvider: providers.JsonRpcProvider;
@@ -26,6 +27,7 @@ export interface AsyncNodeInitializationParameters extends NodeInitializationPar
   store?: IStoreService;
   signer?: IChannelSigner;
   channelProvider?: IChannelProvider;
+  middlewareMap?: MiddlewareMap;
   skipSync?: boolean;
 }
 

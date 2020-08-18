@@ -36,7 +36,7 @@ export const startBot = async (
   txTimestamps: number[];
 }> => {
   const NAME = `Bot #${concurrencyIndex}`;
-  const log = new ColorfulLogger(NAME, logLevel, true, concurrencyIndex);
+  const log = new ColorfulLogger(NAME, 3, true, concurrencyIndex);
   log.info(`Launched ${NAME}, paying in ${tokenAddress}`);
   const TRANSFER_AMT = parseEther("0.001");
   const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
