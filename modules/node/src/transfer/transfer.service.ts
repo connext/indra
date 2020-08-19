@@ -127,9 +127,9 @@ export class TransferService {
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
     const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
-    const expiredApps = channel.appInstances.filter(([, app]) => {
-      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
-    });
+    const expiredApps = channel.appInstances.filter(([, app]) =>
+      app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
+    );
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
     for (const [, app] of expiredApps) {
       try {
@@ -145,7 +145,7 @@ export class TransferService {
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
-  // receivers are online if needed
+  // receivers are online if needed or that payment ids are unique, etc
   async transferAppInstallFlow(
     senderAppIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
@@ -156,6 +156,13 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
+    const existing = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+      paymentId,
+      getSignerAddressFromPublicIdentifier(senderChannel.userIdentifier),
+    );
+    if (existing.type !== AppType.PROPOSAL) {
+      throw new Error(`Duplicate payment id ${paymentId} has already been used to send a transfer`);
+    }
 
     const requireOnline =
       RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];
@@ -221,7 +228,7 @@ export class TransferService {
         }
       }
       this.log.warn(
-        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver was offline`,
+        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver app not installed`,
       );
       return;
     }

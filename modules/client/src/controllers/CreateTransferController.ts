@@ -26,6 +26,7 @@ import {
   toBN,
   stringify,
   hashDomainSeparator,
+  getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
 } from "@connext/utils";
 import { constants, utils, BigNumber } from "ethers";
@@ -42,7 +43,8 @@ export class CreateTransferController extends AbstractController {
     this.log.info(`conditionalTransfer started: ${stringify(params)}`);
 
     const amount = toBN(params.amount);
-    const { meta, recipient, assetId } = params;
+    const { meta, recipient } = params;
+    const assetId = getAddressFromAssetId(params.assetId);
     let conditionType = params.conditionType;
 
     const submittedMeta = { ...(meta || {}) };

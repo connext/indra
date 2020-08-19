@@ -26,16 +26,16 @@ import { ethProviderUrl, ethWallet } from "./ethprovider";
 import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
 
 export const createClient = async (
-  opts: Partial<ClientOptions & { id: string; logLevel: number }> = {},
+  opts: Partial<ClientOptions & { id: string }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
+  const log = new ColorfulLogger("CreateClient", env.logLevel, false, "U");
   const store = opts.store || getMemoryStore({ prefix: getRandomBytes32() });
   await store.init();
   const clientOpts: ClientOptions = {
     ...opts,
     ethProviderUrl: opts.ethProviderUrl || ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
+    loggerService: new ColorfulLogger("Client", env.clientLogLevel, true, opts.id),
     signer: opts.signer || getRandomPrivateKey(),
     nodeUrl: opts.nodeUrl || env.nodeUrl,
     messagingUrl: opts.messagingUrl || env.natsUrl,
@@ -82,7 +82,7 @@ export const createRemoteClient = async (
   const clientOpts: ClientOptions = {
     channelProvider,
     ethProviderUrl: ethProviderUrl,
-    loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
+    loggerService: new ColorfulLogger("TestRunner", env.clientLogLevel, true),
     messagingUrl: env.natsUrl,
   };
   const client = await connect(clientOpts);
@@ -92,7 +92,6 @@ export const createRemoteClient = async (
 };
 
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
-  // TODO: allow test-runner to access external urls
   const urlOptions = {
     ethProviderUrl: ethProviderUrl,
     nodeUrl: env.nodeUrl,
@@ -101,7 +100,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   let clientOpts: Partial<ClientOptions> = {
     ...opts,
     ...urlOptions,
-    loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
+    loggerService: new ColorfulLogger("TestRunner", env.clientLogLevel, true),
   };
   if (network === "mainnet") {
     clientOpts = {
@@ -125,7 +124,7 @@ export type ClientTestMessagingInputOpts = {
 };
 
 export const createClientWithMessagingLimits = async (
-  opts: Partial<ClientTestMessagingInputOpts> & { id?: string; logLevel?: number } = {},
+  opts: Partial<ClientTestMessagingInputOpts> & { id?: string } = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, params } = opts;
   const signer = opts.signer || getRandomChannelSigner(ethProviderUrl);
@@ -185,6 +184,5 @@ export const createClientWithMessagingLimits = async (
     signer: signer,
     store: opts.store,
     id: opts.id,
-    logLevel: opts.logLevel,
   });
 };

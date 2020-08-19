@@ -31,6 +31,7 @@ export const entityToStateProgressedEventPayload = (
     turnTaker,
     signature,
     identityHash: challenge.app.identityHash,
+    chainId: challenge.channel.chainId,
   };
 };
 

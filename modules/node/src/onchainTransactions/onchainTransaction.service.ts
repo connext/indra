@@ -209,7 +209,7 @@ export class OnchainTransactionService implements OnModuleInit {
         );
       }
     }
-    await this.onchainTransactionRepository.markFailed(tx, errors);
+    await this.onchainTransactionRepository.markFailed(tx, errors, appIdentityHash);
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
   }
 

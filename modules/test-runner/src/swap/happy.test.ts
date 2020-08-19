@@ -1,58 +1,64 @@
 import { IConnextClient, PublicParams } from "@connext/types";
 import { constants, utils } from "ethers";
 
-import { expect, ONE_ETH } from "../util";
 import {
-  AssetOptions,
   createClient,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
+  expect,
   fundChannel,
+  getTestLoggers,
+  ONE,
+  ONE_ETH,
   swapAsset,
   TOKEN_AMOUNT,
   WRONG_ADDRESS,
   ZERO_ZERO_TWO,
   ZERO_ZERO_ZERO_FIVE,
-  ONE,
 } from "../util";
 
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-describe("Swaps", () => {
+const name = "Happy Swaps";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
-  let tokenAddress: string;
   let nodeSignerAddress: string;
+  let start: number;
+  let tokenAddress: string;
 
   beforeEach(async () => {
+    start = Date.now();
     client = await createClient();
     tokenAddress = client.config.contractAddresses[client.chainId].Token!;
     nodeSignerAddress = client.nodeSignerAddress;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client swaps eth for tokens successfully", async () => {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+  it("client swaps eth for tokens successfully", async () => {
+    const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
     await swapAsset(client, input, output, nodeSignerAddress);
   });
 
-  it("happy case: client swaps tokens for eth successfully", async () => {
-    const input: AssetOptions = { amount: ONE_ETH, assetId: tokenAddress };
-    const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
+  it("client swaps tokens for eth successfully (case-insensitive assetId)", async () => {
+    const input = { amount: ONE_ETH, assetId: tokenAddress.toUpperCase() };
+    const output = { amount: ETH_AMOUNT_MD, assetId: AddressZero.toUpperCase() };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
     await swapAsset(client, input, output, nodeSignerAddress);
   });
 
-  it("happy case: client tries to swap with insufficient collateral on node", async () => {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+  it("client tries to swap with insufficient collateral on node", async () => {
+    const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
     await swapAsset(client, input, output, nodeSignerAddress);
   });

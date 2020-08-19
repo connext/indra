@@ -4,23 +4,28 @@ import { ERC20 } from "@connext/contracts";
 import { BigNumber, Contract, constants } from "ethers";
 
 import {
+  createClient,
+  ethProvider,
   expect,
+  getOnchainBalance,
+  getTestLoggers,
   NEGATIVE_ONE,
   ONE,
+  TOKEN_AMOUNT,
+  TOKEN_AMOUNT_SM,
   TWO,
   WRONG_ADDRESS,
-  TOKEN_AMOUNT_SM,
-  TOKEN_AMOUNT,
 } from "../util";
-import { createClient } from "../util/client";
-import { getOnchainBalance, ethProvider } from "../util/ethprovider";
 
 const { AddressZero, Zero, One } = constants;
 
-describe("Deposits", () => {
+const name = "Happy Deposits";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
+  let start: number;
 
   const assertClientFreeBalance = async (
     client: IConnextClient,
@@ -53,16 +58,18 @@ describe("Deposits", () => {
   };
 
   beforeEach(async () => {
+    start = Date.now();
     client = await createClient();
     tokenAddress = client.config.contractAddresses[client.chainId].Token!;
     nodeSignerAddress = client.nodeSignerAddress;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it("should deposit ETH", async () => {
     const expected = {
       node: Zero.toString(),
       client: ONE,
@@ -76,13 +83,14 @@ describe("Deposits", () => {
     await assertOnchainBalance(client, expected);
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
+    timeElapsed("beforeEach + test complete", start);
   });
 
-  it("happy case: client should deposit tokens", async () => {
+  it("should deposit tokens (case-insensitive assetId)", async () => {
     const expected = {
       node: Zero.toString(),
       client: One.toString(),
-      assetId: tokenAddress,
+      assetId: tokenAddress.toUpperCase(),
     };
     const response = await client.deposit({ amount: expected.client, assetId: expected.assetId });
     if (response.completed) {
@@ -93,19 +101,19 @@ describe("Deposits", () => {
     await assertNodeFreeBalance(client, expected);
   });
 
-  it("client should not be able to deposit with invalid token address", async () => {
+  it("should not be able to deposit with invalid token address", async () => {
     await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith(
       "invalid",
     );
   });
 
-  it("client should not be able to deposit with negative amount", async () => {
+  it("should not be able to deposit with negative amount", async () => {
     await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
       "Value (-1) is not greater than 0",
     );
   });
 
-  it("client should not be able to propose deposit with value it doesn't have", async () => {
+  it("should not be able to propose deposit with value it doesn't have", async () => {
     await expect(
       client.deposit({
         amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),

@@ -8,7 +8,6 @@ import {
   SignedCancelChallengeRequest,
   StateProgressedEventPayload,
   ChallengeEvents,
-  ContractAddresses,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -21,14 +20,15 @@ import {
 import { IChannelSigner } from "./crypto";
 import { ILoggerService, ILogger } from "./logger";
 import { Ctx } from "evt";
+import { ContractAddressBook } from "./node";
 
 ////////////////////////////////////////
 // Watcher external parameters
 
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
-  provider: providers.JsonRpcProvider | string;
-  context: ContractAddresses;
+  providers: { [chainId: number]: providers.JsonRpcProvider | string };
+  context: ContractAddressBook;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
   logLevel?: number;
@@ -212,6 +212,7 @@ export enum StoredAppChallengeStatus {
 export type StoredAppChallenge = Omit<AppChallenge, "status"> & {
   identityHash: Bytes32;
   status: StoredAppChallengeStatus;
+  chainId: number;
 };
 
 export interface IWatcherStoreService {

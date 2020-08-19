@@ -1,50 +1,53 @@
-/* global before */
 import {
+  Address,
   ConditionalTransferTypes,
   EventNames,
-  NodeResponses,
+  EventPayloads,
+  GraphReceipt,
   IConnextClient,
+  NodeResponses,
+  PrivateKey,
   PublicParams,
   SignedTransferStatus,
-  EventPayloads,
-  PrivateKey,
-  Address,
-  GraphReceipt,
 } from "@connext/types";
 import {
-  getTestVerifyingContract,
-  getTestGraphReceiptToSign,
-  getRandomPrivateKey,
-  signGraphReceiptMessage,
   getChainId,
+  getRandomPrivateKey,
+  getTestGraphReceiptToSign,
+  getTestVerifyingContract,
+  signGraphReceiptMessage,
 } from "@connext/utils";
-
 import { providers, constants, utils } from "ethers";
 
 import {
-  AssetOptions,
   createClient,
   ETH_AMOUNT_SM,
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   TOKEN_AMOUNT,
 } from "../util";
 
 const { AddressZero } = constants;
 const { hexlify, randomBytes } = utils;
 
-describe("Graph Signed Transfers", () => {
-  let privateKeyA: PrivateKey;
-  let clientA: IConnextClient;
-  let privateKeyB: PrivateKey;
-  let clientB: IConnextClient;
-  let tokenAddress: Address;
-  let receipt: GraphReceipt;
+const name = "Graph Signed Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let chainId: number;
-  let verifyingContract: Address;
+  let clientA: IConnextClient;
+  let clientB: IConnextClient;
+  let privateKeyA: PrivateKey;
+  let privateKeyB: PrivateKey;
   let provider: providers.JsonRpcProvider;
+  let receipt: GraphReceipt;
+  let start: number;
+  let tokenAddress: Address;
+  let verifyingContract: Address;
+
   before(async () => {
+    start = Date.now();
     provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
@@ -57,6 +60,7 @@ describe("Graph Signed Transfers", () => {
     for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
       await provider.send("evm_mine", []);
     }
+    timeElapsed("beforeEach complete", start);
   });
 
   beforeEach(async () => {
@@ -75,8 +79,8 @@ describe("Graph Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+  it("clientA signed transfers eth to clientB through node, clientB is online", async () => {
+    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const transferPromise = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
@@ -174,8 +178,8 @@ describe("Graph Signed Transfers", () => {
     expect(clientBPostTransferBal).to.eq(transfer.amount);
   });
 
-  it("happy case: clientA signed transfers tokens to clientB through node", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+  it("clientA signed transfers tokens to clientB through node", async () => {
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
@@ -257,7 +261,7 @@ describe("Graph Signed Transfers", () => {
   });
 
   it("gets a pending signed transfer by lock hash", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
@@ -293,7 +297,7 @@ describe("Graph Signed Transfers", () => {
   });
 
   it("gets a completed signed transfer by lock hash", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
@@ -359,7 +363,7 @@ describe("Graph Signed Transfers", () => {
   });
 
   it("cannot resolve a signed transfer if signature is wrong", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
@@ -394,7 +398,7 @@ describe("Graph Signed Transfers", () => {
   });
 
   it("if sender uninstalls, node should force uninstall receiver first", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
@@ -438,7 +442,7 @@ describe("Graph Signed Transfers", () => {
   });
 
   it("sender cannot uninstall before receiver", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
@@ -472,7 +476,7 @@ describe("Graph Signed Transfers", () => {
   });
 
   it("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
-    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const transfer = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
