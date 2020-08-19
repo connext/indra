@@ -259,13 +259,11 @@ export default class ListenerService implements OnModuleInit {
   }
 
   onModuleInit(): void {
-    Object.entries(this.getEventListeners()).forEach(
-      ([event, callback]: [
-        EventName,
-        (data: ProtocolEventMessage<any>) => void | Promise<void>,
-      ]) => {
-        this.cfCoreService.registerCfCoreListener(event, callback);
-      },
+    Object.entries(
+      this.getEventListeners(),
+    ).forEach(
+      ([event, callback]: [any, (data: ProtocolEventMessage<any>) => void | Promise<void>]) =>
+        this.cfCoreService.registerCfCoreListener(event, callback),
     );
   }
 }

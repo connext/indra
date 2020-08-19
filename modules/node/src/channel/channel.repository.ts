@@ -6,7 +6,7 @@ import { EntityManager, EntityRepository, Repository } from "typeorm";
 import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { AppInstanceSerializer } from "../appInstance/appInstance.repository";
-import { AppType } from "../appInstance/appInstance.entity";
+import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
 import { Channel } from "./channel.entity";
 
@@ -25,18 +25,18 @@ export const ChannelSerializer: JSONSerializer<Channel, StateChannelJSON> = clas
           AppInstanceSerializer.toJSON({
             ...app,
             channel,
-          }),
+          })!,
         ]),
       chainId: channel.chainId,
       freeBalanceAppInstance: AppInstanceSerializer.toJSON({
         ...(channel.appInstances || []).find((app) => app.type === AppType.FREE_BALANCE),
         channel,
-      }),
+      } as AppInstance)!,
       monotonicNumProposedApps: channel.monotonicNumProposedApps,
       multisigAddress: channel.multisigAddress,
       proposedAppInstances: (channel.appInstances || [])
         .filter((app) => app.type === AppType.PROPOSAL)
-        .map((app) => [app.identityHash, AppInstanceSerializer.toJSON({ ...app, channel })]),
+        .map((app) => [app.identityHash, AppInstanceSerializer.toJSON({ ...app, channel })!]),
       schemaVersion: channel.schemaVersion,
       userIdentifiers: [channel.nodeIdentifier, channel.userIdentifier], // always [initiator, responder] -- node will always be initiator
     };
@@ -77,7 +77,7 @@ export class ChannelRepository extends Repository<Channel> {
       await this.createQueryBuilder("channel")
         .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
         .getOne()
-    ).chainId;
+    )?.chainId;
   }
 
   async findAll(available: boolean = true): Promise<Channel[]> {

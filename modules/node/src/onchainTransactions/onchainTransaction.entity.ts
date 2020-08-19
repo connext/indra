@@ -84,7 +84,7 @@ export class OnchainTransaction {
 
   // Fields from TransactionReceipt (after mined)
   @Column("text", { transformer: transformBN })
-  gasUsed: BigNumber;
+  gasUsed!: BigNumber;
 
   @Column("text", { nullable: true })
   logsBloom!: string;

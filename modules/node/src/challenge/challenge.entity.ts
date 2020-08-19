@@ -23,7 +23,7 @@ import { IsKeccak256Hash } from "../validate";
 @Entity()
 export class ProcessedBlock {
   @PrimaryColumn("integer", { unique: true })
-  blockNumber: number;
+  blockNumber!: number;
 }
 
 @Entity()
@@ -32,17 +32,17 @@ export class Challenge<T extends AppName = any> {
   id!: number;
 
   @Column("text", { transformer: transformBN })
-  versionNumber: BigNumber;
+  versionNumber!: BigNumber;
 
   @Column("text")
   @IsKeccak256Hash()
-  appStateHash: string;
+  appStateHash!: string;
 
   @Column("text", { transformer: transformBN })
-  finalizesAt: BigNumber;
+  finalizesAt!: BigNumber;
 
   @Column({ type: "enum", enum: StoredAppChallengeStatus })
-  status: StoredAppChallengeStatus;
+  status!: StoredAppChallengeStatus;
 
   @OneToOne((type: any) => AppInstance)
   @JoinColumn()
@@ -58,8 +58,8 @@ export class Challenge<T extends AppName = any> {
   channel!: Channel;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

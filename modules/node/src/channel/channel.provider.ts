@@ -1,7 +1,7 @@
 import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { utils } from "ethers";
+import { utils, constants } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -42,6 +42,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
+    // eslint-disable-next-line max-len
     private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
@@ -72,13 +73,13 @@ class ChannelMessaging extends AbstractMessagingProvider {
     try {
       const response = await this.channelService.rebalance(
         channel.multisigAddress,
-        getAddress(data.assetId),
+        getAddress(data.assetId || constants.AddressZero),
         RebalanceType.COLLATERALIZE,
       );
       return (
         response && {
-          transaction: response.transaction,
-          depositAppIdentityHash: response.appIdentityHash,
+          transaction: response.transaction!,
+          depositAppIdentityHash: response.appIdentityHash!,
         }
       );
     } catch (e) {
@@ -135,14 +136,16 @@ class ChannelMessaging extends AbstractMessagingProvider {
       throw new Error(`Found channel, but no setup commitment. This should not happen.`);
     }
     // get active app set state commitments
-    const setStateCommitments = await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
-      channel.multisigAddress,
-    );
+    const setStateCommitments =
+      await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
+        channel.multisigAddress,
+      );
 
     // get active app conditional transaction commitments
-    const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
-      channel.multisigAddress,
-    );
+    const conditionalCommitments =
+      await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
+        channel.multisigAddress,
+      );
     return {
       channel,
       setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),
