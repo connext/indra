@@ -63,7 +63,8 @@ export const getCancelAction = (
     | SimpleSignedTransferAppAction
     | GraphSignedTransferAppAction
     | GraphBatchedTransferAppAction
-    | SimpleLinkedTransferAppAction;
+    | SimpleLinkedTransferAppAction
+    | undefined;
   switch (transferType) {
     case ConditionalTransferTypes.OnlineTransfer:
     case ConditionalTransferTypes.LinkedTransfer:
@@ -90,8 +91,10 @@ export const getCancelAction = (
     }
     default: {
       const c: never = transferType;
-      this.log.error(`Unsupported conditionType ${c}`);
     }
+  }
+  if (!action) {
+    throw new Error(`No cancel action defined`);
   }
   return action;
 };
@@ -123,12 +126,16 @@ export class TransferService {
 
   async pruneExpiredApps(_channel: Channel): Promise<void> {
     const channel = await this.cfCoreStore.getStateChannel(_channel.multisigAddress);
+    if (!channel) {
+      throw new Error(`Could not get state channel for ${_channel.multisigAddress}`);
+    }
     this.log.info(
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
-    const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
-    const expiredApps = channel.appInstances.filter(([, app]) =>
-      app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
+    const current = await this.configService.getEthProvider(channel.chainId)!.getBlockNumber();
+    const expiredApps = channel.appInstances.filter(
+      ([, app]) =>
+        app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
     );
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
     for (const [, app] of expiredApps) {
@@ -155,13 +162,15 @@ export class TransferService {
   ): Promise<void> {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
-    const paymentId = proposeInstallParams.meta["paymentId"];
+    const paymentId = proposeInstallParams.meta.paymentId;
     const existing = await this.transferRepository.findTransferAppByPaymentIdAndSender(
       paymentId,
       getSignerAddressFromPublicIdentifier(senderChannel.userIdentifier),
     );
-    if (existing.type !== AppType.PROPOSAL) {
-      throw new Error(`Duplicate payment id ${paymentId} has already been used to send a transfer`);
+    if (existing?.type !== AppType.PROPOSAL) {
+      throw new Error(
+        `Duplicate payment id ${paymentId} has already been used to send a transfer or sender app does not exist`,
+      );
     }
 
     const requireOnline =
@@ -184,7 +193,7 @@ export class TransferService {
     }
 
     // RECEIVER PROPOSAL
-    let receiverProposeRes: MethodResults.ProposeInstall & { appType: AppType };
+    let receiverProposeRes: (MethodResults.ProposeInstall & { appType: AppType }) | undefined;
     const receiverChainId = proposeInstallParams.meta.receiverChainId
       ? proposeInstallParams.meta.receiverChainId
       : senderChannel.chainId;
@@ -196,7 +205,7 @@ export class TransferService {
     this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
 
     try {
-      receiverProposeRes = await Promise.race([
+      receiverProposeRes = (await Promise.race([
         this.proposeReceiverAppByPaymentId(
           from,
           senderChannel.chainId,
@@ -215,7 +224,7 @@ export class TransferService {
           CF_METHOD_TIMEOUT * 3,
           `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
         ),
-      ]);
+      ])) as any;
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (requireOnline) {
@@ -515,7 +524,7 @@ export class TransferService {
 
   async findSenderAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string): Promise<AppInstance<T>> {
+  >(paymentId: string): Promise<AppInstance<T> | undefined> {
     this.log.debug(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
     const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
@@ -528,7 +537,7 @@ export class TransferService {
 
   async findReceiverAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string): Promise<AppInstance<T>> {
+  >(paymentId: string): Promise<AppInstance<T> | undefined> {
     this.log.debug(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
     const app = await this.transferRepository.findTransferAppByPaymentIdAndSender<T>(

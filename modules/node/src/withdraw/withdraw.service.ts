@@ -58,9 +58,6 @@ export class WithdrawService {
     amount: BigNumber,
     assetId: string = AddressZero,
   ): Promise<providers.TransactionResponse> {
-    if (!channel) {
-      throw new Error(`No channel exists for multisigAddress ${channel.multisigAddress}`);
-    }
     const { appIdentityHash, withdrawTracker } = await this.proposeWithdrawApp(
       amount,
       assetId,
@@ -78,13 +75,13 @@ export class WithdrawService {
       this.log.error(`Error waiting for withdrawal app to be uninstalled: ${e.message}`);
       // TODO: should we uninstall ourselves here?
     }
-    const action = uninstallData.action as WithdrawAppAction;
+    const action = uninstallData!.action as WithdrawAppAction;
     await this.withdrawRepository.addCounterpartySignatureAndFinalize(
       withdrawTracker,
       action.signature,
     );
-    const state = uninstallData.uninstalledApp.latestState;
-    const appInstance = uninstallData.uninstalledApp;
+    const state = uninstallData!.uninstalledApp.latestState;
+    const appInstance = uninstallData!.uninstalledApp;
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
@@ -126,7 +123,7 @@ export class WithdrawService {
     );
 
     const signer = this.configService.getSigner(
-      await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress),
+      (await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress))!,
     );
 
     // Sign commitment
@@ -144,7 +141,7 @@ export class WithdrawService {
       );
     }
     await this.withdrawRepository.addCounterpartySignatureAndFinalize(
-      withdraw,
+      withdraw!,
       counterpartySignatureOnWithdrawCommitment,
     );
 
@@ -184,8 +181,8 @@ export class WithdrawService {
 
     const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes.hash);
 
-    await this.withdrawRepository.addUserOnchainTransaction(withdraw, onchainTransaction);
-    this.log.info(`Node responded with transaction: ${onchainTransaction.hash}`);
+    await this.withdrawRepository.addUserOnchainTransaction(withdraw, onchainTransaction!);
+    this.log.info(`Node responded with transaction: ${onchainTransaction!.hash}`);
     this.log.debug(`Transaction details: ${stringify(onchainTransaction)}`);
     return;
   }
@@ -207,7 +204,7 @@ export class WithdrawService {
     const wallet = this.configService.getSigner(channel.chainId);
     if (deployTx !== HashZero) {
       this.log.info(`Waiting for deployment transaction...`);
-      wallet.provider.waitForTransaction(deployTx);
+      wallet.provider!.waitForTransaction(deployTx);
       this.log.info(`Deployment transaction complete!`);
     } else {
       this.log.info(`Multisig already deployed, proceeding with withdrawal`);
@@ -300,7 +297,7 @@ export class WithdrawService {
     };
 
     // propose install + wait for client confirmation
-    const { appIdentityHash } = await this.cfCoreService.proposeAndWaitForInstallApp(
+    const { appIdentityHash } = (await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
       amount,
@@ -310,7 +307,7 @@ export class WithdrawService {
       this.cfCoreService.getAppInfoByNameAndChain(WithdrawAppName, channel.chainId),
       { reason: "Node withdrawal" },
       WITHDRAW_STATE_TIMEOUT,
-    );
+    ))!;
 
     const withdrawTracker = await this.saveWithdrawal(
       appIdentityHash,
