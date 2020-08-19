@@ -37,8 +37,8 @@ export class ChallengeService implements OnModuleInit {
   ): Promise<ChallengeInitiatedResponse> {
     this.assertWatcher();
     await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    const appInstance = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
-    return this.watcher.initiate(appInstance.identityHash);
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash)!;
+    return this.watcher!.initiate(app.identityHash);
   }
 
   async cancelChallenge(
@@ -49,11 +49,11 @@ export class ChallengeService implements OnModuleInit {
     this.assertWatcher();
     // Verify the signature is on the proper nonce
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    const appInstance = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash)!;
 
     const hash = computeCancelDisputeHash(
-      appInstance.identityHash,
-      BigNumber.from(appInstance.latestVersionNumber),
+      app.identityHash,
+      BigNumber.from(app.latestVersionNumber),
     );
     const recovered = await recoverAddressFromChannelMessage(hash, userSignature);
     const userSignerAddress = getSignerAddressFromPublicIdentifier(channel.userIdentifier);
@@ -67,12 +67,12 @@ export class ChallengeService implements OnModuleInit {
     const nodeSignature = await signer.signMessage(hash);
     const req = {
       signatures: [nodeSignature, userSignature],
-      versionNumber: BigNumber.from(appInstance.latestVersionNumber),
+      versionNumber: BigNumber.from(app.latestVersionNumber),
     };
 
     // Call cancel challenge
     // TODO: remove challenge from channel entry iff cancelled
-    return this.watcher.cancel(appInstance.identityHash, req);
+    return this.watcher!.cancel(app.identityHash, req);
   }
 
   private assertWatcher() {

@@ -58,7 +58,7 @@ export class ConfigService implements OnModuleInit {
     return Wallet.fromMnemonic(this.get(`INDRA_MNEMONIC`)).privateKey;
   }
 
-  getSigner(chainId: number): IChannelSigner {
+  getSigner(chainId?: number): IChannelSigner {
     if (chainId) {
       const providers = this.getIndraChainProviders();
       const provider = getEthProvider(providers[chainId], chainId);

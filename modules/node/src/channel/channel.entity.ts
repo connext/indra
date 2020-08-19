@@ -73,7 +73,7 @@ export class Channel {
   transactions!: OnchainTransaction[];
 
   @OneToMany((type: any) => Challenge, (challenge: Challenge) => challenge.channel)
-  challenges: Challenge[];
+  challenges!: Challenge[];
 
   @CreateDateColumn()
   createdAt!: Date;

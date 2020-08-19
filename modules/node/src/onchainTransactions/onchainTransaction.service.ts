@@ -144,8 +144,12 @@ export class OnchainTransactionService implements OnModuleInit {
     multisigAddress: string,
   ): Promise<providers.TransactionResponse> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const queue = this.queues.get(chainId);
+    if (!queue) {
+      throw new Error(`Unsupported chainId ${chainId}. Expected one of: ${Array.from(this.queues.keys())}`);
+    }
     const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
-      this.queues.get(chainId).add(() => {
+      queue.add(() => {
         this.sendTransaction(transaction, TransactionReason.DISPUTE, channel)
           .then((result) => resolve(result))
           .catch((error) => reject(error.message));

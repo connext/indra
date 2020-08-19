@@ -173,7 +173,7 @@ export class CFCoreService {
     assertNoChallenges(channel);
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
-    const json = ChannelSerializer.toJSON(channel);
+    const json = ChannelSerializer.toJSON(channel)!;
     const contractAddresses = this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(json.userIdentifiers[0]),
