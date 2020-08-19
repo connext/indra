@@ -131,7 +131,6 @@ jobs:
   deploy-staging:
     env:
       STAGING_DOMAINNAME: staging.indra.connext.network
-      INDRA_LOGDNA_KEY: ${{ secrets.INDRA_LOGDNA_KEY }}
     needs: [test-utils, test-store, test-contracts, test-cf, test-watcher, test-node, test-ssh, test-integration, test-daicard]
     runs-on: ubuntu-latest
     steps:
@@ -146,7 +145,6 @@ jobs:
             git reset --hard $GITHUB_SHA;
             export INDRA_ENV="prod";
             export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
-            export INDRA_LOGDNA_KEY="$INDRA_LOGDNA_KEY";
             make restart-prod;
             docker container prune -f;
             docker image ls -q | xargs docker image rm || true;
