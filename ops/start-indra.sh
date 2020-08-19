@@ -16,7 +16,7 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 # Load env vars
 
 INDRA_ENV="${INDRA_ENV:-dev}"
-LOGDNA_TAGS="indra-${INDRA_ENV}"
+LOGDNA_TAGS="indra-${INDRA_ENV}:${INDRA_DOMAINNAME:-unknown}"
 
 # Load the default env
 if [[ -f "${INDRA_ENV}.env" ]]
