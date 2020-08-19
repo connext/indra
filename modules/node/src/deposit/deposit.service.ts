@@ -100,9 +100,7 @@ export class DepositService {
         return undefined;
       }
 
-      // if the transaction is complete and the app was never uninstalled,
-      // try to uninstall the app again before proceeding
-      if (!transaction.appUninstalled) {
+      const uninstallDepositApp = async () => {
         let appUninstallError: Error | undefined = undefined;
         try {
           await this.rescindDepositRights(depositApp.identityHash, channel.multisigAddress);
@@ -117,6 +115,21 @@ export class DepositService {
             appUninstallError = e;
           }
         }
+        return appUninstallError;
+      };
+
+      // if the transaction failed, uninstall app
+      if (transaction.status === TransactionStatus.FAILED) {
+        const appUninstallError = await uninstallDepositApp();
+        if (appUninstallError) {
+          throw appUninstallError;
+        }
+      }
+
+      // if the transaction is complete and the app was never uninstalled,
+      // try to uninstall the app again before proceeding
+      if (!transaction.appUninstalled) {
+        const appUninstallError = await uninstallDepositApp();
         if (appUninstallError) {
           this.log.warn(
             `Transaction ${transaction.hash} on ${channel.chainId} completed, but unable to uninstall app ${depositApp.identityHash}: ${appUninstallError.message}`,
