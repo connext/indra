@@ -16,6 +16,7 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 # Load env vars
 
 INDRA_ENV="${INDRA_ENV:-dev}"
+LOGDNA_TAGS="indra-${INDRA_ENV}"
 
 # Load the default env
 if [[ -f "${INDRA_ENV}.env" ]]
@@ -288,6 +289,7 @@ logdna_service="logdna:
     image: '$logdna_image'
     environment:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
+      TAGS: '$LOGDNA_TAGS'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'"
 
