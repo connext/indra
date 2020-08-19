@@ -64,12 +64,13 @@ const jitter = async (maxDelay: number = 500): Promise<void> =>
 
 export class Watcher implements IWatcher {
   private log: ILoggerService;
-  public enabled: boolean = false;
+  private readonly evts: EvtContainer;
   private registries: { [chainId: number]: Contract };
 
-  private readonly evts: EvtContainer;
+  public enabled: boolean = false;
 
-  constructor(
+  // Use `await Watcher.init(opts)` instead of the constructor directly
+  private constructor(
     private readonly signer: IChannelSigner,
     private readonly providers: { [chainId: number]: providers.JsonRpcProvider },
     private readonly context: ContractAddressBook,
@@ -236,7 +237,8 @@ export class Watcher implements IWatcher {
   };
 
   /////////////////////////////////////
-  //////// Listener methods
+  //// Listener methods
+
   public emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void {
     this.evts[event].post(data);
   }
@@ -293,7 +295,8 @@ export class Watcher implements IWatcher {
   }
 
   /////////////////////////////////////
-  //////// Private methods
+  //// Private methods
+
   // will insert + respond to any events that have occurred from
   // the latest processed block to the provided block
   private catchupFrom = async (blockNumber: number): Promise<void> => {

@@ -2,7 +2,6 @@ import { ChallengeRegistry } from "@connext/contracts";
 import {
   ILoggerService,
   ChallengeEvents,
-  IChainListener,
   ChallengeEvent,
   ChallengeEventData,
   ChallengeStatus,
@@ -37,6 +36,48 @@ interface ChainListenerEventsMap {
 type ChainListenerEventData = {
   [P in keyof ChainListenerEventsMap]: ChainListenerEventsMap[P];
 };
+
+////////////////////////////////////////
+// Listener interface
+
+interface IChainListener {
+
+  ////////////////////////////////////////
+  //// Public methods
+
+  attach<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
+  ): void;
+
+  attachOnce<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
+  ): void;
+
+  waitFor<T extends ChallengeEvent>(
+    event: T,
+    timeout: number,
+    providedFilter?: (data: ChallengeEventData[T]) => boolean,
+    ctx?: Ctx<ChallengeEventData[T]>,
+  ): Promise<ChallengeEventData[T]>;
+
+  detach<T extends ChallengeEvent>(ctx?: Ctx<ChallengeEventData[T]>): void;
+
+  enable(): Promise<void>;
+  disable(): Promise<void>;
+
+  parseLogsFrom(startingBlock: number): Promise<void>;
+
+  ////////////////////////////////////////
+  //// Unused methods (TODO: rm?)
+
+  createContext<T extends ChallengeEvent>(): Ctx<ChallengeEventData[T]>;
+}
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -175,7 +216,9 @@ export class ChainListener implements IChainListener {
     }
   };
 
-  //////// Evt methods
+  ////////////////////////////////////////
+  // Evt methods
+
   public attach<T extends ChallengeEvent>(
     event: T,
     callback: (data: ChallengeEventData[T]) => Promise<void>,
@@ -263,7 +306,8 @@ export class ChainListener implements IChainListener {
     this.evtStateProgressed.detach(ctx as any);
   }
 
-  //////// Private methods
+  ////////////////////////////////////////
+  // Private methods
 
   private removeChallengeRegistryListeners = (): void => {
     const chainIds = Object.keys(this.providers);

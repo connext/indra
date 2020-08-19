@@ -1,27 +1,25 @@
 import { providers } from "ethers";
 
+import { AppInstanceJson } from "./app";
+import { Address, Bytes32 } from "./basic";
+import {
+  ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+} from "./commitments";
 import {
   AppChallenge,
-  ChallengeEvent,
   ChallengeEventData,
   ChallengeUpdatedEventPayload,
   SignedCancelChallengeRequest,
   StateProgressedEventPayload,
   ChallengeEvents,
 } from "./contracts";
-import { StateChannelJSON } from "./state";
-import { Address, Bytes32 } from "./basic";
-import { AppInstanceJson } from "./app";
-import {
-  ConditionalTransactionCommitmentJSON,
-  MinimalTransaction,
-  SetStateCommitmentJSON,
-} from "./commitments";
 import { IChannelSigner } from "./crypto";
 import { ILoggerService, ILogger } from "./logger";
-import { Ctx } from "evt";
-import { ContractAddressBook } from "./node";
 import { IOnchainTransactionService } from "./misc";
+import { ContractAddressBook } from "./node";
+import { StateChannelJSON } from "./state";
 
 ////////////////////////////////////////
 // Watcher external parameters
@@ -43,6 +41,7 @@ type BaseChallengeTransactionCompletedEvent = {
   appInstanceId: Bytes32;
   multisigAddress: Address;
 };
+
 type BaseChallengeTransactionFailedEvent = {
   appInstanceId: Bytes32;
   error: string;
@@ -123,9 +122,6 @@ export type WatcherEventData = {
 };
 
 ////////////////////////////////////////
-// Listener Events
-
-////////////////////////////////////////
 // Watcher interface
 
 export type ChallengeInitiatedResponse = {
@@ -164,42 +160,8 @@ export interface IWatcher {
 }
 
 ////////////////////////////////////////
-// Listener interface
-
-export interface IChainListener {
-  //////// Evt methods
-  attach<T extends ChallengeEvent>(
-    event: T,
-    callback: (data: ChallengeEventData[T]) => Promise<void>,
-    providedFilter?: (data: ChallengeEventData[T]) => boolean,
-    ctx?: Ctx<ChallengeEventData[T]>,
-  ): void;
-
-  attachOnce<T extends ChallengeEvent>(
-    event: T,
-    callback: (data: ChallengeEventData[T]) => Promise<void>,
-    providedFilter?: (data: ChallengeEventData[T]) => boolean,
-    ctx?: Ctx<ChallengeEventData[T]>,
-  ): void;
-
-  waitFor<T extends ChallengeEvent>(
-    event: T,
-    timeout: number,
-    providedFilter?: (data: ChallengeEventData[T]) => boolean,
-    ctx?: Ctx<ChallengeEventData[T]>,
-  ): Promise<ChallengeEventData[T]>;
-
-  createContext<T extends ChallengeEvent>(): Ctx<ChallengeEventData[T]>;
-  detach<T extends ChallengeEvent>(ctx?: Ctx<ChallengeEventData[T]>): void;
-
-  //////// Public methods
-  enable(): Promise<void>;
-  disable(): Promise<void>;
-  parseLogsFrom(startingBlock: number): Promise<void>;
-}
-
-////////////////////////////////////////
 // Storage
+
 // The status of a challenge in the ChallengeRegistry
 export enum StoredAppChallengeStatus {
   NO_CHALLENGE = 0,
@@ -210,6 +172,7 @@ export enum StoredAppChallengeStatus {
   CONDITIONAL_SENT = 5,
   PENDING_TRANSITION = 6,
 }
+
 export type StoredAppChallenge = Omit<AppChallenge, "status"> & {
   identityHash: Bytes32;
   status: StoredAppChallengeStatus;
