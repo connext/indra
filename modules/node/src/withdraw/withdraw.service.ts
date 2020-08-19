@@ -129,8 +129,8 @@ export class WithdrawService {
 
     // try to submit the user's withdrawal tx onchain
     // uninstall withdrawal app with tx hash if it's available, otherwise do not provide
-    let txRes: OnchainTransactionResponse;
-    let withdraw: Withdraw;
+    let txRes: OnchainTransactionResponse | undefined;
+    let withdraw: Withdraw | undefined;
     try {
       // Create the same commitment from scratch
       const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
@@ -166,11 +166,12 @@ export class WithdrawService {
         this.log.error(
           `Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`,
         );
+      } else {
+        await this.withdrawRepository.addCounterpartySignatureAndFinalize(
+          withdraw,
+          counterpartySignatureOnWithdrawCommitment,
+        );
       }
-      await this.withdrawRepository.addCounterpartySignatureAndFinalize(
-        withdraw!,
-        counterpartySignatureOnWithdrawCommitment,
-      );
 
       await generatedCommitment.addSignatures(
         counterpartySignatureOnWithdrawCommitment, // our sig
@@ -185,6 +186,9 @@ export class WithdrawService {
         appInstance.identityHash,
         TransactionReason.USER_WITHDRAWAL,
       );
+      if (!txRes) {
+        throw new Error(`No tx response available after submitting to chain!`);
+      }
     } catch (e) {
       this.log.error(`Unable to submit withdrawal tx: ${e.message}`);
     }
@@ -204,7 +208,7 @@ export class WithdrawService {
       return;
     }
 
-    const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes.hash);
+    const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes!.hash);
 
     await this.withdrawRepository.addUserOnchainTransaction(withdraw, onchainTransaction!);
     this.log.info(`Node responded with transaction: ${onchainTransaction!.hash}`);
