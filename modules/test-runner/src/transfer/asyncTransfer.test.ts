@@ -1,4 +1,4 @@
-import { getLocalStore, getMemoryStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
 import {
   getRandomBytes32,
@@ -55,14 +55,6 @@ describe(name, () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
-  });
-
-  it("client A transfers eth to client B through node with localstorage", async () => {
-    const localStorageClient = await createClient({ store: getLocalStore() });
-    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    await fundChannel(localStorageClient, transfer.amount, transfer.assetId);
-    await requestCollateral(clientB, transfer.assetId);
-    await asyncTransferAsset(localStorageClient, clientB, transfer.amount, transfer.assetId);
   });
 
   it("should transfer tokens to online peer (case-insensitive assetId)", async () => {

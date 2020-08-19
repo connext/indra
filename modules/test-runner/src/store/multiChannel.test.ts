@@ -11,7 +11,6 @@ import {
 import { getFileStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
 import {
-  abrv,
   ChannelSigner,
   getRandomBytes32,
   getRandomPrivateKey,
@@ -20,7 +19,7 @@ import {
   signGraphReceiptMessage,
   toBN,
 } from "@connext/utils";
-import { Sequelize } from "sequelize";
+import { Sequelize, Transaction } from "sequelize";
 import { BigNumber } from "ethers";
 
 import {
@@ -37,6 +36,7 @@ import {
 // there is no validation done to ensure the events correspond to the payments,
 // or to ensure that the event payloads are correct.
 
+/*
 const registerFailureListeners = (reject: any, sender: ConnextClient, recipient: ConnextClient) => {
   recipient.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, reject);
   sender.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, reject);
@@ -49,6 +49,7 @@ const registerFailureListeners = (reject: any, sender: ConnextClient, recipient:
   recipient.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
   sender.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
 };
+*/
 
 const performConditionalTransfer = async (params: {
   ASSET: string;
@@ -171,7 +172,12 @@ describe(name, () => {
     recipientKey = getRandomPrivateKey();
     senderSigner = new ChannelSigner(senderKey, ethProviderUrl);
     recipientSigner = new ChannelSigner(recipientKey, ethProviderUrl);
-    const sequelize = new Sequelize(`sqlite:${env.storeDir}/store.sqlite`, { logging: false });
+    const sequelize = new Sequelize(
+      `sqlite:${env.storeDir}/store.sqlite`,
+      {
+        logging: false,
+        isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+      });
     // create stores with same sequelize instance but with different prefixes
     const senderStore = getFileStore(
       env.storeDir,
@@ -275,7 +281,7 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (concurrent payments)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (many payments)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(10);
     const reps = 3;
@@ -302,7 +308,7 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (concurrent payments)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (many payments)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(10);
     const reps = 3;

@@ -68,8 +68,6 @@ const recreateReceiverAndRetryTransfer = async (
   await asyncTransferAsset(senderClient, newClient, amount, assetId);
 };
 
-// TODO: don't skip
-
 const name = "Offline Async Transfers";
 const { timeElapsed } = getTestLoggers(name);
 describe.skip(name, () => {

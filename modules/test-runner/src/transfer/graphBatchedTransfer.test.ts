@@ -1,4 +1,3 @@
-/* global before */
 import {
   ConditionalTransferTypes,
   EventNames,
