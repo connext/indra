@@ -58,6 +58,15 @@ export class WithdrawService {
     amount: BigNumber,
     assetId: string = AddressZero,
   ): Promise<providers.TransactionResponse> {
+    // first try to deploy multisig. if this fails, cancel the withdrawal
+    try {
+      await this.deployMultisig(channel);
+    } catch (e) {
+      this.log.error(`Error deploying multisig: ${e.message}`);
+      this.log.warn(`Aborting node reclaim`);
+      throw e;
+    }
+
     const { appIdentityHash, withdrawTracker } = await this.proposeWithdrawApp(
       amount,
       assetId,
@@ -74,7 +83,13 @@ export class WithdrawService {
     } catch (e) {
       this.log.error(`Error waiting for withdrawal app to be uninstalled: ${e.message}`);
       // TODO: should we uninstall ourselves here?
+      throw e;
     }
+
+    if (!uninstallData.uninstalledApp.latestState.finalized) {
+      throw new Error(`Error, cannot reclaim on withdraw app that is not finalized. AppId: ${appIdentityHash}`)
+    }
+
     const action = uninstallData!.action as WithdrawAppAction;
     await this.withdrawRepository.addCounterpartySignatureAndFinalize(
       withdrawTracker,
