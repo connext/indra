@@ -2,20 +2,31 @@ import { IConnextClient, EventNames } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 
-import { expect, createClient, fundChannel } from "../util";
+import {
+  createClient,
+  expect,
+  fundChannel,
+  getTestLoggers,
+} from "../util";
 
 const { AddressZero } = constants;
 
-// TODO: fix race condition
-describe.skip("Full Flow: Multi-client transfer", () => {
+const name = "Multiclient Ping Pong";
+const { log, timeElapsed } = getTestLoggers(name);
+describe.skip(name, () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
+  let start: number;
 
   beforeEach(async () => {
+    start = Date.now();
     gateway = await createClient();
     indexerA = await createClient();
     indexerB = await createClient();
+    log.info(`Gateway ${gateway.publicIdentifier}`);
+    log.info(`Indexers A ${indexerA.publicIdentifier} | B ${indexerB.publicIdentifier}`);
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -25,7 +36,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
   });
 
   it("Clients transfer assets between themselves", async function () {
-    // how long the ping-pong transfers should last in s
+    // how long the ping-pong transfers should last in ms
     const DURATION = 15_000;
     const gatewayTransfers = {
       sent: 0,

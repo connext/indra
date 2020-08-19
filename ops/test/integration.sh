@@ -40,7 +40,8 @@ contract_addresses="`cat $addresses_file | jq . -c`"
 common="$interactive \
   --env=INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN \
   --env=INDRA_CHAIN_PROVIDERS=$chain_providers \
-  --env=INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL \
+  --env=INDRA_TEST_LOG_LEVEL=${TEST_LOG_LEVEL:-$LOG_LEVEL} \
+  --env=INDRA_CLIENT_LOG_LEVEL=${CLIENT_LOG_LEVEL:-$LOG_LEVEL} \
   --env=INDRA_CONTRACT_ADDRESSES=$contract_addresses \
   --env=INDRA_NATS_URL=nats://proxy:4222 \
   --env=INDRA_NODE_URL=http://proxy:80 \

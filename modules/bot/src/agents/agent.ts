@@ -205,7 +205,7 @@ export class Agent {
     assetId: Address = AddressZero,
     id: string = getRandomBytes32(),
     type: ConditionalTransferTypes = ConditionalTransferTypes.GraphTransfer,
-    timeout: number = 10_000,
+    timeout: number = 15_000,
   ) {
     const params = await this.getTransferParameters(
       receiverIdentifier,

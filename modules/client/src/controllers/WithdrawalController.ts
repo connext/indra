@@ -1,8 +1,11 @@
 import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppInstanceJson,
+  CF_METHOD_TIMEOUT,
   ChannelMethods,
+  DefaultApp,
   EventNames,
+  GenericMessage,
   MethodParams,
   MinimalTransaction,
   PublicParams,
@@ -10,13 +13,12 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  DefaultApp,
-  CF_METHOD_TIMEOUT,
-  GenericMessage,
+  EventPayloads,
 } from "@connext/types";
 import {
+  getAddressFromAssetId,
+  getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
-  getAddressError,
   stringify,
   toBN,
 } from "@connext/utils";
@@ -25,29 +27,15 @@ import { providers, constants, utils } from "ethers";
 import { AbstractController } from "./AbstractController";
 
 const { AddressZero, Zero, HashZero } = constants;
-const { getAddress, hexlify, randomBytes } = utils;
+const { getAddress } = utils;
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
     this.log.info(`withdraw started: ${stringify(params)}`);
-    // Set defaults
-    if (!params.assetId) {
-      params.assetId = AddressZero;
-    }
-    params.assetId = getAddress(params.assetId);
-
-    if (!params.recipient) {
-      params.recipient = this.connext.signerAddress;
-    }
-    params.recipient = getAddress(params.recipient);
-
-    if (!params.nonce) {
-      params.nonce = hexlify(randomBytes(32));
-    }
-
-    const { assetId, recipient } = params;
-
-    this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
+    params.assetId = getAddressFromAssetId(params.assetId || AddressZero);
+    // The following should throw an error if the recipient address has an invalid checksum
+    params.recipient = getAddress(params.recipient || this.connext.signerAddress);
+    params.nonce = params.nonce || getRandomBytes32();
 
     let withdrawCommitment: WithdrawCommitment;
     let withdrawerSignatureOnWithdrawCommitment: string;
@@ -79,7 +67,7 @@ export class WithdrawalController extends AbstractController {
       this.log.info(`Waiting for node to provide withdrawl tx hash`);
       const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${withdrawAppId}.uninstall`;
 
-      const uninstallEvent: any = await Promise.race([
+      const uninstallEvent = (await Promise.race([
         this.listener.waitFor(
           EventNames.UNINSTALL_EVENT,
           CF_METHOD_TIMEOUT * 5,
@@ -90,23 +78,30 @@ export class WithdrawalController extends AbstractController {
             resolve(msg.data),
           ),
         ),
-      ]);
+      ])) as EventPayloads.Uninstall;
 
-      // TODO: if no transaction, we should probably send it ourselves?
+      // if not finalized, the withdrawal was canceled
+      if (!(uninstallEvent.uninstalledApp.latestState as WithdrawAppState).finalized) {
+        throw new Error(
+          `Withdrawal app was uninstalled without being finalized, canceling withdrawal. Final state: ${stringify(
+            uninstallEvent.uninstalledApp.latestState,
+          )}`,
+        );
+      }
       if (!uninstallEvent.protocolMeta?.withdrawTx) {
         throw new Error(
-          `Cannot find withdrawal tx in uninstall event data: ${stringify(uninstallEvent)}`,
+          `Cannot find withdrawal tx in uninstall event data. However, the withdrawal commitment was generated successfully and can be retrieved from store and manually sent to chain.`,
         );
       }
       transaction = await this.connext.ethProvider.getTransaction(
-        uninstallEvent.protocolMeta?.withdrawTx,
+        uninstallEvent.protocolMeta!.withdrawTx,
       );
       if (!transaction) {
         // wait an extra block
         transaction = await new Promise((resolve) => {
           this.connext.ethProvider.on("block", async () => {
             const tx = await this.connext.ethProvider.getTransaction(
-              uninstallEvent.protocolMeta?.withdrawTx,
+              uninstallEvent.protocolMeta!.withdrawTx,
             );
             return resolve(tx);
           });
@@ -136,7 +131,7 @@ export class WithdrawalController extends AbstractController {
     // Note that we listen for the signed commitment and save it to store only in listener.ts
 
     const result: PublicResults.Withdraw = { transaction };
-    this.log.info(`withdraw for assetId ${assetId} completed: ${stringify(result)}`);
+    this.log.info(`withdraw for assetId ${params.assetId} completed: ${stringify(result)}`);
     return result;
   }
 
@@ -153,13 +148,10 @@ export class WithdrawalController extends AbstractController {
     const hash = generatedCommitment.hashToSign();
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
-    // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    // Dont need to validate sigs because we already did it during the propose flow
     this.log.debug(`Uninstalling with action ${appInstance.identityHash}`);
     await this.connext.uninstallApp(appInstance.identityHash, {
-      signature: counterpartySignatureOnWithdrawCommitment,
+      signature: await this.connext.channelProvider.signMessage(hash),
     } as WithdrawAppAction);
   }
 

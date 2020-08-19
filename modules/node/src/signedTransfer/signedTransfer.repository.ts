@@ -10,7 +10,7 @@ export class SignedTransferRepository extends Repository<
   findInstalledSignedTransferAppsByPaymentId(
     paymentId: string,
     appDefinition: string,
-  ): Promise<AppInstance<typeof SimpleSignedTransferAppName>> {
+  ): Promise<AppInstance<typeof SimpleSignedTransferAppName> | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })

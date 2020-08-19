@@ -36,12 +36,18 @@ export class HashLockTransferService {
     lockHash: Bytes32,
     assetId: Address,
     chainId: number,
-  ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
+  ): Promise<{
+    senderApp: AppInstance | undefined;
+    receiverApp: AppInstance | undefined;
+    status: any;
+  }> {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} started`);
     const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId, chainId);
     const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId, chainId);
-    const block = await this.configService.getEthProvider(chainId).getBlockNumber();
-    const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
+    const block = await this.configService.getEthProvider(chainId)!.getBlockNumber();
+    const status = senderApp
+      ? appStatusesToHashLockTransferStatus(block, senderApp, receiverApp)
+      : "unknown";
     const result = { senderApp, receiverApp, status };
     this.log.info(
       `findSenderAndReceiverAppsWithStatus ${lockHash} completed: ${JSON.stringify(result)}`,
@@ -53,7 +59,7 @@ export class HashLockTransferService {
     lockHash: Bytes32,
     assetId: Address,
     chainId: number,
-  ): Promise<AppInstance<"HashLockTransferApp">> {
+  ): Promise<AppInstance<"HashLockTransferApp"> | undefined> {
     this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
     // eslint-disable-next-line max-len
@@ -72,7 +78,7 @@ export class HashLockTransferService {
     lockHash: Bytes32,
     assetId: Address,
     chainId: number,
-  ): Promise<AppInstance<"HashLockTransferApp">> {
+  ): Promise<AppInstance<"HashLockTransferApp"> | undefined> {
     this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
     // eslint-disable-next-line max-len

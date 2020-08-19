@@ -12,20 +12,21 @@ import {
   APP_PROTOCOL_TOO_LONG,
   CLIENT_INSTALL_FAILED,
   ClientTestMessagingInputOpts,
-  ETH_AMOUNT_SM,
-  RECEIVED,
-  SEND,
-  TOKEN_AMOUNT,
-  TestMessagingService,
-  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
   createClientWithMessagingLimits,
   env,
+  ETH_AMOUNT_SM,
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
+  RECEIVED,
   requestCollateral,
+  SEND,
   swapAsset,
+  TestMessagingService,
+  TOKEN_AMOUNT,
+  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
 import { getRandomChannelSigner, delay } from "@connext/utils";
 
@@ -116,7 +117,17 @@ const fundChannelAndSwap = async (opts: {
   await swapAsset(client, input, output, client.nodeSignerAddress);
 };
 
-describe.skip("Swap offline", () => {
+// TODO: don't skip
+
+const name = "Offline Swaps";
+const { timeElapsed } = getTestLoggers(name);
+describe.skip(name, () => {
+  let start: number;
+
+  beforeEach(async () => {
+    start = Date.now();
+  });
+
   const swapAppAddr = env.contractAddresses[env.defaultChain].SimpleTwoPartySwapApp.address;
   it("Bot A tries to propose swap app, but gets no response from the node", async () => {
     const messagingConfig = {
@@ -135,6 +146,7 @@ describe.skip("Swap offline", () => {
       failsWith: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       failureEvent: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
+    timeElapsed("Test finished", start);
   });
 
   it("Bot A successfully proposes swap app, but goes offline before install protocol begins", async () => {

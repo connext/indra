@@ -31,6 +31,7 @@ export const entityToStateProgressedEventPayload = (
     turnTaker,
     signature,
     identityHash: challenge.app.identityHash,
+    chainId: challenge.channel.chainId,
   };
 };
 
@@ -59,8 +60,8 @@ export class StateProgressedEvent<T extends AppName = any> {
   signature!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

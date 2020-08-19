@@ -2,24 +2,30 @@ import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
 import {
-  AssetOptions,
-  createClient,
   ETH_AMOUNT_SM,
+  createClient,
   ethProviderUrl,
-  fundChannel,
   ethProviderUrlForChain,
-} from "../util";
-import { expect } from "../util";
+  expect,
+  fundChannel,
+  getTestLoggers,
+} from "./util";
 
 const { AddressZero, Zero } = constants;
 
-describe("Multichain clients", () => {
+const name = "Multichain Clients";
+const { timeElapsed } = getTestLoggers(name);
+describe(name, () => {
+  let start: number;
+
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A", ethProviderUrl });
     clientB = await createClient({ id: "B", ethProviderUrl: ethProviderUrlForChain(1338) });
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -27,8 +33,8 @@ describe("Multichain clients", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA on chainA can deposit and transfer to clientB on chainB", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+  it("clientA on chainA can deposit and transfer to clientB on chainB", async () => {
+    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const receiverUnlock = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
     const senderUnlock = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);

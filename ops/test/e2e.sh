@@ -22,7 +22,9 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-common="$interactive \
+opts="$interactive \
+  --env=INDRA_CHAIN_URL=$INDRA_CHAIN_URL \
+  --env=INDRA_NODE_URL=$INDRA_NODE_URL \
   --name=${project}_e2e_test_${chainid} \
   --network=$project \
   --rm"
@@ -32,10 +34,24 @@ args="--chain-id $chainid \
   --funder-mnemonic '$MNEMONIC' \
   --log-level $LOG_LEVEL"
 
-exec docker run \
-    $common \
-    --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
-    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+  image=${project}_bot:$version
+  echo "Executing image $image"
+  exec docker run $opts $image e2e $args
+
+else
+  echo "Executing image ${project}_builder"
+  make bot
+  exec docker run \
+    $opts \
     --entrypoint=bash \
     --volume="$root:/root" \
-    ${project}_builder -c "cd modules/bot && node dist/src/index.js e2e $args"
+    ${project}_builder -c "cd modules/bot && node dist/cli.js e2e $args"
+fi

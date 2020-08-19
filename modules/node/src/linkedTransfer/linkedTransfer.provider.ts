@@ -61,7 +61,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       paymentId: paymentId,
       receiverIdentifier: recipient,
       senderIdentifier: senderApp.initiatorIdentifier,
-      status,
+      status: status!,
     };
   }
 

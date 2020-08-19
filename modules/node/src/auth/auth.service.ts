@@ -72,7 +72,7 @@ export class AuthService {
     }
 
     // Try to get latest published OR move everything under address route.
-    let permissions = {
+    const permissions = {
       publish: {
         allow: [`${userIdentifier}.>`, `${this.configService.getMessagingKey()}.>`],
       },

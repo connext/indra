@@ -40,7 +40,7 @@ export class ConfigService implements OnModuleInit {
 
   constructor(private readonly log: LoggerService) {
     this.log.setContext("ConfigService");
-    this.envConfig = process.env;
+    this.envConfig = process.env as any;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
     const urls = this.getProviderUrls();
     this.getSupportedChains().forEach((chainId, idx) => {
@@ -61,7 +61,7 @@ export class ConfigService implements OnModuleInit {
 
   getSigner(chainId: number): IChannelSigner {
     const providers = this.getIndraChainProviders();
-    const provider = getEthProvider(providers[chainId], chainId );
+    const provider = getEthProvider(providers[chainId], chainId);
     const signer = new ChannelSigner(this.getPrivateKey(), provider);
     return signer;
   }
@@ -71,7 +71,7 @@ export class ConfigService implements OnModuleInit {
     return Object.values(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
   }
 
-  getEthProvider(chainId: number): providers.JsonRpcProvider {
+  getEthProvider(chainId: number): providers.JsonRpcProvider | undefined {
     return this.providers.get(chainId);
   }
 
@@ -351,7 +351,7 @@ export class ConfigService implements OnModuleInit {
           `actualChain !== signerMappedChain, ${actualChain} !== ${signerMappedChain}`,
         );
       }
-      await signer.connectProvider(this.getEthProvider(signerMappedChain));
+      await signer.connectProvider(this.getEthProvider(signerMappedChain)!);
     }
   }
 }

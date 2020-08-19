@@ -1,5 +1,5 @@
 export interface JSONSerializer<T, U> {
-  toJSON(input: T): U;
+  toJSON(input?: T): U | undefined;
 }
 
 export interface BigNumberJSON {

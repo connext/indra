@@ -162,12 +162,14 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   async markFailed(
     tx: providers.TransactionResponse,
     errors: { [k: number]: string },
+    appIdentityHash?: string,
   ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(OnchainTransaction)
         .set({
+          appIdentityHash,
           status: TransactionStatus.FAILED,
           errors,
         })

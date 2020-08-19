@@ -9,7 +9,7 @@
     "outDir": "dist",
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "target": "es6"
   },
   "exclude": ["dist", "node_modules", "**/*spec.ts"],

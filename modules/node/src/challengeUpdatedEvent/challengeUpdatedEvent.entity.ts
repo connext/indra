@@ -27,6 +27,7 @@ export const entityToChallengeUpdatedPayload = (
     finalizesAt,
     status,
     identityHash: challenge.app.identityHash,
+    chainId: challenge.channel.chainId,
   };
 };
 
@@ -49,11 +50,11 @@ export class ChallengeUpdatedEvent<T extends AppName = any> {
   finalizesAt!: BigNumber;
 
   @Column({ type: "enum", enum: ChallengeStatus })
-  status: ChallengeStatus;
+  status!: ChallengeStatus;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
