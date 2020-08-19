@@ -70,15 +70,6 @@ describe(name, () => {
     );
     await clientB.requestCollateral(AddressZero);
 
-    // transfer to node to get node over upper bound reclaim
-    // first transfer gets to upper bound
-    await asyncTransferAsset(
-      clientA,
-      clientB,
-      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
-      AddressZero,
-    );
-
     const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
@@ -93,7 +84,7 @@ describe(name, () => {
       });
       clientA
         .transfer({
-          amount: One.toString(),
+          amount: BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
           assetId: AddressZero,
           recipient: clientB.publicIdentifier,
           paymentId,
