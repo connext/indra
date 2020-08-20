@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class removeAppCommitments1595210814094 implements MigrationInterface {
-  name = "removeAppCommitments1595210814094";
+export class storeLatestAction1597957131361 implements MigrationInterface {
+  name = "storeLatestAction1597957131361";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Update remove app instance to set the latest state of the app
