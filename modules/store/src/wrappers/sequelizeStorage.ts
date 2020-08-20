@@ -26,7 +26,7 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
       if ((_sequelize as string).startsWith("sqlite:")) {
         const dbPath = (_sequelize as string).split("sqlite:").pop();
         if (dbPath !== storeDefaults.SQLITE_MEMORY_STORE_STRING) {
-          const dir = dirname(dbPath);
+          const dir = dirname(dbPath || "");
           mkdirSync(dir, { recursive: true });
         } else {
           // see comments in prop declaration
