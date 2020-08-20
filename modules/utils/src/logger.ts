@@ -1,4 +1,5 @@
-import { ILogger, ILoggerService } from "@connext/types";
+import { ILogger, ILoggerService, LogLevels, LogLevel } from "@connext/types";
+import pino from "pino";
 
 export const logTime = (log: ILogger, start: number, msg: string): void => {
   const diff = Date.now() - start;
@@ -11,6 +12,53 @@ export const logTime = (log: ILogger, start: number, msg: string): void => {
     log.warn(message);
   }
 };
+
+export class PinoLogger implements ILoggerService {
+  private context: string;
+  private level: number;
+  private internal: pino.Logger;
+  constructor(context: string = "Unknown", level: number = 3) {
+    this.context = context;
+    this.level = level;
+    this.internal = pino({ name: this.context, level: LogLevels[level] });
+  }
+  public trace(msg: string, details?: object, ...args: any[]): void {
+    this.print("trace", msg, details, ...args);
+  }
+  public silent(msg: string, details?: object, ...args: any[]): void {
+    this.print("silent", msg, details, ...args);
+  }
+  public debug(msg: string, details?: object, ...args: any[]): void {
+    this.print("debug", msg, details, ...args);
+  }
+  public info(msg: string, details?: object, ...args: any[]): void {
+    this.print("info", msg, details, ...args);
+  }
+  public warn(msg: string, details?: object, ...args: any[]): void {
+    this.print("warn", msg, details, ...args);
+  }
+  public error(msg: string, details?: object, ...args: any[]): void {
+    this.print("error", msg, details, ...args);
+  }
+  public fatal(msg: string, details?: object, ...args: any[]): void {
+    this.print("fatal", msg, details, ...args);
+  }
+  public setContext(context: string): void {
+    this.context = context;
+    this.internal = pino({ name: this.context, level: LogLevels[this.level] });
+  }
+  public newContext(context: string): ILoggerService {
+    return new PinoLogger(context, this.level);
+  }
+
+  private print(type: LogLevel, msg: string, details?: object, ...args: any[]): void {
+    const idx = LogLevels[type];
+    if (this.level < idx) {
+      return;
+    }
+    this.internal[type](msg, details, ...args);
+  }
+}
 
 // Example implementation that can be used as a silent default
 export const nullLogger: ILoggerService = {
