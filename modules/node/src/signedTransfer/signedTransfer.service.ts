@@ -5,8 +5,9 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
+
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { LoggerService } from "../logger/logger.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 import { appStatusesToTransferStatus } from "../utils";
@@ -34,7 +35,7 @@ export function normalizeSignedTransferAppState<T extends SignedTransferTypes>(
 @Injectable()
 export class SignedTransferService {
   constructor(
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly cfCoreService: CFCoreService,
     private readonly signedTransferRepository: SignedTransferRepository,
   ) {

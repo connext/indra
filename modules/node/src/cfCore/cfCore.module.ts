@@ -11,7 +11,6 @@ import { ConditionalTransactionCommitmentRepository } from "../conditionalCommit
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
 import { LockModule } from "../lock/lock.module";
-import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { cfCoreProviderFactory } from "./cfCore.provider";
@@ -28,7 +27,6 @@ import { OnchainTransactionModule } from "../onchainTransactions/onchainTransact
     ConfigModule,
     DatabaseModule,
     LockModule,
-    LoggerModule,
     MessagingModule,
     OnchainTransactionModule,
     TypeOrmModule.forFeature([

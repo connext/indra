@@ -1,8 +1,8 @@
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { PinoLogger } from "nestjs-pino";
 
 import { AuthService } from "../auth/auth.service";
-import { LoggerService } from "../logger/logger.service";
 import { LockProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { ConfigService } from "../config/config.service";
@@ -13,7 +13,7 @@ class LockMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     private readonly lockService: LockService,
-    log: LoggerService,
+    log: PinoLogger,
     messaging: MessagingService,
     private readonly configService: ConfigService,
   ) {
@@ -41,12 +41,12 @@ class LockMessaging extends AbstractMessagingProvider {
 }
 
 export const lockProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LockService, LoggerService, MessagingProviderId, ConfigService],
+  inject: [AuthService, LockService, PinoLogger, MessagingProviderId, ConfigService],
   provide: LockProviderId,
   useFactory: async (
     authService: AuthService,
     lockService: LockService,
-    log: LoggerService,
+    log: PinoLogger,
     messaging: MessagingService,
     configService: ConfigService,
   ): Promise<void> => {

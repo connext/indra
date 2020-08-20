@@ -2,8 +2,8 @@ import { ChannelSigner } from "@connext/utils";
 import { providers, Wallet } from "ethers";
 
 import { ConfigService } from "../../config/config.service";
-import { LoggerService } from "../../logger/logger.service";
 import { Address } from "@connext/types";
+import { PinoLogger } from "nestjs-pino";
 
 export const env = {
   chainProviders: JSON.parse(process.env.INDRA_CHAIN_PROVIDERS!),
@@ -34,7 +34,7 @@ export class MockConfigService extends ConfigService {
   private supportedTokens: { [chainId: number]: Address[] };
 
   constructor(overrides: Partial<ConfigOverrides> = {}) {
-    super(new LoggerService("Test"));
+    super(new PinoLogger({}));
     this.nodeSigner = overrides.signer || defaultSigner;
     const realSupported = super.getSupportedTokens();
     Object.keys(overrides.extraSupportedTokens || []).forEach((chainId) => {

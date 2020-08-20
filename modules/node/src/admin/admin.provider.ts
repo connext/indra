@@ -3,9 +3,9 @@ import { StateChannelJSON, RebalanceProfile } from "@connext/types";
 import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
+import { PinoLogger } from "nestjs-pino";
 
 import { Channel } from "../channel/channel.entity";
-import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { ChannelService } from "../channel/channel.service";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
@@ -14,7 +14,7 @@ import { AdminService } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
-    public readonly log: LoggerService,
+    public readonly log: PinoLogger,
     messaging: MessagingService,
     private readonly adminService: AdminService,
     private readonly channelService: ChannelService,
@@ -136,10 +136,10 @@ class AdminMessaging extends AbstractMessagingProvider {
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [LoggerService, MessagingProviderId, AdminService, ChannelService],
+  inject: [MessagingProviderId, AdminService, ChannelService],
   provide: AdminMessagingProviderId,
   useFactory: async (
-    log: LoggerService,
+    log: PinoLogger,
     messaging: MessagingService,
     adminService: AdminService,
     channelService: ChannelService,

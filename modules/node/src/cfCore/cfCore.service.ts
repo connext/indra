@@ -35,11 +35,11 @@ import { MessagingService } from "@connext/messaging";
 import { BigNumber, constants } from "ethers";
 
 import { ConfigService } from "../config/config.service";
-import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { PinoLogger } from "nestjs-pino";
 
 const { Zero } = constants;
 
@@ -49,7 +49,7 @@ export class CFCoreService {
   public emitter: TypedEmitter;
   constructor(
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly configService: ConfigService,
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly cfCoreRepository: CFCoreRecordRepository,

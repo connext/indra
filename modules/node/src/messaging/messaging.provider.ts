@@ -1,18 +1,18 @@
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { PinoLogger } from "nestjs-pino";
 
 import { ConfigService } from "../config/config.service";
 import { AuthService } from "../auth/auth.service";
-import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 
 export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>> = {
-  inject: [ConfigService, AuthService, LoggerService],
+  inject: [ConfigService, AuthService, PinoLogger],
   provide: MessagingProviderId,
   useFactory: async (
     config: ConfigService,
     auth: AuthService,
-    log: LoggerService,
+    log: PinoLogger,
   ): Promise<MessagingService> => {
     log.setContext("MessagingProviderFactory");
     const getBearerToken = async (): Promise<string> => {

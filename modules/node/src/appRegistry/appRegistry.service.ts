@@ -22,6 +22,7 @@ import {
 import { getAddressFromAssetId, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers";
+import { PinoLogger } from "nestjs-pino";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -30,7 +31,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { DepositService } from "../deposit/deposit.service";
-import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
@@ -41,7 +41,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly transferService: TransferService,
     private readonly swapRateService: SwapRateService,
     private readonly withdrawService: WithdrawService,

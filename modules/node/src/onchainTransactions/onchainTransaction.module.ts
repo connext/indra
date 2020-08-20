@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { LoggerModule } from "../logger/logger.module";
 import { ConfigModule } from "../config/config.module";
 
 import { OnchainTransactionService } from "./onchainTransaction.service";
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { LoggerModule } from "nestjs-pino";
 
 @Module({
   controllers: [],

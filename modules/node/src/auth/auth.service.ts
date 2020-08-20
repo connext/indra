@@ -8,9 +8,9 @@ import {
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
 import { Injectable, Inject } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
 
 import { ChannelRepository } from "../channel/channel.repository";
-import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 
 import { MessagingAuthProviderId } from "../constants";
@@ -27,7 +27,7 @@ export class AuthService {
   constructor(
     @Inject(MessagingAuthProviderId) private readonly messagingAuthService: MessagingAuthService,
     private readonly configService: ConfigService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly channelRepo: ChannelRepository,
   ) {
     this.log.setContext("AuthService");

@@ -12,7 +12,6 @@ import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.re
 import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
-import { LoggerModule } from "../logger/logger.module";
 import {
   createAppInstanceJson,
   createChallengeUpdatedEventPayload,
@@ -33,6 +32,7 @@ import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 import { CacheModule } from "../caching/cache.module";
 import { CacheService } from "../caching/cache.service";
+import { PinoLogger } from "nestjs-pino";
 
 describe("CFCoreStore", () => {
   let cfCoreStore: CFCoreStore;
@@ -47,7 +47,7 @@ describe("CFCoreStore", () => {
       imports: [
         ConfigModule,
         DatabaseModule,
-        LoggerModule,
+        PinoLogger,
         TypeOrmModule.forFeature([
           CFCoreRecordRepository,
           ChannelRepository,

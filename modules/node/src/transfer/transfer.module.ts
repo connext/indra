@@ -6,7 +6,6 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
-import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 import { DepositModule } from "../deposit/deposit.module";
@@ -15,6 +14,7 @@ import { SwapRateModule } from "../swapRate/swapRate.module";
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferService } from "./transfer.service";
 import { TransferRepository } from "./transfer.repository";
+import { LoggerModule } from "nestjs-pino";
 
 @Module({
   controllers: [],
@@ -25,8 +25,8 @@ import { TransferRepository } from "./transfer.repository";
     ChannelModule,
     ConfigModule,
     DepositModule,
-    LoggerModule,
     LinkedTransferModule,
+    LoggerModule,
     MessagingModule,
     SwapRateModule,
     TypeOrmModule.forFeature([ChannelRepository, TransferRepository]),

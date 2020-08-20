@@ -32,8 +32,8 @@ import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
 import { constants, utils } from "ethers";
 import { isEqual } from "lodash";
+import { PinoLogger } from "nestjs-pino";
 
-import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -102,7 +102,7 @@ export const getCancelAction = (
 @Injectable()
 export class TransferService {
   constructor(
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly cfCoreService: CFCoreService,
     private readonly cfCoreStore: CFCoreStore,
     private readonly channelService: ChannelService,

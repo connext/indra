@@ -8,11 +8,11 @@ import {
   SupportedApplicationNames,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -54,7 +54,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {

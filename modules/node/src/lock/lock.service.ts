@@ -1,9 +1,9 @@
 import { abbreviate } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
 import Redis from "ioredis";
+import { PinoLogger } from "nestjs-pino";
 
 import { LOCK_SERVICE_TTL, RedisProviderId } from "../constants";
-import { LoggerService } from "../logger/logger.service";
 import { MemoLock } from "./memo-lock";
 
 @Injectable()
@@ -18,7 +18,7 @@ export class LockService {
   private memoLock: MemoLock;
 
   constructor(
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     @Inject(RedisProviderId) private readonly redis: Redis.Redis,
   ) {
     this.log.setContext("LockService");

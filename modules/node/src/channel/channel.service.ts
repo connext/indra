@@ -12,10 +12,10 @@ import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils"
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { BigNumber, constants, utils, providers } from "ethers";
+import { PinoLogger } from "nestjs-pino";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
-import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
@@ -40,7 +40,7 @@ export class ChannelService {
     private readonly configService: ConfigService,
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly httpService: HttpService,
   ) {
     this.log.setContext("ChannelService");

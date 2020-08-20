@@ -2,12 +2,13 @@ import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getRandomBytes32 } from "@connext/utils";
 import { BigNumber } from "ethers";
+import { getConnection } from "typeorm";
+import { PinoLogger } from "nestjs-pino";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
-import { LoggerModule } from "../logger/logger.module";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { ConfigService } from "../config/config.service";
 import {
@@ -27,7 +28,6 @@ import { CacheModule } from "../caching/cache.module";
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { TransactionReason } from "./onchainTransaction.entity";
 import { KNOWN_ERRORS } from "./onchainTransaction.service";
-import { getConnection } from "typeorm";
 
 describe("OnchainTransactionRepository", () => {
   let onchainTxRepository: OnchainTransactionRepository;
@@ -41,7 +41,7 @@ describe("OnchainTransactionRepository", () => {
       imports: [
         ConfigModule,
         DatabaseModule,
-        LoggerModule,
+        PinoLogger,
         TypeOrmModule.forFeature([
           CFCoreRecordRepository,
           ChannelRepository,

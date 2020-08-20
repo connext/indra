@@ -1,10 +1,10 @@
 import { LinkedTransferStatus, SimpleLinkedTransferAppName } from "@connext/types";
 import { Injectable } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { LoggerService } from "../logger/logger.service";
 import { appStatusesToTransferStatus } from "../utils";
 
 const appStatusesToLinkedTransferStatus = (
@@ -18,7 +18,7 @@ const appStatusesToLinkedTransferStatus = (
 export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("LinkedTransferService");

@@ -1,15 +1,15 @@
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import Redis from "ioredis";
 import Redlock from "redlock";
+import { PinoLogger } from "nestjs-pino";
 
 import { ConfigService } from "../config/config.service";
-import { LoggerService } from "../logger/logger.service";
 import { RedisProviderId, RedlockProviderId, LOCK_SERVICE_TTL } from "../constants";
 
 export const redisClientFactory: FactoryProvider = {
-  inject: [ConfigService, LoggerService],
+  inject: [ConfigService, PinoLogger],
   provide: RedisProviderId,
-  useFactory: (config: ConfigService, log: LoggerService): Redis.Redis => {
+  useFactory: (config: ConfigService, log: PinoLogger): Redis.Redis => {
     const redisClient = new Redis(config.getRedisUrl(), {
       retryStrategy: (times: number): number => {
         log.warn("Lost connection to redis. Retrying to connect...");
@@ -24,9 +24,9 @@ export const redisClientFactory: FactoryProvider = {
 const RETRY_DELAY = 50;
 
 export const redlockClientFactory: FactoryProvider = {
-  inject: [RedisProviderId, LoggerService],
+  inject: [RedisProviderId, PinoLogger],
   provide: RedlockProviderId,
-  useFactory: (redis: Redis.Redis, log: LoggerService): Redlock => {
+  useFactory: (redis: Redis.Redis, log: PinoLogger): Redlock => {
     const redlockClient = new Redlock([redis], {
       // the expected clock drift; for more details
       // see http://redis.io/topics/distlock

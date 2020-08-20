@@ -1,13 +1,13 @@
 import { Controller, Get, Options, Post, Body, Param, BadRequestException } from "@nestjs/common";
 
-import { LoggerService } from "../logger/logger.service";
 
 import { VerifyNonceDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
+import { PinoLogger } from "nestjs-pino";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService, private readonly log: LoggerService) {
+  constructor(private readonly authService: AuthService, private readonly log: PinoLogger) {
     this.log.setContext("AuthController");
   }
 

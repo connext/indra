@@ -3,7 +3,6 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ConfigModule } from "../config/config.module";
-import { LoggerModule } from "../logger/logger.module";
 import { AnonymizedOnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
 import { CollateralService } from "./collateral.service";
@@ -15,7 +14,6 @@ import { CollateralController } from "./collateral.controller";
   imports: [
     ConfigModule,
     CFCoreModule,
-    LoggerModule,
     TypeOrmModule.forFeature([AnonymizedOnchainTransactionRepository]),
   ],
   providers: [CollateralService],

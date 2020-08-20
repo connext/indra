@@ -1,10 +1,10 @@
 import { StateChannelJSON } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
-import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository, ChannelSerializer } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 
@@ -18,7 +18,7 @@ export class AdminService implements OnApplicationBootstrap {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly log: LoggerService,
+    private readonly log: PinoLogger,
     private readonly cfCoreStore: CFCoreStore,
     private readonly channelRepository: ChannelRepository,
   ) {
