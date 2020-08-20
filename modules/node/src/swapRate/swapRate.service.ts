@@ -105,7 +105,10 @@ export class SwapRateService implements OnModuleInit {
         throw new Error(`No valid swap exists for ${from} to ${to}`);
       }
     }
-    return rate!;
+    if (!rate) {
+      throw new Error(`Could not get rate for ${from}:${fromChainId} to ${to}:${toChainId}`);
+    }
+    return rate;
   }
 
   async fetchSwapRate(
@@ -172,6 +175,11 @@ export class SwapRateService implements OnModuleInit {
           return "0";
         }
       }
+    }
+
+    if (newRate === "0" || newRate === "Infinity") {
+      this.log.debug(`Invalid swap rate for ${from} to ${to}: ${newRate}`);
+      return undefined;
     }
 
     const newSwap: SwapRate = {
