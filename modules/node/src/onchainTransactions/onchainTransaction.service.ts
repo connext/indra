@@ -158,7 +158,8 @@ export class OnchainTransactionService implements OnModuleInit {
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse | undefined;
     let nonce: number | undefined;
-    for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
+    let attempt: number | undefined;
+    for (attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const chainNonce = await wallet.getTransactionCount();
@@ -229,7 +230,7 @@ export class OnchainTransactionService implements OnModuleInit {
         const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
         if (!knownErr) {
           this.log.error(`Transaction failed to send with unknown error: ${e.message}`);
-          throw new Error(e.stack || e.message);
+          break;
         }
         // known error, retry
         this.log.warn(
@@ -238,13 +239,16 @@ export class OnchainTransactionService implements OnModuleInit {
       }
     }
     if (tx) {
+      this.log.info(`Marking failed by tx hash`);
       await this.onchainTransactionRepository.markFailedByTxHash(tx, errors, appIdentityHash);
     } else if (nonce) {
+      this.log.info(`Marking failed by nonce`);
       await this.onchainTransactionRepository.markFailedByChannelFromAndNonce(
         channel.multisigAddress,
         wallet.address,
         nonce,
         errors,
+        appIdentityHash,
       );
     } else {
       this.log.error(`No nonce or tx hash found to mark failed tx with!`);
