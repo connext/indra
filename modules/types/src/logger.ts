@@ -1,9 +1,9 @@
 // Designed to be as simple as possible so client users can easily inject their own
 export interface ILogger {
-  debug(msg: string): void;
-  info(msg: string): void;
-  warn(msg: string): void;
-  error(msg: string): void;
+  debug(msg: string, details?: object): void;
+  info(msg: string, details?: object): void;
+  warn(msg: string, details?: object): void;
+  error(msg: string, details?: object): void;
 }
 
 // Designed to give devs power over log format & context switching
