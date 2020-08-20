@@ -23,16 +23,19 @@ import { Contract, Wallet } from "ethers";
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethProviderUrl, ethWallet } from "./ethprovider";
+import { getTestLoggers } from "./misc";
 import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
+
+const { log, timeElapsed } = getTestLoggers("ClientHelper");
 
 export const createClient = async (
   opts: Partial<ClientOptions & { id: string }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const log = new ColorfulLogger("CreateClient", env.logLevel, false, "U");
+  const start = Date.now();
   const store = opts.store || getMemoryStore({ prefix: getRandomBytes32() });
   await store.init();
-  const clientOpts: ClientOptions = {
+  const client = await connect({
     ...opts,
     ethProviderUrl: opts.ethProviderUrl || ethProviderUrl,
     loggerService: new ColorfulLogger("Client", env.clientLogLevel, true, opts.id),
@@ -40,52 +43,42 @@ export const createClient = async (
     nodeUrl: opts.nodeUrl || env.nodeUrl,
     messagingUrl: opts.messagingUrl || env.natsUrl,
     store,
-  };
-  log.info(`connect() called`);
-  let start = Date.now();
-  const client = await connect(clientOpts);
-  log.info(`connect() returned after ${Date.now() - start}ms`);
-  start = Date.now();
+  });
+
   if (fund) {
-    log.info(`sending client eth`);
-    const ethTx = await ethWallet.sendTransaction({
-      to: client.signerAddress,
-      value: ETH_AMOUNT_LG,
-    });
-    log.debug(`transaction sent ${ethTx.hash}, waiting...`);
-    await ethTx.wait();
-    const token = new Contract(
-      client.config.contractAddresses[client.chainId].Token!,
-      ERC20.abi,
-      ethWallet,
+    const tokenAddress = client.config.contractAddresses[client.chainId].Token!;
+    const token = new Contract(tokenAddress, ERC20.abi, ethWallet);
+    const [ethTx, tokenTx] = await Promise.all([
+      await ethWallet.sendTransaction({
+        to: client.signerAddress,
+        value: ETH_AMOUNT_LG,
+      }),
+      await token.transfer(client.signerAddress, TOKEN_AMOUNT),
+    ]);
+    log.debug(
+      `Sent ${tokenAddress} tokens on chain ${client.chainId} from funding account ${
+        ethWallet.address
+      } with balance ${await token.balanceOf(ethWallet.address)} via tx ${tokenTx.hash}`,
     );
-    log.info(
-      `sending client ${client.config.contractAddresses[client.chainId].Token} tokens on chain ${
-        client.chainId
-      } from funding account ${ethWallet.address} with balance ${await token.balanceOf(
-        ethWallet.address,
-      )}`,
-    );
-    const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
-    log.debug(`transaction sent ${tokenTx.hash}, waiting...`);
-    await tokenTx.wait();
+    await Promise.all([ethTx.wait(), tokenTx.wait()]);
   }
+
   expect(client.signerAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
   expect(client.multisigAddress).to.be.ok;
+  timeElapsed(`Created client ${client.publicIdentifier}`, start);
   return client;
 };
 
 export const createRemoteClient = async (
   channelProvider: IChannelProvider,
 ): Promise<IConnextClient> => {
-  const clientOpts: ClientOptions = {
+  const client = await connect({
     channelProvider,
     ethProviderUrl: ethProviderUrl,
     loggerService: new ColorfulLogger("TestRunner", env.clientLogLevel, true),
     messagingUrl: env.natsUrl,
-  };
-  const client = await connect(clientOpts);
+  });
   expect(client.signerAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
   return client;

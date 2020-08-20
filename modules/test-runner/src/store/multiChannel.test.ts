@@ -175,9 +175,11 @@ describe(name, () => {
     const sequelize = new Sequelize(
       `sqlite:${env.storeDir}/store.sqlite`,
       {
+        isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
         logging: false,
-        isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED,
-      });
+        transactionType: "IMMEDIATE",
+      },
+    );
     // create stores with same sequelize instance but with different prefixes
     const senderStore = getFileStore(
       env.storeDir,
@@ -198,6 +200,7 @@ describe(name, () => {
       store: recipientStore,
       id: "R",
     })) as ConnextClient;
+    timeElapsed("Created both clients", start);
     receipt = getTestGraphReceiptToSign();
     chainId = (await sender.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
@@ -215,7 +218,7 @@ describe(name, () => {
     await recipient.store.clear();
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (single payment)", async () => {
+  it("Linked transfers should work w clients sharing a sequelize instance", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
 
@@ -238,7 +241,7 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (single payment)", async () => {
+  it("Graph transfers should work w clients sharing a sequelize instance", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
 
@@ -281,7 +284,7 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (many payments)", async () => {
+  it("Multiple linked transfers should work w clients sharing a sequelize instance", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(10);
     const reps = 3;
@@ -308,7 +311,7 @@ describe(name, () => {
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (many payments)", async () => {
+  it("Multiple graph transfers should work w clients sharing a sequelize instance", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(10);
     const reps = 3;
