@@ -1,6 +1,6 @@
 import { Watcher } from "../../src";
 import {
-  IWatcherStoreService,
+  IStoreService,
   WatcherEvents,
   ChallengeUpdatedEventPayload,
   ChallengeStatus,
@@ -31,7 +31,7 @@ export const initiateDispute = async (
   app: AppWithCounterClass,
   freeBalance: MiniFreeBalance,
   watcher: Watcher,
-  store: IWatcherStoreService,
+  store: IStoreService,
   networkContext: TestNetworkContext,
   callSetAndProgress: boolean = false,
 ) => {

@@ -1,6 +1,6 @@
 import { Watcher } from "../../src";
 import {
-  IWatcherStoreService,
+  IStoreService,
   WatcherEvents,
   ChallengeCompletedEventData,
   StoredAppChallengeStatus,
@@ -11,7 +11,7 @@ import { mineBlock } from "./contracts";
 export const waitForDisputeCompletion = async (
   appIds: string[],
   watcher: Watcher,
-  store: IWatcherStoreService,
+  store: IStoreService,
   networkContext: TestNetworkContext,
 ) => {
   // Get stored challenges before setting outcome

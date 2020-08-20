@@ -1,25 +1,17 @@
 import { providers } from "ethers";
 
-import { AppInstanceJson } from "./app";
 import { Address, Bytes32 } from "./basic";
-import {
-  ConditionalTransactionCommitmentJSON,
-  MinimalTransaction,
-  SetStateCommitmentJSON,
-} from "./commitments";
 import {
   AppChallenge,
   ChallengeEventData,
-  ChallengeUpdatedEventPayload,
   SignedCancelChallengeRequest,
-  StateProgressedEventPayload,
   ChallengeEvents,
 } from "./contracts";
 import { IChannelSigner } from "./crypto";
 import { ILoggerService, ILogger } from "./logger";
 import { IOnchainTransactionService } from "./misc";
 import { ContractAddressBook } from "./node";
-import { StateChannelJSON } from "./state";
+import { IStoreService } from "./store";
 
 ////////////////////////////////////////
 // Watcher external parameters
@@ -28,7 +20,7 @@ export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   providers: { [chainId: number]: providers.JsonRpcProvider | string };
   context: ContractAddressBook;
-  store: IWatcherStoreService;
+  store: IStoreService;
   logger?: ILoggerService | ILogger;
   transactionService?: IOnchainTransactionService;
 };
@@ -178,57 +170,3 @@ export type StoredAppChallenge = Omit<AppChallenge, "status"> & {
   status: StoredAppChallengeStatus;
   chainId: number;
 };
-
-export interface IWatcherStoreService {
-  // Disputes
-  getAppChallenge(appIdentityHash: Bytes32): Promise<StoredAppChallenge | undefined>;
-  saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void>;
-  getActiveChallenges(): Promise<StoredAppChallenge[]>;
-
-  // Events
-  getLatestProcessedBlock(): Promise<number>;
-  updateLatestProcessedBlock(blockNumber: number): Promise<void>;
-
-  getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]>;
-  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void>;
-
-  getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
-  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void>;
-
-  addOnchainAction(appIdentityHash: Bytes32, provider: providers.JsonRpcProvider): Promise<void>;
-
-  ////////////////////////////////////////
-  //// Channel data
-
-  // Schema version
-  getSchemaVersion(): Promise<number>;
-
-  // State channels
-  getAllChannels(): Promise<StateChannelJSON[]>;
-  getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
-  getStateChannelByOwnersAndChainId(
-    owners: Address[],
-    chainId: number,
-  ): Promise<StateChannelJSON | undefined>;
-  getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
-
-  // App instances
-  getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
-
-  // App proposals
-  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
-
-  // Free balance
-  getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
-
-  // Setup commitment
-  getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
-
-  // SetState commitment
-  getSetStateCommitments(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON[]>;
-
-  // Conditional tx commitment
-  getConditionalTransactionCommitment(
-    appIdentityHash: Bytes32,
-  ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
-}

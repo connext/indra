@@ -1,4 +1,4 @@
-import { DataTypes, Op, Sequelize, Transaction, ModelAttributes } from "sequelize";
+import { DataTypes, Op, Sequelize, Transaction } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
@@ -6,29 +6,6 @@ import { storeDefaults } from "../constants";
 import { KeyValueStorage } from "../types";
 
 type SupportedDialects = "postgres" | "sqlite";
-
-/**
- * Get data required to create Sequelize model. This data will be passed into the sequelize.define()
- * funtion along with the table name.
- *
- * @param dialect: SupportedDialects Supported database dialect
- * @returns model: ModelAttributes
- */
-export const getSequelizeModelDefinitionData = (dialect: SupportedDialects): ModelAttributes => {
-  let valueDataType = DataTypes.JSON;
-  if (dialect === "postgres") {
-    valueDataType = DataTypes.JSONB;
-  }
-  return {
-    key: {
-      type: new DataTypes.STRING(1024),
-      primaryKey: true,
-    },
-    value: {
-      type: valueDataType,
-    },
-  };
-};
 
 export class WrappedSequelizeStorage implements KeyValueStorage {
   public sequelize: Sequelize;
@@ -59,116 +36,142 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
       this.sequelize = new Sequelize(_sequelize as string, {
         logging: false,
         isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
+        // transactionType: Transaction.TYPES.IMMEDIATE,
       });
     } else {
       this.sequelize = _sequelize as Sequelize;
     }
-
     this.ConnextClientData = this.sequelize.define(
       this.tableName,
-      getSequelizeModelDefinitionData(this.sequelize.getDialect() as SupportedDialects),
+      {
+        key: {
+          type: new DataTypes.STRING(1024),
+          primaryKey: true,
+        },
+        value: {
+          type: this.sequelize.getDialect() === "postgres" ? DataTypes.JSON : DataTypes.JSONB,
+        },
+      },
     );
   }
 
-  async getItem<T>(key: string): Promise<T | undefined> {
-    const item = await this.ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
-    return item && (item.value as any);
-  }
-
-  async setItem(key: string, value: any): Promise<void> {
-    const execute = async (options = {}) => {
-      await this.ConnextClientData.upsert(
-        {
-          key: `${this.prefix}${this.separator}${key}`,
-          value,
-        },
-        options,
-      );
-    };
-    if (!this.shouldUseTransaction) {
-      return execute();
-    }
-    return this.sequelize.transaction(async (t) => {
-      await execute({ transaction: t, lock: true });
-    });
-  }
-
-  async removeItem(key: string): Promise<void> {
-    const execute = async (options = {}) => {
-      await this.ConnextClientData.destroy(
-        {
-          where: {
-            key: `${this.prefix}${this.separator}${key}`,
-          },
-        },
-        options,
-      );
-    };
-    if (!this.shouldUseTransaction) {
-      return execute();
-    }
-    return this.sequelize.transaction(async (t) => {
-      await execute({ transaction: t, lock: true });
-    });
-  }
-
-  async getKeys(): Promise<string[]> {
-    const relevantItems = await this.getRelevantItems();
-    return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
-  }
-
-  async getEntries(): Promise<[string, any][]> {
-    const relevantItems = await this.getRelevantItems();
-    return relevantItems.map((item) => [
-      item.key.replace(`${this.prefix}${this.separator}`, ""),
-      item.value,
-    ]);
-  }
-
-  private async getRelevantItems(): Promise<any[]> {
-    return this.ConnextClientData.findAll({
-      where: {
-        key: {
-          [Op.startsWith]: `${this.prefix}${this.separator}`,
-        },
-      },
-    });
-  }
-
-  async clear(): Promise<void> {
-    const execute = async (options = {}) => {
-      await this.ConnextClientData.destroy(
-        {
-          where: {
-            key: {
-              [Op.startsWith]: `${this.prefix}${this.separator}`,
-            },
-          },
-        },
-        options,
-      );
-    };
-    if (!this.shouldUseTransaction) {
-      return execute();
-    }
-    return this.sequelize.transaction(async (t) => {
-      await execute({ transaction: t, lock: true });
-    });
-  }
+  ////////////////////////////////////////
+  // Public Methods
 
   async init(): Promise<void> {
-    await this.syncModels(false);
+    try {
+      await this.sequelize.sync({ force: false });
+    } catch (e) {
+      throw new Error(`init() failed: ${e.message}`);
+    }
   }
 
   close(): Promise<void> {
-    return this.sequelize.close();
-  }
-
-  async syncModels(force: boolean = false): Promise<void> {
-    await this.sequelize.sync({ force });
+    try {
+      return this.sequelize.close();
+    } catch (e) {
+      throw new Error(`close() failed: ${e.message}`);
+    }
   }
 
   getKey(...args: string[]): string {
-    return args.join(this.separator);
+    try {
+      return args.join(this.separator);
+    } catch (e) {
+      throw new Error(`getKeys() failed: ${e.message}`);
+    }
   }
+
+  async getKeys(): Promise<string[]> {
+    try {
+      const relevantItems = await this.getRelevantItems();
+      return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
+    } catch (e) {
+      throw new Error(`getKeys() failed: ${e.message}`);
+    }
+  }
+
+  async getEntries(): Promise<[string, any][]> {
+    try {
+      const relevantItems = await this.getRelevantItems();
+      return relevantItems.map((item) => [
+        item.key.replace(`${this.prefix}${this.separator}`, ""),
+        item.value,
+      ]);
+    } catch (e) {
+      throw new Error(`getEntries() failed: ${e.message}`);
+    }
+  }
+
+  async getItem<T>(key: string): Promise<T | undefined> {
+    try {
+      const item = await this.ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
+      return item && (item.value as any);
+    } catch (e) {
+      throw new Error(`getItem(${key}) failed: ${e.message}`);
+    }
+  }
+
+  async setItem(key: string, value: any): Promise<void> {
+    try {
+      const execute = async (options = {}) => {
+        await this.ConnextClientData.upsert(
+          {
+            key: `${this.prefix}${this.separator}${key}`,
+            value,
+          },
+          options,
+        );
+      };
+      if (!this.shouldUseTransaction) {
+        return execute();
+      }
+      return this.sequelize.transaction(async (t) => {
+        await execute({ transaction: t, lock: true });
+      });
+    } catch (e) {
+      throw new Error(`setItem(${key}, ..) failed: ${e.message}`);
+    }
+  }
+
+  async removeItem(key: string): Promise<void> {
+    try {
+      const execute = async (options = {}) => {
+        await this.ConnextClientData.destroy(
+          {
+            where: {
+              key: `${this.prefix}${this.separator}${key}`,
+            },
+          },
+          options,
+        );
+      };
+      if (!this.shouldUseTransaction) {
+        return execute();
+      }
+      return this.sequelize.transaction(async (t) => {
+        await execute({ transaction: t, lock: true });
+      });
+    } catch (e) {
+      throw new Error(`removeItem(${key}) failed: ${e.message}`);
+    }
+  }
+
+  ////////////////////////////////////////
+  // Private Methods
+
+  private async getRelevantItems(): Promise<any[]> {
+    try {
+      return this.ConnextClientData.findAll({
+        where: {
+          key: {
+            [Op.startsWith]: `${this.prefix}${this.separator}`,
+          },
+        },
+      });
+    } catch (e) {
+      throw new Error(`getRelevantItems() failed: ${e.message}`);
+    }
+  }
+
 }

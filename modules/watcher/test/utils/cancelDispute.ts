@@ -1,12 +1,12 @@
 import { AppWithCounterClass } from "./appWithCounter";
 import { Watcher } from "../../src";
-import { IWatcherStoreService, WatcherEvents } from "@connext/types";
+import { IStoreService, WatcherEvents } from "@connext/types";
 import { expect, nullify, verifyCancelChallenge } from ".";
 
 export const cancelDispute = async (
   app: AppWithCounterClass,
   watcher: Watcher,
-  store: IWatcherStoreService,
+  store: IStoreService,
   failsWith: string | undefined = undefined,
 ) => {
   const existing = await store.getAppChallenge(app.identityHash);

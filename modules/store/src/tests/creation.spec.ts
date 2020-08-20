@@ -14,7 +14,6 @@ import {
   setAndGet,
   setAndGetMultiple,
   TEST_STORE_PAIR,
-  testAsyncStorageKey,
 } from "./utils";
 
 const storeTypes = Object.keys(StoreTypes);
@@ -86,25 +85,6 @@ describe("Instantiation", () => {
     const preInsert = await store.getEntries();
     await setAndGetMultiple(store, length);
     expect((await store.getEntries()).length).to.equal(preInsert.length + length);
-    await store.clear();
-  });
-
-  // TODO: fix test
-  it.skip("AsyncStorage should include a single key matching asyncStorageKey", async () => {
-    const store = await createStore(StoreTypes.AsyncStorage, { asyncStorageKey });
-
-    await setAndGetMultiple(store, length);
-
-    await testAsyncStorageKey(store, asyncStorageKey);
-    await store.clear();
-  });
-
-  // TODO: ask pedro about the spirit of this test, and if it still needs to
-  // be included/if its still relevant
-  it.skip("FileStorage should include a single key matching asyncStorageKey", async () => {
-    const store = await createStore(StoreTypes.File, { asyncStorageKey });
-    await setAndGetMultiple(store, length);
-    await testAsyncStorageKey(store, asyncStorageKey);
     await store.clear();
   });
 
