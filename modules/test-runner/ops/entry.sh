@@ -49,7 +49,7 @@ bundle=dist/tests.bundle.js
 
 if [[ "$NODE_ENV" == "production" ]]
 then opts="--forbid-only"
-else opts=""
+else opts="--bail"
 fi
 
 if [[ "$cmd" == "watch" ]]

@@ -6,6 +6,7 @@ import "./swap/happy.test";
 import "./transfer/linkedTransfer.test";
 import "./multichain.test";
 import "./withdraw/happy.test";
+import "./challenge.test";
 import "./channelProvider.test";
 import "./collateral/profiles.test";
 import "./collateral/reclaim.test";

@@ -1,24 +1,23 @@
-import {
-  getNatsClient,
-  createClient,
-  fundChannel,
-  ETH_AMOUNT_SM,
-  ETH_AMOUNT_MD,
-  expect,
-} from "../util";
-import { Client } from "ts-nats";
 import { IConnextClient, AppInstanceJson } from "@connext/types";
 import { getRandomIdentifier } from "@connext/utils";
+// import { Client } from "ts-nats";
+
+import {
+  createClient,
+  ETH_AMOUNT_MD,
+  ETH_AMOUNT_SM,
+  expect,
+  fundChannel,
+//   getNatsClient,
+} from "./util";
 
 describe("Challenges", () => {
   let client: IConnextClient;
   let app: AppInstanceJson;
   const recipient = getRandomIdentifier();
-  let nats: Client;
 
-  before(async () => {
-    nats = getNatsClient();
-  });
+  // let nats: Client;
+  // before(async () => { nats = getNatsClient(); });
 
   beforeEach(async () => {
     client = await createClient({ watcherEnabled: true });
