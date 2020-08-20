@@ -25,7 +25,7 @@ describe(name, () => {
     await client.messaging.disconnect();
   });
 
-  it.only("should collateralize ETH", async () => {
+  it("should collateralize ETH", async () => {
     const response = (await client.requestCollateral(AddressZero))!;
     expect(response).to.be.ok;
     expect(response.completed).to.be.ok;
