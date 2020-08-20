@@ -1,8 +1,8 @@
 import { ConfigService } from "./config.service";
-import { PinoLogger } from "nestjs-pino";
+import { LoggerService } from "../logger/logger.service";
 
 describe("ConfigService", () => {
-  const configService = new ConfigService(new PinoLogger({ renameContext: "Test" }));
+  const configService = new ConfigService(new LoggerService());
 
   it("can getPort", () => {
     const port = configService.getPort();

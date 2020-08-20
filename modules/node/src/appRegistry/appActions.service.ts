@@ -6,8 +6,8 @@ import {
   SupportedApplicationNames,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
-import { PinoLogger } from "nestjs-pino";
 
+import { LoggerService } from "../logger/logger.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { TransferService } from "../transfer/transfer.service";
@@ -15,7 +15,7 @@ import { TransferService } from "../transfer/transfer.service";
 @Injectable()
 export class AppActionsService {
   constructor(
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     private readonly cfCoreService: CFCoreService,
     private readonly transferService: TransferService,
   ) {

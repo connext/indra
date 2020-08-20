@@ -18,11 +18,11 @@ export class PinoLogger implements ILoggerService {
   private context: string;
   private level: string;
   private internal: pino.Logger;
-  constructor(context: string = "Unknown", level: number = 3, internalLogger?: pino.Logger) {
+  constructor(context: string = "Unknown", level: number = 3) {
     this.context = context;
     const levelStr = Object.entries(LogLevels).find((k, v) => v === level)[0];
     this.level = levelStr as LogLevel;
-    this.internal = internalLogger || pino({ name: this.context, level: this.level });
+    this.internal = pino({ name: this.context, level: this.level });
   }
   public trace(msg: string, details?: object, ...args: any[]): void {
     this.print("trace", msg, details, ...args);

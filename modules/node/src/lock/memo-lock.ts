@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import crypto from "crypto";
 
-import { PinoLogger } from "nestjs-pino";
+import { LoggerService } from "../logger/logger.service";
 
 const lockScript = `
   local len = redis.call("llen", KEYS[1]);
@@ -59,7 +59,7 @@ type Awaiter = {
 };
 
 export class MemoLock {
-  private readonly log: PinoLogger;
+  private readonly log: LoggerService;
 
   private readonly redis: Redis.Redis;
 
@@ -77,7 +77,7 @@ export class MemoLock {
   private subConn: Redis.Redis;
 
   constructor(
-    log: PinoLogger,
+    log: LoggerService,
     redis: Redis.Redis,
     queueLen: number = 50,
     ttl: number = 30000,

@@ -1,14 +1,15 @@
 import { MessagingService } from "@connext/messaging";
 import { getPublicIdentifierError, logTime } from "@connext/utils";
 import { RpcException } from "@nestjs/microservices";
-import { PinoLogger } from "nestjs-pino";
+
+import { LoggerService } from "../logger/logger.service";
 
 export interface IMessagingProvider {
   setupSubscriptions(): void;
 }
 
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
-  constructor(public readonly log: PinoLogger, protected readonly messaging: MessagingService) {
+  constructor(public readonly log: LoggerService, protected readonly messaging: MessagingService) {
     this.log.setContext("MessagingInterface");
   }
 
@@ -26,7 +27,9 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
-      this.log.debug(`Got NATS message`, { subject: msg.subject, data: msg.data });
+      this.log.debug(
+        `Got NATS message for subject ${msg.subject} with data ${JSON.stringify(msg.data)}`,
+      );
       if (msg.reply) {
         try {
           const start = Date.now();
@@ -41,16 +44,11 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
             err: e ? e.toString() : e,
             message: `Error during processor function: ${processor.name}`,
           });
-          this.log.error({
-            subject: msg.subject,
-            data: msg.data,
-            error: e.message,
-            stack: e.stack,
-          }, `Error processing message`);
+          this.log.error(`Error processing message ${msg.subject}: ${e.message}`, e.stack);
         }
       }
     });
-    this.log.info({ pattern, processor: processor.name }, `Connected message to callback`);
+    this.log.info(`Connected message pattern "${pattern}" to function ${processor.name}`);
   }
 
   abstract setupSubscriptions(): void;

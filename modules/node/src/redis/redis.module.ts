@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 
+import { LoggerModule } from "../logger/logger.module";
 import { ConfigModule } from "../config/config.module";
 
 import { redisClientFactory, redlockClientFactory } from "./redis.provider";
-import { LoggerModule } from "nestjs-pino";
 
 @Module({
   exports: [redisClientFactory, redlockClientFactory],

@@ -1,13 +1,13 @@
 import { Inject } from "@nestjs/common";
 import Redis from "ioredis";
-import { PinoLogger } from "nestjs-pino";
 import { JSONSerializer } from "@connext/types";
 import { RedisProviderId } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 
 export class CacheService {
   constructor(
     @Inject(RedisProviderId) private readonly redis: Redis.Redis,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
   ) {
     this.log.setContext("Cache");
   }

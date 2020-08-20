@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
+import { LoggerService } from "../logger/logger.service";
 import { AnonymizedOnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { PinoLogger } from "nestjs-pino";
 
 @Injectable()
 export class CollateralService {
   constructor(
     private readonly anonymizedOnchainTransactionRepository: AnonymizedOnchainTransactionRepository,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
   ) {
     this.log.setContext("CollateralService");
   }

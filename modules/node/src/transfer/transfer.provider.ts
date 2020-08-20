@@ -10,9 +10,9 @@ import {
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 import { stringify } from "@connext/utils";
-import { PinoLogger } from "nestjs-pino";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
@@ -23,7 +23,7 @@ import { TransferService } from "./transfer.service";
 export class TransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     private readonly configService: ConfigService,
     private readonly linkedTransferService: LinkedTransferService,
@@ -187,7 +187,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
     AuthService,
-    PinoLogger,
+    LoggerService,
     MessagingProviderId,
     ConfigService,
     LinkedTransferService,
@@ -196,7 +196,7 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
   provide: TransferProviderId,
   useFactory: async (
     authService: AuthService,
-    logging: PinoLogger,
+    logging: LoggerService,
     messaging: MessagingService,
     configService: ConfigService,
     linkedTransferService: LinkedTransferService,

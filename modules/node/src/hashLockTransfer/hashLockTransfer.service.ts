@@ -2,12 +2,12 @@ import { HashLockTransferAppName, HashLockTransferStatus, Address, Bytes32 } fro
 import { Injectable } from "@nestjs/common";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 import { appStatusesToTransferWithExpiryStatus } from "../utils";
-import { PinoLogger } from "nestjs-pino";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
@@ -26,7 +26,7 @@ export class HashLockTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     private readonly hashlockTransferRepository: HashlockTransferRepository,
   ) {
     this.log.setContext("HashLockTransferService");

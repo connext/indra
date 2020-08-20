@@ -9,13 +9,13 @@ import {
   Bytes32,
   FreeBalanceResponse,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify, getRandomBytes32 } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, providers } from "ethers";
-import { PinoLogger } from "nestjs-pino";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
+import { LoggerService } from "../logger/logger.service";
 import {
   OnchainTransactionService,
   OnchainTransactionResponse,
@@ -37,7 +37,7 @@ export class DepositService {
     private readonly configService: ConfigService,
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("DepositService");

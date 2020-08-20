@@ -8,9 +8,9 @@ import {
 import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
-import { PinoLogger } from "nestjs-pino";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { ConfigService } from "../config/config.service";
@@ -20,7 +20,7 @@ import { SignedTransferService } from "./signedTransfer.service";
 export class SignedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     private readonly configService: ConfigService,
     private readonly signedTransferService: SignedTransferService,
@@ -109,11 +109,11 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const signedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, PinoLogger, MessagingProviderId, ConfigService, SignedTransferService],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, SignedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
-    logging: PinoLogger,
+    logging: LoggerService,
     messaging: MessagingService,
     configService: ConfigService,
     signedTransferService: SignedTransferService,

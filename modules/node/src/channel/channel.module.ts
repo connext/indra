@@ -5,6 +5,7 @@ import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ConfigModule } from "../config/config.module";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { WithdrawModule } from "../withdraw/withdraw.module";
 import { DepositModule } from "../deposit/deposit.module";
@@ -28,6 +29,7 @@ import { ConditionalTransactionCommitmentRepository } from "../conditionalCommit
     ConfigModule,
     HttpModule,
     WithdrawModule,
+    LoggerModule,
     MessagingModule,
     DepositModule,
     CacheModule,

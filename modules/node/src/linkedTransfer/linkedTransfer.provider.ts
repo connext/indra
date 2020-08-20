@@ -3,9 +3,9 @@ import { LinkedTransferStatus, NodeResponses, SimpleLinkedTransferAppState } fro
 import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
-import { PinoLogger } from "nestjs-pino";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { ConfigService } from "../config/config.service";
@@ -15,7 +15,7 @@ import { LinkedTransferService } from "./linkedTransfer.service";
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     private readonly configService: ConfigService,
     private readonly linkedTransferService: LinkedTransferService,
@@ -97,11 +97,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, PinoLogger, MessagingProviderId, ConfigService, LinkedTransferService],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, LinkedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
-    logging: PinoLogger,
+    logging: LoggerService,
     messaging: MessagingService,
     configService: ConfigService,
     linkedTransferService: LinkedTransferService,

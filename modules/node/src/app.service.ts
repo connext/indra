@@ -4,10 +4,10 @@ import { Injectable, Inject } from "@nestjs/common";
 import { Interval } from "@nestjs/schedule";
 import { utils } from "ethers";
 import { collectDefaultMetrics, Gauge } from "prom-client";
-import { PinoLogger } from "nestjs-pino";
 
 import { ConfigService } from "./config/config.service";
 import { MessagingProviderId } from "./constants";
+import { LoggerService } from "./logger/logger.service";
 
 @Injectable()
 export class AppService {
@@ -15,7 +15,7 @@ export class AppService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     @Inject(MessagingProviderId) private readonly messaging: MessagingService,
   ) {
     this.log.setContext("AppService");

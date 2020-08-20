@@ -1,8 +1,8 @@
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { utils } from "ethers";
-import { PinoLogger } from "nestjs-pino";
 
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, SwapRateProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { ConfigService } from "../config/config.service";
@@ -13,7 +13,7 @@ const { getAddress } = utils;
 
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     private readonly configService: ConfigService,
     private readonly swapRateService: SwapRateService,
@@ -42,10 +42,10 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 }
 
 export const swapRateProviderFactory: FactoryProvider<Promise<MessagingService>> = {
-  inject: [PinoLogger, MessagingProviderId, SwapRateService, ConfigService],
+  inject: [LoggerService, MessagingProviderId, SwapRateService, ConfigService],
   provide: SwapRateProviderId,
   useFactory: async (
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     swapRateService: SwapRateService,
     configService: ConfigService,

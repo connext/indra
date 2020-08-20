@@ -3,12 +3,12 @@ import { getGasPrice, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers, BigNumber } from "ethers";
 import PriorityQueue from "p-queue";
-import { PinoLogger } from "nestjs-pino";
 
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
+import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -33,7 +33,7 @@ export class OnchainTransactionService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
     this.configService.signers.forEach((signer, chainId) => {

@@ -14,12 +14,12 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, utils, providers } from "ethers";
-import { PinoLogger } from "nestjs-pino";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import {
   OnchainTransaction,
   TransactionReason,
@@ -40,7 +40,7 @@ const { hexlify, randomBytes } = utils;
 export class WithdrawService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,

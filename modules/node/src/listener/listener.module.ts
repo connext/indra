@@ -6,13 +6,13 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
 import { ChannelRepository } from "../channel/channel.repository";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 
 import ListenerService from "./listener.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { LoggerModule } from "nestjs-pino";
 
 @Module({
   controllers: [],

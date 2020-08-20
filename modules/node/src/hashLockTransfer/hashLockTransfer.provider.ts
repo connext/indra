@@ -6,20 +6,20 @@ import { RpcException } from "@nestjs/microservices";
 import { constants } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { ConfigService } from "../config/config.service";
-import { PinoLogger } from "nestjs-pino";
 
 const { AddressZero, HashZero } = constants;
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     private readonly configService: ConfigService,
     private readonly hashLockTransferService: HashLockTransferService,
@@ -97,11 +97,11 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, PinoLogger, MessagingProviderId, ConfigService, HashLockTransferService],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, HashLockTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
-    logging: PinoLogger,
+    logging: LoggerService,
     messaging: MessagingService,
     configService: ConfigService,
     hashLockTransferService: HashLockTransferService,

@@ -4,6 +4,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { utils, constants } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
@@ -27,14 +28,13 @@ import {
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
-import { PinoLogger } from "nestjs-pino";
 
 const { getAddress } = utils;
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
@@ -186,7 +186,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
     AuthService,
-    PinoLogger,
+    LoggerService,
     MessagingProviderId,
     ChannelService,
     ConfigService,
@@ -199,7 +199,7 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
-    log: PinoLogger,
+    log: LoggerService,
     messaging: MessagingService,
     channelService: ChannelService,
     config: ConfigService,

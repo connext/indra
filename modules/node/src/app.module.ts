@@ -15,6 +15,7 @@ import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.modu
 import { LinkedTransferModule } from "./linkedTransfer/linkedTransfer.module";
 import { ListenerModule } from "./listener/listener.module";
 import { LockModule } from "./lock/lock.module";
+import { LoggerModule } from "./logger/logger.module";
 import { MessagingModule } from "./messaging/messaging.module";
 import { RedisModule } from "./redis/redis.module";
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
@@ -22,11 +23,10 @@ import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { LoggerModule } from "nestjs-pino";
 
 @Module({
   controllers: [AppController],
-  exports: [ConfigModule, AuthModule],
+  exports: [ConfigModule, LoggerModule, AuthModule],
   imports: [
     AdminModule,
     AppRegistryModule,
@@ -42,7 +42,7 @@ import { LoggerModule } from "nestjs-pino";
     LinkedTransferModule,
     ListenerModule,
     LockModule,
-    LoggerModule.forRoot(),
+    LoggerModule,
     MessagingModule,
     RedisModule,
     ScheduleModule.forRoot(),

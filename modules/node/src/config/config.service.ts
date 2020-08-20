@@ -9,14 +9,15 @@ import {
   AllowedSwap,
   PriceOracleTypes,
   NetworkContexts,
+  JsonRpcProvider,
 } from "@connext/types";
 import { ChannelSigner, getEthProvider } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, Contract, providers, constants, utils, BigNumber } from "ethers";
 
 import { DEFAULT_DECIMALS } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { PinoLogger } from "nestjs-pino";
 
 const { AddressZero, Zero } = constants;
 const { getAddress, parseEther } = utils;
@@ -37,7 +38,7 @@ export class ConfigService implements OnModuleInit {
   // keyed on chainId
   public readonly providers: Map<number, providers.JsonRpcProvider> = new Map();
 
-  constructor(private readonly log: PinoLogger) {
+  constructor(private readonly log: LoggerService) {
     this.log.setContext("ConfigService");
     this.envConfig = process.env as any;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)

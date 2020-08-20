@@ -8,9 +8,9 @@ import {
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
 import { constants, utils } from "ethers";
-import { PinoLogger } from "nestjs-pino";
 
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 
 const { AddressZero } = constants;
@@ -22,7 +22,7 @@ export class SwapRateService implements OnModuleInit {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     @Inject(MessagingProviderId) private readonly messaging: MessagingService,
   ) {
     this.log.setContext("SwapRateService");

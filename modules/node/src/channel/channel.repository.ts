@@ -3,16 +3,16 @@ import { NotFoundException } from "@nestjs/common";
 import { constants } from "ethers";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { AppInstanceSerializer } from "../appInstance/appInstance.repository";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
 import { Channel } from "./channel.entity";
-import { PinoLogger } from "nestjs-pino";
 
 const { AddressZero } = constants;
 
-const log = new PinoLogger({ renameContext: "ChannelRepository" });
+const log = new LoggerService("ChannelRepository");
 
 export const ChannelSerializer: JSONSerializer<Channel, StateChannelJSON> = class {
   static toJSON(channel: Channel): StateChannelJSON {

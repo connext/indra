@@ -57,9 +57,9 @@ import {
 } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { ChallengeRegistry } from "@connext/contracts";
+import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
-import { PinoLogger } from "nestjs-pino";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;
@@ -68,7 +68,7 @@ const { defaultAbiCoder } = utils;
 export class CFCoreStore implements IStoreService {
   private schemaVersion: number = STORE_SCHEMA_VERSION;
   constructor(
-    private readonly log: PinoLogger,
+    private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
     // eslint-disable-next-line max-len

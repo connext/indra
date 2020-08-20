@@ -7,12 +7,12 @@ import { Contract, constants, utils } from "ethers";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
+import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
 import { formatUnits } from "ethers/lib/utils";
-import { NetworkContexts, MinimalTransaction, StateChannelJSON, ILoggerService } from "@connext/types";
+import { NetworkContexts, MinimalTransaction, StateChannelJSON } from "@connext/types";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { PinoLogger } from "nestjs-pino";
 
 const { EtherSymbol } = constants;
 const { formatEther } = utils;
@@ -21,7 +21,7 @@ export const cfCoreProviderFactory: Provider = {
   inject: [
     ConfigService,
     LockService,
-    PinoLogger,
+    LoggerService,
     OnchainTransactionService,
     MessagingProviderId,
     CFCoreStore,
@@ -30,7 +30,7 @@ export const cfCoreProviderFactory: Provider = {
   useFactory: async (
     config: ConfigService,
     lockService: LockService,
-    log: PinoLogger,
+    log: LoggerService,
     onchainTransactionService: OnchainTransactionService,
     messaging: MessagingService,
     store: CFCoreStore,
@@ -46,6 +46,27 @@ export const cfCoreProviderFactory: Provider = {
       },
       {},
     );
+
+    // test that provider works
+    const cfCore = await CFCore.create(
+      messaging,
+      store,
+      networkContexts,
+      config.getSigner(config.getSupportedChains()[0]), // TODO: fix
+      {
+        acquireLock: lockService.acquireLock.bind(lockService),
+        releaseLock: lockService.releaseLock.bind(lockService),
+      },
+      undefined,
+      log.newContext("CFCore"),
+      false, // only clients sync on cf core start
+      {
+        sendTransaction: (tx: MinimalTransaction, json: StateChannelJSON) => {
+          return onchainTransactionService.sendMultisigDeployment(tx, json);
+        },
+      },
+    );
+    log.info(`Created CF Core!`);
 
     for (const [chainId, provider] of config.providers.entries()) {
       log.info(`Checking balances of configured chainId: ${chainId}`);
@@ -72,30 +93,7 @@ export const cfCoreProviderFactory: Provider = {
       }
     }
 
-    log.info(`Creating CF Core!`);
-    // @ts-ignore
-    log.newContext = (context: string) => {
-      log.setContext(context);
-      return log;
-    };
-    const cfCore = await CFCore.create(
-      messaging,
-      store,
-      networkContexts,
-      config.getSigner(config.getSupportedChains()[0]), // TODO: fix
-      {
-        acquireLock: lockService.acquireLock.bind(lockService),
-        releaseLock: lockService.releaseLock.bind(lockService),
-      },
-      undefined,
-      (log as any).newContext("CFCore"),
-      false, // only clients sync on cf core start
-      {
-        sendTransaction: (tx: MinimalTransaction, json: StateChannelJSON) => {
-          return onchainTransactionService.sendMultisigDeployment(tx, json);
-        },
-      },
-    );
+    log.info(`CFCore created with identifier: ${cfCore.publicIdentifier}`);
     return cfCore;
   },
 };

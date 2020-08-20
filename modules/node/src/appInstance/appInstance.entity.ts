@@ -8,7 +8,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
 import {
   Column,
   CreateDateColumn,
