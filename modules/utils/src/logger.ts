@@ -15,12 +15,13 @@ export const logTime = (log: ILogger, start: number, msg: string): void => {
 
 export class PinoLogger implements ILoggerService {
   private context: string;
-  private level: number;
+  private level: string;
   private internal: pino.Logger;
   constructor(context: string = "Unknown", level: number = 3) {
     this.context = context;
-    this.level = level;
-    this.internal = pino({ name: this.context, level: LogLevels[level] });
+    const levelStr = Object.entries(LogLevels).find((k, v) => v === level)[0];
+    this.level = levelStr as LogLevel;
+    this.internal = pino({ name: this.context, level: this.level });
   }
   public trace(msg: string, details?: object, ...args: any[]): void {
     this.print("trace", msg, details, ...args);
@@ -45,15 +46,16 @@ export class PinoLogger implements ILoggerService {
   }
   public setContext(context: string): void {
     this.context = context;
-    this.internal = pino({ name: this.context, level: LogLevels[this.level] });
+    this.internal = pino({ name: this.context, level: this.level });
   }
   public newContext(context: string): ILoggerService {
-    return new PinoLogger(context, this.level);
+    return new PinoLogger(context, LogLevels[this.level]);
   }
 
   private print(type: LogLevel, msg: string, details?: object, ...args: any[]): void {
     const idx = LogLevels[type];
-    if (this.level < idx) {
+    const level = LogLevels[this.level];
+    if (level < idx) {
       return;
     }
     this.internal[type](msg, details, ...args);
