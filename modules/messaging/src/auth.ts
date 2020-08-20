@@ -13,9 +13,7 @@ export class MessagingAuthService {
     }
 
     this.log = this.config.logger || nullLogger;
-    this.log.debug(
-      `Created messaging auth service with config: ${JSON.stringify(config, null, 2)}`,
-    );
+    this.log.debug(`Created messaging auth service`, { config });
 
     this.defaultJWTAudience = this.config.messagingUrl as string;
     this.auth = new AuthService(
