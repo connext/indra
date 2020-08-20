@@ -11,3 +11,14 @@ export interface ILoggerService extends ILogger {
   setContext(context: string): void;
   newContext(context: string): ILoggerService;
 }
+
+export const LogLevels = {
+  fatal: 0,
+  error: 1,
+  warn: 2,
+  info: 3,
+  debug: 4,
+  trace: 5,
+  silent: 6,
+} as const;
+export type LogLevel = keyof typeof LogLevels;
