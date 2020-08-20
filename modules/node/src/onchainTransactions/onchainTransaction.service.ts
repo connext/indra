@@ -163,7 +163,23 @@ export class OnchainTransactionService implements OnModuleInit {
         const chainNonce = await wallet.getTransactionCount();
         const memoryNonce = (await this.nonces.get(channel.chainId))!;
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
+        // add pending so we can mark it failed
+        this.log.info(`Adding pending tx with nonce ${nonce}`);
+
+        // TODO: this wont work if the loop happens more than once
+        // possible fix: add unique index on from+nonce and use onConflict
+        // actually this wont work, easiest fix is to look it up by channel+from+nonce first :/
+        await this.onchainTransactionRepository.addPending(
+          transaction,
+          nonce,
+          wallet.address,
+          reason,
+          channel,
+          appIdentityHash,
+        );
+        this.log.info(`Populating tx with nonce ${nonce}`);
         const populatedTx = await wallet.populateTransaction({ ...transaction, nonce });
+        this.log.info(`Sending tx with nonce ${nonce}`);
         tx = await wallet.sendTransaction({
           ...populatedTx,
           gasLimit: BigNumber.from(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
@@ -171,17 +187,25 @@ export class OnchainTransactionService implements OnModuleInit {
             : populatedTx.gasLimit,
           gasPrice: getGasPrice(wallet.provider!, channel.chainId),
         });
+        this.log.info(`Tx submitted, hash: ${tx.hash}`);
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        // add fields from tx response
-        await this.onchainTransactionRepository.addResponse(tx, reason, channel, appIdentityHash);
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
+        // add fields from tx response
+        await this.onchainTransactionRepository.addResponse(
+          tx,
+          nonce,
+          reason,
+          channel,
+          appIdentityHash,
+        );
         const start = Date.now();
         // eslint-disable-next-line no-loop-func
         const completed: Promise<void> = new Promise(async (resolve, reject) => {
           try {
             const receipt = await tx!.wait();
+            this.log.info(`Tx mined, hash: ${receipt.transactionHash}`);
             await this.onchainTransactionRepository.addReceipt(receipt);
             resolve();
           } catch (e) {

@@ -10,6 +10,7 @@ import {
   TransactionStatus,
 } from "./onchainTransaction.entity";
 import { toBN } from "@connext/utils";
+import { MinimalTransaction } from "@connext/types";
 const { Zero } = constants;
 
 export const onchainEntityToReceipt = (
@@ -124,8 +125,10 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async addResponse(
-    tx: providers.TransactionResponse,
+  async addPending(
+    tx: MinimalTransaction,
+    nonce: number,
+    from: string,
     reason: TransactionReason,
     channel: Channel,
     appIdentityHash?: string,
@@ -136,7 +139,38 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         .insert()
         .into(OnchainTransaction)
         .values({
-          ...tx,
+          to: tx.to,
+          data: tx.data.toString(),
+          value: toBN(tx.value),
+          chainId: channel.chainId.toString(),
+          from,
+          nonce,
+          reason,
+          status: TransactionStatus.PENDING,
+          channel,
+          gasUsed: Zero,
+          appIdentityHash,
+        })
+        .execute();
+    });
+  }
+
+  async addResponse(
+    tx: providers.TransactionResponse,
+    nonce: number,
+    reason: TransactionReason,
+    channel: Channel,
+    appIdentityHash?: string,
+  ): Promise<void> {
+    console.log("tx: ", tx);
+    console.log("nonce: ", nonce);
+    return getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(OnchainTransaction)
+        .set({
+          from: tx.from,
+          to: tx.to,
           data: tx.data.toString(),
           value: toBN(tx.value),
           gasPrice: toBN(tx.gasPrice),
@@ -153,8 +187,11 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           gasUsed: Zero,
           appIdentityHash,
         })
-        .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
-        .setParameter("nonce", toBN(tx.nonce).toNumber())
+        .where('"channelMultisigAddress" = :multisigAddress', {
+          multisigAddress: channel.multisigAddress,
+        })
+        .andWhere("nonce = :nonce", { nonce })
+        .andWhere("from = :from", { from: tx.from })
         .execute();
     });
   }
