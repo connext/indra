@@ -149,7 +149,7 @@ const performConditionalTransfer = async (params: {
 
 const name = "Multichannel Store";
 const { log, timeElapsed } = getTestLoggers(name);
-describe(name, () => {
+describe.only(name, () => {
   let chainId: number;
   let initialRecipientFb: { [x: string]: BigNumber };
   let initialSenderFb: { [x: string]: string | BigNumber };
@@ -178,6 +178,14 @@ describe(name, () => {
         isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
         logging: false,
         transactionType: "IMMEDIATE",
+        retry: {
+          max: 3,
+          timeout: 5050,
+          backoffBase: 200,
+          backoffExponent: 1.2,
+          name: `IntegratedSharedStore`,
+          match: ["SQLITE_BUSY"],
+        },
       },
     );
     // create stores with same sequelize instance but with different prefixes
@@ -214,7 +222,14 @@ describe(name, () => {
     await sender.messaging.disconnect();
     await recipient.messaging.disconnect();
     // clear stores
-    await sender.store.clear();
+    log.warn(`Clearing store...`);
+    try {
+      await sender.store.clear();
+    } catch (e) {
+      log.error(`Caught error while clearing store ${e.message}`);
+      throw e;
+    }
+    log.warn(`Clearing other store..`);
     await recipient.store.clear();
   });
 

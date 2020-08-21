@@ -434,8 +434,12 @@ export class Watcher implements IWatcher {
     ) {
       return;
     }
-    await this.store.saveAppChallenge(event);
-    this.log.debug(`Saved challenge to store: ${stringify(event)}`);
+    try {
+      await this.store.saveAppChallenge(event);
+      this.log.debug(`Saved challenge to store: ${stringify(event)}`);
+    } catch (e) {
+      this.log.error(`Failed to save challenge to store: ${stringify(event)}`);
+    }
   };
 
   private respondToChallenge = async (
@@ -1101,10 +1105,14 @@ export class Watcher implements IWatcher {
     challenge: StoredAppChallenge,
   ) => {
     this.log.debug(`Transitioning challenge status from ${challenge.status} to ${status}`);
-    return this.store.saveAppChallenge({
-      ...challenge,
-      status,
-    });
+    try {
+      return await this.store.saveAppChallenge({
+        ...challenge,
+        status,
+      });
+    } catch (e) {
+      this.log.error(`Failed to updateChallengeStatus: ${e.message}`);
+    }
   };
 
   private isFreeBalanceApp = async (identityHash: string): Promise<boolean> => {

@@ -267,8 +267,13 @@ export class StoreService implements IStoreService {
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    console.log(`Saving app challege!`);
     const key = this.storage.getKey(CHALLENGE, data.identityHash);
-    return this.storage.setItem(key, data);
+    try {
+      return await this.storage.setItem(key, data);
+    } catch (e) {
+      throw new Error(`Failed to save app challenge: ${e.message}`);
+    }
   }
 
   ////////////////////////////////////////

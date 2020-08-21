@@ -1,5 +1,7 @@
 import "./setup";
 // Run happy-path tests first
+import "./store/multiChannel.test";
+
 import "./deposit/happy.test";
 import "./deposit/rights.test";
 import "./swap/happy.test";
@@ -15,7 +17,6 @@ import "./connect.test";
 import "./get/appRegistry.test";
 import "./get/stateChannel.test";
 import "./store/happy.test";
-import "./store/multiChannel.test";
 import "./store/restoreState.test";
 import "./transfer/asyncTransfer.test";
 import "./transfer/concurrentTransfers.test";
