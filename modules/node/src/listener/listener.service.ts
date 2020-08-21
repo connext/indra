@@ -182,10 +182,10 @@ export default class ListenerService implements OnModuleInit {
 
   async handleUninstallFailed(data: UninstallFailedMessage) {
     const { params } = data.data;
-    await this.transferRepository.removeTransferAction(
+    const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
       params.appIdentityHash,
-      params.action as AppAction,
     );
+    await this.transferRepository.removeTransferAction(receiverApp.meta.paymentId);
   }
 
   async handleUninstall(data: UninstallMessage) {
