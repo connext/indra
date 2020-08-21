@@ -71,7 +71,7 @@ import { removeAppCommitments1595210814094 } from "../../migrations/159521081409
 import { updateTxEnum1595439120210 } from "../../migrations/1595439120210-update-tx-enum";
 import { addAppIdTx1596488084652 } from "../../migrations/1596488084652-add-app-id-tx";
 import { transactionAppFlag1596924706697 } from "../../migrations/1596924706697-transaction-app-flag";
-import { storeLatestAction1597957131361 } from "../../migrations/1597957131361-store-latest-action";
+import { initTransferTable1598039003043 } from "../../migrations/1598039003043-initTransferTable";
 
 export const entities = [
   AppInstance,
@@ -90,6 +90,7 @@ export const entities = [
   ProcessedBlock,
   StateProgressedEvent,
   ChallengeUpdatedEvent,
+  Transfer,
 ];
 
 export const migrations = [
@@ -142,7 +143,7 @@ export const migrations = [
   updateTxEnum1595439120210,
   addAppIdTx1596488084652,
   transactionAppFlag1596924706697,
-  storeLatestAction1597957131361,
+  initTransferTable1598039003043,
 ];
 
 @Injectable()
