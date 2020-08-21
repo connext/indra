@@ -14,7 +14,7 @@ export class TransferRepository extends Repository<Transfer<any>> {
         .set({
           action: undefined,
         })
-        .where("transfer.paymentId = :paymentId", { paymentId })
+        .where("paymentId = :paymentId", { paymentId })
         .execute();
     });
   }
@@ -27,7 +27,7 @@ export class TransferRepository extends Repository<Transfer<any>> {
         .set({
           action,
         })
-        .where("transfer.paymentId = :paymentId", { paymentId })
+        .where("paymentId = :paymentId", { paymentId })
         .execute();
     });
   }
@@ -40,7 +40,7 @@ export class TransferRepository extends Repository<Transfer<any>> {
         .set({
           receiverApp,
         })
-        .where("transfer.paymentId = :paymentId", { paymentId })
+        .where("paymentId = :paymentId", { paymentId })
         .execute();
     });
   }
