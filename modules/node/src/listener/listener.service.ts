@@ -6,7 +6,7 @@ import {
   ProtocolEventMessage,
   EventName,
   SupportedApplicationNames,
-  EventPayloads,
+  UninstallFailedMessage,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 
@@ -180,10 +180,11 @@ export default class ListenerService implements OnModuleInit {
     };
   }
 
-  async handleUninstallFailed(data: EventPayloads.UninstallFailed) {
+  async handleUninstallFailed(data: UninstallFailedMessage) {
+    const { params } = data.data;
     await this.transferRepository.removeTransferSecret(
-      data.params.appIdentityHash,
-      data.params.action,
+      params.appIdentityHash,
+      params.action as AppAction,
     );
   }
 

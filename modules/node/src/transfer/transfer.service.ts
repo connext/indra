@@ -6,7 +6,6 @@ import {
   CoinTransfer,
   ConditionalTransferAppNames,
   ConditionalTransferTypes,
-  GenericConditionalTransferAppName,
   RequireOnlineApps,
   GraphBatchedTransferAppAction,
   GraphBatchedTransferAppState,
@@ -21,6 +20,7 @@ import {
   SupportedApplicationNames,
   CF_METHOD_TIMEOUT,
   AppAction,
+  GenericConditionalTransferAppName,
 } from "@connext/types";
 import {
   stringify,
@@ -36,7 +36,7 @@ import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { AppInstance, AppType } from "../appInstance/appInstance.entity";
+import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
@@ -47,6 +47,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const { Zero, HashZero } = constants;
 const { parseUnits } = utils;
@@ -111,6 +112,7 @@ export class TransferService {
     private readonly swapRateService: SwapRateService,
     private readonly configService: ConfigService,
     private readonly transferRepository: TransferRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("TransferService");
@@ -164,7 +166,7 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta.paymentId;
-    const existing = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+    const existing = await this.appInstanceRepository.findTransferAppByPaymentIdAndSender(
       paymentId,
       getSignerAddressFromPublicIdentifier(senderChannel.userIdentifier),
     );
@@ -528,7 +530,7 @@ export class TransferService {
   >(paymentId: string): Promise<AppInstance<T> | undefined> {
     this.log.debug(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
+    const app = await this.appInstanceRepository.findTransferAppByPaymentIdAndReceiver<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
@@ -541,7 +543,7 @@ export class TransferService {
   >(paymentId: string): Promise<AppInstance<T> | undefined> {
     this.log.debug(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndSender<T>(
+    const app = await this.appInstanceRepository.findTransferAppByPaymentIdAndSender<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
@@ -565,14 +567,14 @@ export class TransferService {
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
     // eslint-disable-next-line max-len
-    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+    const senderTransferApps = await this.appInstanceRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
       senderIdentifier,
       this.cfCoreService.cfCore.signerAddress,
     );
 
     for (const senderApp of senderTransferApps) {
       // eslint-disable-next-line max-len
-      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+      const correspondingReceiverApp = await this.appInstanceRepository.findTransferAppByPaymentIdAndSender(
         senderApp.meta.paymentId,
         this.cfCoreService.cfCore.signerAddress,
       );
