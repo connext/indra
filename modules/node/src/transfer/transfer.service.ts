@@ -176,6 +176,9 @@ export class TransferService {
       );
     }
 
+    // Create the transfer with the sender app and the payment id
+    await this.transferRepository.createTransfer(paymentId, existing);
+
     const requireOnline =
       RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];
 
@@ -271,6 +274,11 @@ export class TransferService {
         this.log.info(
           `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
         );
+        // Add the receiver app to the transfer
+        const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+          receiverProposeRes!.appIdentityHash,
+        );
+        await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
       }
     } catch (e) {
       this.log.error(`Error installing receiver app: ${e.message || e}`);
@@ -511,6 +519,11 @@ export class TransferService {
       this.log.info(
         `Receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
       );
+      // Add the receiver app to the transfer
+      const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+        proposeRes.appIdentityHash,
+      );
+      await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
     }
 
     return {

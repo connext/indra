@@ -281,13 +281,20 @@ export class AppRegistryService implements OnModuleInit {
     const nodeSignerAddress = await this.configService.getSignerAddress();
     const senderAppLatestState = appInstance.latestState as GenericConditionalTransferAppState;
 
+    const paymentId = appInstance.meta.paymentId;
+
     // only run validation against sender app uninstall
     if (senderAppLatestState.coinTransfers[1].to !== nodeSignerAddress) {
+      // add secret for receiver app uninstalls
+      await this.transferService.addTransferSecret(
+        paymentId,
+        params.action as AppAction,
+      );
       return;
     }
 
     let receiverApp = await this.transferService.findReceiverAppByPaymentId(
-      appInstance.meta.paymentId,
+      paymentId,
     );
 
     // TODO: VERIFY THIS
@@ -297,11 +304,6 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     this.log.info(`Starting uninstallTransferMiddleware for ${appInstance.identityHash}`);
-
-    await this.transferService.addTransferSecret(
-      receiverApp.identityHash,
-      params.action as AppAction,
-    );
 
     if (receiverApp.type !== AppType.UNINSTALLED) {
       this.log.info(
