@@ -63,9 +63,9 @@ export class DepositService {
       DepositAppName,
       channel.chainId,
     );
-    const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
+    const depositApp: AppInstance<"DepositApp"> | undefined = channel.appInstances.find(
       (app) =>
-        app.appDefinition === depositRegistry.appDefinitionAddress &&
+        app.appDefinition === depositRegistry!.appDefinitionAddress &&
         app.latestState.assetId === assetId,
     );
     if (depositApp) {
@@ -100,9 +100,7 @@ export class DepositService {
         return undefined;
       }
 
-      // if the transaction is complete and the app was never uninstalled,
-      // try to uninstall the app again before proceeding
-      if (!transaction.appUninstalled) {
+      const uninstallDepositApp = async () => {
         let appUninstallError: Error | undefined = undefined;
         try {
           await this.rescindDepositRights(depositApp.identityHash, channel.multisigAddress);
@@ -117,6 +115,21 @@ export class DepositService {
             appUninstallError = e;
           }
         }
+        return appUninstallError;
+      };
+
+      // if the transaction failed, uninstall app
+      if (transaction.status === TransactionStatus.FAILED) {
+        const appUninstallError = await uninstallDepositApp();
+        if (appUninstallError) {
+          throw appUninstallError;
+        }
+      }
+
+      // if the transaction is complete and the app was never uninstalled,
+      // try to uninstall the app again before proceeding
+      if (!transaction.appUninstalled) {
+        const appUninstallError = await uninstallDepositApp();
         if (appUninstallError) {
           this.log.warn(
             `Transaction ${transaction.hash} on ${channel.chainId} completed, but unable to uninstall app ${depositApp.identityHash}: ${appUninstallError.message}`,
@@ -186,7 +199,7 @@ export class DepositService {
   async requestDepositRights(
     channel: Channel,
     tokenAddress: string = AddressZero,
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
       throw new Error(
@@ -199,6 +212,9 @@ export class DepositService {
   async rescindDepositRights(appIdentityHash: string, multisigAddress: string): Promise<void> {
     this.log.debug(`Uninstalling deposit app for ${multisigAddress} with ${appIdentityHash}`);
     const onchain = await this.onchainTransactionService.findByAppId(appIdentityHash);
+    if (!onchain) {
+      throw new Error(`Onchain tx doesn't exist for app ${appIdentityHash}`);
+    }
     if (onchain.appUninstalled) {
       return;
     }
@@ -264,7 +280,7 @@ export class DepositService {
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      this.log.info(`Checking withdrawn amount using ethProvider ${ethProvider.connection.url}`);
+      this.log.info(`Checking withdrawn amount using ethProvider ${ethProvider!.connection.url}`);
       startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
@@ -279,11 +295,11 @@ export class DepositService {
 
     // generate starting multisig balance
     this.log.info(
-      `Checking starting multisig balance of ${channel.multisigAddress} asset ${tokenAddress} on chain ${channel.chainId} using ethProvider ${ethProvider.connection.url}`,
+      `Checking starting multisig balance of ${channel.multisigAddress} asset ${tokenAddress} on chain ${channel.chainId} using ethProvider ${ethProvider?.connection.url}`,
     );
     const startingMultisigBalance =
       tokenAddress === AddressZero
-        ? await ethProvider.getBalance(channel.multisigAddress)
+        ? await ethProvider!.getBalance(channel.multisigAddress)
         : await new Contract(tokenAddress, ERC20.abi, ethProvider).balanceOf(
             channel.multisigAddress,
           );

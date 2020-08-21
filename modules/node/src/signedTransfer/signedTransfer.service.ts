@@ -14,14 +14,14 @@ import { appStatusesToTransferStatus } from "../utils";
 type SignedTransferTypes = typeof SimpleSignedTransferAppName | typeof GraphSignedTransferAppName;
 
 const appStatusesToSignedTransferStatus = (
-  senderApp: AppInstance<SignedTransferTypes>,
+  senderApp?: AppInstance<SignedTransferTypes>,
   receiverApp?: AppInstance<SignedTransferTypes>,
 ): SignedTransferStatus | undefined => {
   return appStatusesToTransferStatus<SignedTransferTypes>(senderApp, receiverApp);
 };
 
 export function normalizeSignedTransferAppState<T extends SignedTransferTypes>(
-  app: AppInstance,
+  app?: AppInstance,
 ): AppInstance<T> | undefined {
   return (
     app && {
@@ -45,14 +45,11 @@ export class SignedTransferService {
     paymentId: string,
     appName: T,
     chainId: number,
-  ): Promise<
-    | {
-        senderApp: AppInstance<T>;
-        receiverApp: AppInstance<T>;
-        status: any;
-      }
-    | undefined
-  > {
+  ): Promise<{
+    senderApp?: AppInstance<T>;
+    receiverApp?: AppInstance<T>;
+    status?: SignedTransferStatus;
+  }> {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     const senderApp = await this.findSenderAppByPaymentId(paymentId, appName, chainId);
     const receiverApp = await this.findReceiverAppByPaymentId(paymentId, appName, chainId);
@@ -68,7 +65,7 @@ export class SignedTransferService {
     paymentId: string,
     appName: T,
     chainId: number,
-  ): Promise<AppInstance<T>> {
+  ): Promise<AppInstance<T> | undefined> {
     this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
@@ -85,7 +82,7 @@ export class SignedTransferService {
     paymentId: string,
     appName: T,
     chainId: number,
-  ): Promise<AppInstance<T>> {
+  ): Promise<AppInstance<T> | undefined> {
     this.log.info(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(

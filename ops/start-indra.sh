@@ -241,6 +241,8 @@ echo "Chain providers configured"
 ####################
 # Observability tools config
 
+LOGDNA_TAGS="indra-${INDRA_DOMAINNAME:-unknown}"
+
 logdna_image="logdna/logspout:v1.2.0";
 pull_if_unavailable "$logdna_image"
 
@@ -288,6 +290,7 @@ logdna_service="logdna:
     image: '$logdna_image'
     environment:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
+      TAGS: '$LOGDNA_TAGS'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'"
 

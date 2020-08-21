@@ -8,7 +8,7 @@ import { AppInstance, AppType } from "./appInstance.entity";
 const { HashZero } = constants;
 
 export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJson> = class {
-  static toJSON(app: AppInstance): AppInstanceJson {
+  static toJSON(app: AppInstance): AppInstanceJson | undefined {
     if (!app) {
       return undefined;
     }
@@ -16,7 +16,7 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJson>
       appDefinition: app.appDefinition,
       abiEncodings: {
         stateEncoding: app.stateEncoding,
-        actionEncoding: app.actionEncoding || null,
+        actionEncoding: app.actionEncoding,
       },
       appSeqNo: app.appSeqNo,
       defaultTimeout: app.defaultTimeout,
@@ -130,7 +130,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     paymentId: string,
     senderIdentifier: string,
     appDefinition: string,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance | undefined> {
     const senderAddress = getSignerAddressFromPublicIdentifier(senderIdentifier);
     return await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
@@ -146,7 +146,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     paymentId: string,
     receiverIdentifier: string,
     appDefinition: string,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance | undefined> {
     const receiverAddress = getSignerAddressFromPublicIdentifier(receiverIdentifier);
     return await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
@@ -163,7 +163,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     paymentId: string,
     nodeSignerAddress: string,
     appDefinition: string,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance | undefined> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
       // if uninstalled, redeemed

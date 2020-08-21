@@ -19,7 +19,7 @@ export class RebalanceProfile {
   reclaimThreshold!: BigNumber;
 
   @Column("text")
-  assetId: string;
+  assetId!: string;
 
   @ManyToMany((type: any) => Channel, (channel: Channel) => channel.rebalanceProfiles)
   channels!: Channel[];

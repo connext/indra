@@ -32,16 +32,16 @@ export class AdminService implements OnApplicationBootstrap {
   async getStateChannelByUserPublicIdentifierAndChain(
     userIdentifier: string,
     chainId: number,
-  ): Promise<StateChannelJSON> {
+  ): Promise<StateChannelJSON | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChain(
       userIdentifier,
       chainId,
     );
-    return ChannelSerializer.toJSON(channel);
+    return channel && ChannelSerializer.toJSON(channel);
   }
 
   /**  Get channels by multisig */
-  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     return this.cfCoreStore.getStateChannel(multisigAddress);
   }
 
@@ -84,7 +84,7 @@ export class AdminService implements OnApplicationBootstrap {
   > {
     // get all available channels, meaning theyre deployed
     const channels = await this.channelService.findAll();
-    const corrupted = [];
+    const corrupted: any[] = [];
     for (const channel of channels) {
       // try to get the free balance of eth
       const { multisigAddress, userIdentifier: userAddress } = channel;
@@ -111,7 +111,7 @@ export class AdminService implements OnApplicationBootstrap {
     const channels = await this.channelService.findAll();
     // for each of the channels, search for the entries to merge based on
     // outlined possibilities
-    const toMerge = [];
+    const toMerge: any[] = [];
     for (const chan of channels) {
       const oldPrefix = await this.cfCoreService.getChannelRecord(
         chan.multisigAddress,

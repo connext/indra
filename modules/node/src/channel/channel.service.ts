@@ -8,7 +8,11 @@ import {
   DepositAppState,
   FreeBalanceResponse,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import {
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+  calculateExchangeWad,
+} from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { BigNumber, constants, utils, providers } from "ethers";
@@ -25,7 +29,7 @@ import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const { AddressZero } = constants;
-const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;
+const { getAddress, toUtf8Bytes, sha256 } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -107,11 +111,14 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<{
-    completed?: () => Promise<FreeBalanceResponse>;
-    transaction?: providers.TransactionResponse;
-    appIdentityHash?: string;
-  }> {
+  ): Promise<
+    | {
+        completed?: () => Promise<FreeBalanceResponse>;
+        transaction?: providers.TransactionResponse;
+        appIdentityHash?: string;
+      }
+    | undefined
+  > {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId} for ${multisigAddress}`,
@@ -119,7 +126,7 @@ export class ChannelService {
     const normalizedAssetId = getAddress(assetId);
     const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)!
         .appDefinitionAddress,
     );
     const signerAddr = await this.configService.getSignerAddress();
@@ -172,7 +179,7 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        rebalanceRes = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        rebalanceRes = (await this.depositService.deposit(channel, amount, normalizedAssetId))!;
       } else {
         this.log.info(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
@@ -236,7 +243,7 @@ export class ChannelService {
     this.log.debug(
       `Getting rebalancing targets for user: ${userPublicIdentifier} on ${chainId}, assetId: ${assetId}`,
     );
-    let targets: RebalanceProfileType;
+    let targets: RebalanceProfileType | undefined;
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     targets = await this.getDataFromRebalancingService(userPublicIdentifier, assetId);
 
@@ -265,12 +272,18 @@ export class ChannelService {
       const decimals = await this.configService.getTokenDecimals(chainId, assetId);
       if (decimals !== DEFAULT_DECIMALS) {
         this.log.info(`Token has ${decimals} decimals, converting rebalance targets`);
-        targets.collateralizeThreshold = BigNumber.from(
-          formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
+        targets.collateralizeThreshold = calculateExchangeWad(
+          targets.collateralizeThreshold,
+          DEFAULT_DECIMALS,
+          "1",
+          decimals,
         );
-        targets.target = BigNumber.from(formatUnits(targets.target, decimals).split(".")[0]);
-        targets.reclaimThreshold = BigNumber.from(
-          formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
+        targets.target = calculateExchangeWad(targets.target, DEFAULT_DECIMALS, "1", decimals);
+        targets.reclaimThreshold = calculateExchangeWad(
+          targets.reclaimThreshold,
+          DEFAULT_DECIMALS,
+          "1",
+          decimals,
         );
         this.log.warn(`Converted rebalance targets: ${stringify(targets)}`);
       }
@@ -334,15 +347,15 @@ export class ChannelService {
     const existing = await this.channelRepository.findByMultisigAddress(
       creationData.data.multisigAddress,
     );
-    const existingOwners = [
-      getSignerAddressFromPublicIdentifier(existing.nodeIdentifier),
-      getSignerAddressFromPublicIdentifier(existing.userIdentifier),
-    ];
     if (!existing) {
       throw new Error(
         `Did not find existing channel, meaning "PERSIST_STATE_CHANNEL" failed in setup protocol`,
       );
     }
+    const existingOwners = [
+      getSignerAddressFromPublicIdentifier(existing!.nodeIdentifier),
+      getSignerAddressFromPublicIdentifier(existing!.userIdentifier),
+    ];
     if (
       !creationData.data.owners.includes(existingOwners[0]) ||
       !creationData.data.owners.includes(existingOwners[1])

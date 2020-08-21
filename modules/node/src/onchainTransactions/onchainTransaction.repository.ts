@@ -10,6 +10,7 @@ import {
   TransactionStatus,
 } from "./onchainTransaction.entity";
 import { toBN } from "@connext/utils";
+import { MinimalTransaction } from "@connext/types";
 const { Zero } = constants;
 
 export const onchainEntityToReceipt = (
@@ -109,6 +110,25 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
+  // Use reason here because channels can collide with multisig/nonce,
+  // but cannot collide with multisig/nonce + reason due to protocol
+  // level locks.
+  // TODO: (Med) Generate the transaction hash ahead of time
+  async findByChannelReasonAndNonce(
+    multisigAddress: string,
+    reason: TransactionReason,
+    nonce: number,
+  ): Promise<OnchainTransaction | undefined> {
+    const tx = await this.createQueryBuilder("onchainTransaction")
+      .where('"onchainTransaction"."channelMultisigAddress" = :multisigAddress', {
+        multisigAddress,
+      })
+      .andWhere("onchainTransaction.reason = :reason", { reason })
+      .andWhere("onchainTransaction.nonce = :nonce", { nonce })
+      .getOne();
+    return tx;
+  }
+
   async addAppUninstallFlag(appUninstalled: boolean, hash: string): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
@@ -124,8 +144,60 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
+  async addPending(
+    tx: MinimalTransaction,
+    nonce: number,
+    from: string,
+    reason: TransactionReason,
+    channel: Channel,
+    appIdentityHash?: string,
+  ): Promise<void> {
+    const existing = await this.findByChannelReasonAndNonce(channel.multisigAddress, reason, nonce);
+    return getManager().transaction(async (transactionalEntityManager) => {
+      if (existing) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .update(OnchainTransaction)
+          .set({
+            to: tx.to,
+            data: tx.data.toString(),
+            value: toBN(tx.value),
+            chainId: channel.chainId.toString(),
+            from,
+            nonce,
+            reason,
+            status: TransactionStatus.PENDING,
+            channel,
+            gasUsed: Zero,
+            appIdentityHash,
+          })
+          .execute();
+      } else {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(OnchainTransaction)
+          .values({
+            to: tx.to,
+            data: tx.data.toString(),
+            value: toBN(tx.value),
+            chainId: channel.chainId.toString(),
+            from,
+            nonce,
+            reason,
+            status: TransactionStatus.PENDING,
+            channel,
+            gasUsed: Zero,
+            appIdentityHash,
+          })
+          .execute();
+      }
+    });
+  }
+
   async addResponse(
     tx: providers.TransactionResponse,
+    nonce: number,
     reason: TransactionReason,
     channel: Channel,
     appIdentityHash?: string,
@@ -133,10 +205,10 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
-        .insert()
-        .into(OnchainTransaction)
-        .values({
-          ...tx,
+        .update(OnchainTransaction)
+        .set({
+          from: tx.from,
+          to: tx.to,
           data: tx.data.toString(),
           value: toBN(tx.value),
           gasPrice: toBN(tx.gasPrice),
@@ -153,21 +225,51 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           gasUsed: Zero,
           appIdentityHash,
         })
-        .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
-        .setParameter("nonce", toBN(tx.nonce).toNumber())
+        .where('"onchain_transaction"."channelMultisigAddress" = :multisigAddress', {
+          multisigAddress: channel.multisigAddress,
+        })
+        .andWhere("onchain_transaction.nonce = :nonce", { nonce })
+        .andWhere("onchain_transaction.from = :from", { from: tx.from })
         .execute();
     });
   }
 
-  async markFailed(
-    tx: providers.TransactionResponse,
+  async markFailedByChannelFromAndNonce(
+    multisigAddress: string,
+    from: string,
+    nonce: number,
     errors: { [k: number]: string },
+    appIdentityHash?: string,
   ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(OnchainTransaction)
         .set({
+          appIdentityHash,
+          status: TransactionStatus.FAILED,
+          errors,
+        })
+        .where('"onchain_transaction"."channelMultisigAddress" = :multisigAddress', {
+          multisigAddress,
+        })
+        .andWhere("onchain_transaction.nonce = :nonce", { nonce })
+        .andWhere("onchain_transaction.from = :from", { from })
+        .execute();
+    });
+  }
+
+  async markFailedByTxHash(
+    tx: providers.TransactionResponse,
+    errors: { [k: number]: string },
+    appIdentityHash?: string,
+  ): Promise<void> {
+    return getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(OnchainTransaction)
+        .set({
+          appIdentityHash,
           status: TransactionStatus.FAILED,
           errors,
         })
