@@ -552,7 +552,7 @@ export class TransferService {
   }
 
   addTransferSecret(receiverAppIdentityHash: string, action?: AppAction) {
-    return this.transferRepository.addTransferSecret(receiverAppIdentityHash, action);
+    return this.transferRepository.addTransferAction(receiverAppIdentityHash, action);
   }
 
   // unlockable transfer:
@@ -598,7 +598,7 @@ export class TransferService {
         await this.cfCoreService.uninstallApp(
           senderApp.identityHash,
           senderApp.channel.multisigAddress,
-          correspondingReceiverApp.transfer.secret,
+          correspondingReceiverApp.transfer.action,
         );
       } else {
         this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);

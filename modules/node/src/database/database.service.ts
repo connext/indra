@@ -19,6 +19,7 @@ import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.ent
 import { Challenge, ProcessedBlock } from "../challenge/challenge.entity";
 import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
 import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
+import { Transfer } from "../transfer/transfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -82,6 +83,7 @@ export const entities = [
   ConditionalTransactionCommitment,
   SetStateCommitment,
   SetupCommitment,
+  Transfer,
   Withdraw,
   WithdrawCommitment,
   Challenge,

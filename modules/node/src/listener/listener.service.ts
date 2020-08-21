@@ -182,7 +182,7 @@ export default class ListenerService implements OnModuleInit {
 
   async handleUninstallFailed(data: UninstallFailedMessage) {
     const { params } = data.data;
-    await this.transferRepository.removeTransferSecret(
+    await this.transferRepository.removeTransferAction(
       params.appIdentityHash,
       params.action as AppAction,
     );

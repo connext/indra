@@ -107,7 +107,7 @@ export class AppInstance<T extends AppName = any> {
   @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
-  @OneToOne((type: any) => Transfer)
+  @OneToOne((type: any) => Transfer, { nullable: true })
   @JoinColumn()
   transfer!: Transfer<T>;
 
