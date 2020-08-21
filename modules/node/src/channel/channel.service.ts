@@ -8,7 +8,11 @@ import {
   DepositAppState,
   FreeBalanceResponse,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import {
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+  calculateExchangeWad,
+} from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { BigNumber, constants, utils, providers } from "ethers";
@@ -25,7 +29,7 @@ import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const { AddressZero } = constants;
-const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;
+const { getAddress, toUtf8Bytes, sha256 } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -268,12 +272,18 @@ export class ChannelService {
       const decimals = await this.configService.getTokenDecimals(chainId, assetId);
       if (decimals !== DEFAULT_DECIMALS) {
         this.log.info(`Token has ${decimals} decimals, converting rebalance targets`);
-        targets.collateralizeThreshold = BigNumber.from(
-          formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
+        targets.collateralizeThreshold = calculateExchangeWad(
+          targets.collateralizeThreshold,
+          DEFAULT_DECIMALS,
+          "1",
+          decimals,
         );
-        targets.target = BigNumber.from(formatUnits(targets.target, decimals).split(".")[0]);
-        targets.reclaimThreshold = BigNumber.from(
-          formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
+        targets.target = calculateExchangeWad(targets.target, DEFAULT_DECIMALS, "1", decimals);
+        targets.reclaimThreshold = calculateExchangeWad(
+          targets.reclaimThreshold,
+          DEFAULT_DECIMALS,
+          "1",
+          decimals,
         );
         this.log.warn(`Converted rebalance targets: ${stringify(targets)}`);
       }
