@@ -1,13 +1,7 @@
 import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
-import {
-  createClient,
-  ETH_AMOUNT_MD,
-  expect,
-  getTestLoggers,
-  TOKEN_AMOUNT,
-} from "../util";
+import { createClient, ETH_AMOUNT_MD, expect, getTestLoggers, TOKEN_AMOUNT } from "../util";
 
 const { AddressZero, Zero } = constants;
 

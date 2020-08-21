@@ -88,7 +88,7 @@ export const requestCollateral = async (
     return;
   }
   if (!res) {
-    throw new Error("Node did not collateralized, and collateral should be enforced");
+    throw new Error("Node did not collateralize, and collateral should be enforced");
   }
   log.info(`waiting for collateral tx to be mined and ap to be uninstalled`);
   const { freeBalance } = await res.completed();
