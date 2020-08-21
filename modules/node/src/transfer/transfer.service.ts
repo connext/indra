@@ -608,6 +608,9 @@ export class TransferService {
           )} correspondingReceiverApp: ${stringify(correspondingReceiverApp.latestState, true, 0)}`,
         );
         // need to take action before uninstalling
+        if (!correspondingReceiverApp.transfer.action) {
+          throw new Error(`Receiver app has no transfer action and states are different, refusing to uninstall`);
+        }
         await this.cfCoreService.uninstallApp(
           senderApp.identityHash,
           senderApp.channel.multisigAddress,
