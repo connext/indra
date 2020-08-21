@@ -95,9 +95,11 @@ export class StoreService implements IStoreService {
       try {
         await this.backupService.backup({ path: storeKey, value: store });
       } catch (e) {
-        this.log.warn(
-          `Could not save ${storeKey} to backup service. Error: ${e.stack || e.message}`,
-        );
+        this.log.warn(`Error saving to backup service`, {
+          storeKey,
+          error: e.message,
+          stack: e.stack,
+        });
       }
     }
     await this.storage.setItem(storeKey, store);
@@ -259,12 +261,16 @@ export class StoreService implements IStoreService {
         throw new Error(`Can't create app instance without channel`);
       }
       if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
-        this.log.warn(
-          `appInstance.identityHash ${appInstance.identityHash} already exists, will not add appInstance to ${multisigAddress}`,
-        );
+        this.log.warn(`App exists in channel`, {
+          identityHash: appInstance.identityHash,
+          multisigAddress,
+        });
       } else {
         // add app instance
-        this.log.debug(`Adding app instance ${appInstance.identityHash} to channel`);
+        this.log.debug(`Adding app to channel`, {
+          identityHash: appInstance.identityHash,
+          multisigAddress,
+        });
         channel.appInstances.push([appInstance.identityHash, appInstance]);
 
         // remove proposal
@@ -280,20 +286,16 @@ export class StoreService implements IStoreService {
       );
       let updatedStore = store;
       if (oldFreeBalanceUpdate) {
-        this.log.debug(
-          `Removing stale free balance update at nonce ${toBN(
-            oldFreeBalanceUpdate.versionNumber,
-          ).toString()}`,
-        );
+        this.log.debug(`Removing free balance update`, {
+          nonce: toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+        });
         updatedStore = this.unsetSetStateCommitment(
           updatedStore,
           freeBalanceAppInstance.identityHash,
           toBN(oldFreeBalanceUpdate.versionNumber).toString(),
         );
       }
-      this.log.debug(
-        `Adding conditional transaction, new free balance state, and revised channel to store`,
-      );
+      this.log.debug(`Saving updated store`);
       updatedStore = this.setSetStateCommitment(
         this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
         freeBalanceAppInstance.identityHash,
@@ -324,18 +326,16 @@ export class StoreService implements IStoreService {
 
       let updatedStore = store;
       if (oldCommitment && signedSetStateCommitment.signatures.filter((x) => !!x).length === 2) {
-        this.log.debug(
-          `Removing stale commitment at ${toBN(oldCommitment.versionNumber).toString()}`,
-        );
+        this.log.debug(`Removing stale commitment`, {
+          nonce: toBN(oldCommitment.versionNumber).toString(),
+        });
         updatedStore = this.unsetSetStateCommitment(
           updatedStore,
           appInstance.identityHash,
           toBN(oldCommitment.versionNumber).toString(),
         );
       }
-      this.log.debug(
-        `Updating channel with new app instance at nonce ${appInstance.latestVersionNumber}`,
-      );
+      this.log.debug(`Updating channel with new app`, { nonce: appInstance.latestVersionNumber });
       updatedStore = this.setSetStateCommitment(
         this.setStateChannel(store, channel),
         appInstance.identityHash,
@@ -354,35 +354,33 @@ export class StoreService implements IStoreService {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
-        this.log.debug(
-          `No channel found in store with multisig: ${multisigAddress}, doing nothing`,
-        );
+        this.log.debug(`No channel in store`, { multisigAddress });
         return store;
       }
       if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         // does not exist
-        this.log.debug(
-          `No app with hash ${appInstance.identityHash} found in channel with multisig ${multisigAddress}`,
-        );
+        this.log.debug(`App not found in channel`, {
+          identityHash: appInstance.identityHash,
+          multisigAddress,
+        });
         return store;
       }
       const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
-      const presplice = channel.appInstances.length;
       channel.appInstances.splice(idx, 1);
-      this.log.debug(
-        `Removed app instance from channel (prev length: ${presplice}, curr: ${channel.appInstances.length})`,
-      );
+      this.log.debug(`Removing app from channel`, {
+        identityHash: appInstance.identityHash,
+        multisigAddress,
+        installedApps: channel.appInstances.length,
+      });
       const oldFreeBalanceUpdate = this.getLatestSetStateCommitment(
         store,
         freeBalanceAppInstance.identityHash,
       );
       let updatedStore = store;
       if (oldFreeBalanceUpdate) {
-        this.log.debug(
-          `Unsetting free balance set state commitment at nonce ${toBN(
-            oldFreeBalanceUpdate.versionNumber,
-          ).toString()}`,
-        );
+        this.log.debug(`Unsetting fb set state`, {
+          nonce: toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+        });
         updatedStore = this.unsetSetStateCommitment(
           updatedStore,
           freeBalanceAppInstance.identityHash,
@@ -398,7 +396,7 @@ export class StoreService implements IStoreService {
         ),
         appInstance.identityHash,
       );
-      this.log.debug(`Updating channel with new free balance updates without app instance`);
+      this.log.debug(`Saving updated channel without app`);
       updatedStore = this.setSetStateCommitment(
         this.setStateChannel(store, {
           ...channel,
@@ -407,7 +405,6 @@ export class StoreService implements IStoreService {
         channel.freeBalanceAppInstance.identityHash,
         signedFreeBalanceUpdate,
       );
-      this.log.debug(`Saved updated store for channel nonce ${channel.monotonicNumProposedApps}`);
       return this.saveStore(updatedStore);
     });
   }
@@ -437,14 +434,18 @@ export class StoreService implements IStoreService {
         throw new Error(`Can't save app proposal without channel`);
       }
       if (this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
-        this.log.warn(
-          `appInstance.identityHash ${appInstance.identityHash} already exists, will not add appInstance to ${multisigAddress}`,
-        );
+        this.log.warn(`Proposal found in channel`, {
+          identityHash: appInstance.identityHash,
+          multisigAddress,
+        });
       } else {
-        this.log.debug(`Adding proposal ${appInstance.identityHash} to store`);
+        this.log.debug(`Adding proposal to channel`, {
+          identityHash: appInstance.identityHash,
+          multisigAddress,
+        });
         channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
       }
-      this.log.debug(`Adding set state commitment to store, and updating channel`);
+      this.log.debug(`Saving updated store`);
       const updatedStore = this.setConditionalTransactionCommitment(
         this.setSetStateCommitment(
           this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
@@ -462,14 +463,14 @@ export class StoreService implements IStoreService {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
-        this.log.debug(`Could not find channel at ${multisigAddress}, doing nothing`);
+        this.log.debug(`Channel not found`, { multisigAddress });
         return store;
       }
       if (!this.hasAppIdentityHash(appIdentityHash, channel.proposedAppInstances)) {
-        this.log.debug(`Could not find proposal with ${appIdentityHash} in channel, doing nothing`);
+        this.log.debug(`Proposal not found in channel`, { appIdentityHash, multisigAddress });
         return store;
       }
-      this.log.debug(`Removing proposal for ${appIdentityHash}`);
+      this.log.debug(`Removing proposal`, { appIdentityHash, multisigAddress });
       const idx = channel.proposedAppInstances.findIndex(([app]) => app === appIdentityHash);
       channel.proposedAppInstances.splice(idx, 1);
       // TODO: remove set state commitment
@@ -622,7 +623,7 @@ export class StoreService implements IStoreService {
       return;
     }
     stored.push(event);
-    this.log.debug(`Adding challenge updated event: ${stringify(event)}`);
+    this.log.debug(`Adding challenge updated event`, { event: stringify(event) });
     return this.storage.setItem(key, stored);
   }
 

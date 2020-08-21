@@ -13,7 +13,7 @@ export class MessagingService implements IMessagingService {
     private readonly getBearerToken: () => Promise<string>,
   ) {
     this.log = config.logger || nullLogger;
-    this.log.debug(`Created NatsMessagingService with config: ${JSON.stringify(config, null, 2)}`);
+    this.log.debug(`Created NatsMessagingService`, { config });
     this.bearerToken = null;
   }
 
@@ -60,17 +60,21 @@ export class MessagingService implements IMessagingService {
   async onReceive(subject: string, callback: (msg: GenericMessage) => void): Promise<void> {
     await this.service!.subscribe(this.prependKey(`${subject}.>`), (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
-        this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
+        this.log.error(`Caught error receiving message`, {
+          msg,
+          err: err.message,
+          stack: err.stack,
+        });
       } else {
         const data = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
-        this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
+        this.log.debug(`Received message`, { subject, data });
         callback(data as GenericMessage);
       }
     });
   }
 
   async send(to: string, msg: GenericMessage): Promise<void> {
-    this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.debug(`Sending message`, { to, msg });
     return this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
 
@@ -78,26 +82,31 @@ export class MessagingService implements IMessagingService {
   // More generic methods
 
   async publish(subject: string, data: any): Promise<void> {
-    this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
+    this.log.debug(`Publishing`, { subject, data });
     this.service!.publish(subject, JSON.stringify(data));
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<any> {
-    this.log.debug(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
+    this.log.debug(`Requesting response`, { subject, data });
     const response = await this.service!.request(subject, timeout, JSON.stringify(data));
-    this.log.debug(`Request for ${subject} returned: ${JSON.stringify(response)}`);
+    this.log.debug(`Request received`, { subject, response });
     return response;
   }
 
   async subscribe(subject: string, callback: (msg: GenericMessage) => void): Promise<void> {
     await this.service!.subscribe(subject, (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
-        this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
+        this.log.error(`Failed to handle subscription`, {
+          msg,
+          subject,
+          error: err?.message,
+          stack: err?.stack,
+        });
       } else {
         const parsedMsg = typeof msg === `string` ? JSON.parse(msg) : msg;
         const parsedData = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         parsedMsg.data = parsedData;
-        this.log.debug(`Subscription for ${subject}: ${JSON.stringify(parsedMsg)}`);
+        this.log.debug(`Received subscription`, { subject, data: parsedMsg });
         callback(parsedMsg as GenericMessage);
       }
     });

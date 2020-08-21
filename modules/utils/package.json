@@ -19,7 +19,8 @@
     "axios": "0.19.2",
     "bs58check": "2.1.2",
     "eccrypto-js": "4.5.4",
-    "evt": "1.8.4"
+    "evt": "1.8.4",
+    "pino": "6.5.1"
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.4",

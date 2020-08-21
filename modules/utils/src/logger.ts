@@ -1,4 +1,6 @@
-import { ILogger, ILoggerService } from "@connext/types";
+import { ILogger, ILoggerService, LogLevels, LogLevel } from "@connext/types";
+import pino from "pino";
+import { stringify } from "./json";
 
 export const logTime = (log: ILogger, start: number, msg: string): void => {
   const diff = Date.now() - start;
@@ -12,12 +14,61 @@ export const logTime = (log: ILogger, start: number, msg: string): void => {
   }
 };
 
+export class PinoLogger implements ILoggerService {
+  private context: string;
+  private level: string;
+  private internal: pino.Logger;
+  constructor(context: string = "Unknown", level: number = 3) {
+    this.context = context;
+    const levelStr = Object.entries(LogLevels).find((k, v) => v === level)[0];
+    this.level = levelStr as LogLevel;
+    this.internal = pino({ name: this.context, level: this.level });
+  }
+  public trace(msg: string, details?: object, ...args: any[]): void {
+    this.print("trace", msg, details, ...args);
+  }
+  public silent(msg: string, details?: object, ...args: any[]): void {
+    this.print("silent", msg, details, ...args);
+  }
+  public debug(msg: string, details?: object, ...args: any[]): void {
+    this.print("debug", msg, details, ...args);
+  }
+  public info(msg: string, details?: object, ...args: any[]): void {
+    this.print("info", msg, details, ...args);
+  }
+  public warn(msg: string, details?: object, ...args: any[]): void {
+    this.print("warn", msg, details, ...args);
+  }
+  public error(msg: string, details?: object, ...args: any[]): void {
+    this.print("error", msg, details, ...args);
+  }
+  public fatal(msg: string, details?: object, ...args: any[]): void {
+    this.print("fatal", msg, details, ...args);
+  }
+  public setContext(context: string): void {
+    this.context = context;
+    this.internal = pino({ name: this.context, level: this.level });
+  }
+  public newContext(context: string): ILoggerService {
+    return new PinoLogger(context, LogLevels[this.level]);
+  }
+
+  private print(type: LogLevel, msg: string, details?: object, ...args: any[]): void {
+    const idx = LogLevels[type];
+    const level = LogLevels[this.level];
+    if (level < idx) {
+      return;
+    }
+    this.internal[type](msg, details, ...args);
+  }
+}
+
 // Example implementation that can be used as a silent default
 export const nullLogger: ILoggerService = {
-  debug: (msg: string): void => {},
-  info: (msg: string): void => {},
-  warn: (msg: string): void => {},
-  error: (msg: string): void => {},
+  debug: (msg: string, details?: object): void => {},
+  info: (msg: string, details?: object): void => {},
+  warn: (msg: string, details?: object): void => {},
+  error: (msg: string, details?: object): void => {},
   setContext: (context: string): void => {},
   newContext: function (context: string): ILoggerService {
     return this;
@@ -44,25 +95,25 @@ export class ConsoleLogger implements ILoggerService {
     return new ConsoleLogger(context, this.level);
   }
 
-  public error(msg: string): void {
-    this.print("error", msg);
+  public error(msg: string, details?: object): void {
+    this.print("error", msg, details);
   }
 
-  public warn(msg: string): void {
-    this.print("warn", msg);
+  public warn(msg: string, details?: object): void {
+    this.print("warn", msg, details);
   }
 
-  public info(msg: string): void {
-    this.print("info", msg);
+  public info(msg: string, details?: object): void {
+    this.print("info", msg, details);
   }
 
-  public debug(msg: string): void {
-    this.print("debug", msg);
+  public debug(msg: string, details?: object): void {
+    this.print("debug", msg, details);
   }
 
-  private print(level: string, msg: string): void {
+  private print(level: string, msg: string, details?: object): void {
     if (this.levels[level] > this.level) return;
-    this.log[level](`${new Date().toISOString()} [${this.context}] ${msg}`);
+    this.log[level](`${new Date().toISOString()} [${this.context}] ${msg}. Details: ${stringify(details || {})}`);
   }
 }
 
@@ -125,29 +176,30 @@ export class ColorfulLogger implements ILoggerService {
     return new ColorfulLogger(context, this.level, this.color, this.id);
   }
 
-  public error(msg: string): void {
-    this.print("error", msg);
+  public error(msg: string, details?: object): void {
+    this.print("error", msg, details);
   }
 
-  public warn(msg: string): void {
-    this.print("warn", msg);
+  public warn(msg: string, details?: object): void {
+    this.print("warn", msg, details);
   }
 
-  public info(msg: string): void {
-    this.print("info", msg);
+  public info(msg: string, details?: object): void {
+    this.print("info", msg, details);
   }
 
-  public debug(msg: string): void {
-    this.print("debug", msg);
+  public debug(msg: string, details?: object): void {
+    this.print("debug", msg, details);
   }
 
-  private print(level: string, msg: string): void {
+  private print(level: string, msg: string, details?: object): void {
     if (this.levels[level] > this.level) return;
     const now = new Date().toISOString();
     console[level](
       `${now} ${this.colors[level]}${level.substring(0, 1).toUpperCase()} ` +
         `${this.colors.context}[${this.id}][${this.context}] ` +
-        `${this.colors[level]}${msg}${this.colors.reset}`,
+        `${this.colors[level]}${msg}${this.colors.reset}` +
+        `${this.colors.context}Details: ${stringify(details || {})}[${this.context}] `,
     );
   }
 }
