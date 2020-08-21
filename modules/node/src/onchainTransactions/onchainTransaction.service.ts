@@ -51,18 +51,19 @@ export class OnchainTransactionService implements OnModuleInit {
     transaction: MinimalTransaction,
     appIdentityHash: string,
   ): Promise<OnchainTransactionResponse> {
-    return new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId)!.add(() => {
-        this.sendTransaction(
-          transaction,
-          TransactionReason.USER_WITHDRAWAL,
-          channel,
-          appIdentityHash,
-        )
-          .then((result) => resolve(result))
-          .catch((error) => reject(error.message));
-      });
-    });
+    return this.queues.get(channel.chainId)!.add(
+      () =>
+        new Promise((resolve, reject) =>
+          this.sendTransaction(
+            transaction,
+            TransactionReason.USER_WITHDRAWAL,
+            channel,
+            appIdentityHash,
+          )
+            .then((result) => resolve(result))
+            .catch((error) => reject(error.message)),
+        ),
+    );
   }
 
   async sendWithdrawal(
@@ -70,18 +71,19 @@ export class OnchainTransactionService implements OnModuleInit {
     transaction: MinimalTransaction,
     appIdentityHash: string,
   ): Promise<OnchainTransactionResponse> {
-    return new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId)!.add(() => {
-        this.sendTransaction(
-          transaction,
-          TransactionReason.NODE_WITHDRAWAL,
-          channel,
-          appIdentityHash,
-        )
-          .then((result) => resolve(result))
-          .catch((error) => reject(error.message));
-      });
-    });
+    return this.queues.get(channel.chainId)!.add(
+      () =>
+        new Promise((resolve, reject) =>
+          this.sendTransaction(
+            transaction,
+            TransactionReason.NODE_WITHDRAWAL,
+            channel,
+            appIdentityHash,
+          )
+            .then((result) => resolve(result))
+            .catch((error) => reject(error.message)),
+        ),
+    );
   }
 
   async sendDeposit(
@@ -89,18 +91,19 @@ export class OnchainTransactionService implements OnModuleInit {
     transaction: MinimalTransaction,
     appIdentityHash: string,
   ): Promise<OnchainTransactionResponse> {
-    return new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId)!.add(() => {
-        this.sendTransaction(
-          transaction,
-          TransactionReason.COLLATERALIZATION,
-          channel,
-          appIdentityHash,
-        )
-          .then((result) => resolve(result))
-          .catch((error) => reject(error.message));
-      });
-    });
+    return this.queues.get(channel.chainId)!.add(
+      () =>
+        new Promise((resolve, reject) =>
+          this.sendTransaction(
+            transaction,
+            TransactionReason.COLLATERALIZATION,
+            channel,
+            appIdentityHash,
+          )
+            .then((result) => resolve(result))
+            .catch((error) => reject(error.message)),
+        ),
+    );
   }
 
   findByHash(hash: string): Promise<OnchainTransaction | undefined> {
@@ -116,13 +119,15 @@ export class OnchainTransactionService implements OnModuleInit {
     json: StateChannelJSON,
   ): Promise<TransactionReceipt> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
-    const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
-      this.queues.get(channel.chainId)!.add(() => {
-        this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
-          .then((result) => resolve(result))
-          .catch((error) => reject(error.message));
-      });
-    });
+    const queue = this.queues.get(channel.chainId);
+    const tx: OnchainTransactionResponse = (await queue?.add(
+      () =>
+        new Promise((resolve, reject) =>
+          this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
+            .then((res) => resolve(res))
+            .catch((e) => reject(e.message)),
+        ),
+    )) as any;
     // make sure to wait for the transaction to be completed here, since
     // the multisig deployment is followed by a call to `getOwners`.
     // and since the cf-core transaction service expects the tx to be
@@ -167,10 +172,11 @@ export class OnchainTransactionService implements OnModuleInit {
         nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         // add pending so we can mark it failed
         this.log.info(`Adding pending tx with nonce ${nonce}`);
+        // TODO: (Med) Generate the transaction hash before sending
 
         // TODO: this wont work if the loop happens more than once
         // possible fix: add unique index on from+nonce and use onConflict
-        // actually this wont work, easiest fix is to look it up by channel+from+nonce first :/
+        // actually this wont work, easiest fix is to look it up by channel+reason+nonce first :/
         await this.onchainTransactionRepository.addPending(
           transaction,
           nonce,
