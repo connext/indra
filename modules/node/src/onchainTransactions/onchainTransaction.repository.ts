@@ -110,16 +110,20 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async findByChannelFromAndNonce(
+  // Use reason here because channels can collide with multisig/nonce,
+  // but cannot collide with multisig/nonce + reason due to protocol
+  // level locks.
+  // TODO: (Med) Generate the transaction hash ahead of time
+  async findByChannelReasonAndNonce(
     multisigAddress: string,
-    from: string,
+    reason: TransactionReason,
     nonce: number,
   ): Promise<OnchainTransaction | undefined> {
     const tx = await this.createQueryBuilder("onchainTransaction")
       .where('"onchainTransaction"."channelMultisigAddress" = :multisigAddress', {
         multisigAddress,
       })
-      .andWhere("onchainTransaction.from = :from", { from })
+      .andWhere("onchainTransaction.reason = :reason", { reason })
       .andWhere("onchainTransaction.nonce = :nonce", { nonce })
       .getOne();
     return tx;
@@ -148,7 +152,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     channel: Channel,
     appIdentityHash?: string,
   ): Promise<void> {
-    const existing = await this.findByChannelFromAndNonce(channel.multisigAddress, from, nonce);
+    const existing = await this.findByChannelReasonAndNonce(channel.multisigAddress, reason, nonce);
     return getManager().transaction(async (transactionalEntityManager) => {
       if (existing) {
         await transactionalEntityManager
