@@ -83,7 +83,7 @@ const sendHashlockTransfer = async (
   return receiverEvent as ConditionalTransferCreatedEventData<"HashLockTransferApp">;
 };
 
-describe("Hashlock Transfer", () => {
+describe.only("Hashlock Transfer", () => {
   const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
 
   let app: INestApplication;
