@@ -1,5 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import { toBN, toBNJson } from "@connext/utils";
+import { toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
@@ -33,11 +33,13 @@ import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 import { CacheModule } from "../caching/cache.module";
 import { CacheService } from "../caching/cache.service";
+import { AppType } from "../appInstance/appInstance.entity";
 
 describe("CFCoreStore", () => {
   let cfCoreStore: CFCoreStore;
   let configService: ConfigService;
   let channelRepository: ChannelRepository;
+  let appRepository: AppInstanceRepository;
   let cacheService: CacheService;
   let chainId: number;
 
@@ -67,6 +69,7 @@ describe("CFCoreStore", () => {
     configService = moduleRef.get<ConfigService>(ConfigService);
     cacheService = moduleRef.get<CacheService>(CacheService);
     channelRepository = moduleRef.get<ChannelRepository>(ChannelRepository);
+    appRepository = moduleRef.get<AppInstanceRepository>(AppInstanceRepository);
     chainId = configService.getSupportedChains()[0];
   });
 
@@ -355,6 +358,8 @@ describe("CFCoreStore", () => {
         appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
         versionNumber: toBNJson(chainId),
       });
+      const action = { preImage: getRandomBytes32() };
+      appInstance.latestAction = action;
 
       for (let index = 0; index < 3; index++) {
         await cfCoreStore.removeAppInstance(
@@ -383,6 +388,12 @@ describe("CFCoreStore", () => {
           freeBalanceAppInstance: updatedFreeBalance,
           monotonicNumProposedApps: 2,
         });
+        const app = await appRepository.findByIdentityHash(appInstance.identityHash);
+        expect(app.type).to.be.eq(AppType.UNINSTALLED);
+        expect(app.latestAction).to.containSubset(action);
+        expect(app.latestState).to.containSubset(appInstance.latestState);
+        expect(app.stateTimeout).to.be.eq(appInstance.stateTimeout);
+        expect(app.latestVersionNumber).to.be.eq(appInstance.latestVersionNumber);
       }
     });
   });
