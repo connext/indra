@@ -1,44 +1,16 @@
 import { EntityRepository, Repository } from "typeorm";
-import { GenericConditionalTransferAppName, ConditionalTransferAppNames } from "@connext/types";
+import { AppAction } from "@connext/types";
 
-import { AppInstance } from "../appInstance/appInstance.entity";
+import { Transfer } from "./transfer.entity";
 
-@EntityRepository(AppInstance)
-export class TransferRepository extends Repository<AppInstance> {
-  findTransferAppByPaymentIdAndSender<
-    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string, senderSignerAddress: string): Promise<AppInstance<T> | undefined> {
-    return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect("app_instance.channel", "channel")
-      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
-      )
-      .getOne() as Promise<AppInstance<T> | undefined>;
+@EntityRepository(Transfer)
+export class TransferRepository extends Repository<Transfer<any>> {
+  async removeTransferSecret(receiverAppIdentityHash: string, action?: AppAction) {
+    throw new Error(`how to implement`);
   }
 
-  findTransferAppByPaymentIdAndReceiver<
-    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string, receiverSignerAddress: string): Promise<AppInstance<T> | undefined> {
-    return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect("app_instance.channel", "channel")
-      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
-      )
-      .getOne() as Promise<AppInstance<T>>;
+  async addTransferSecret(receiverAppIdentityHash: string, action?: AppAction) {
+    throw new Error(`how to implement`);
   }
 
-  findTransferAppsByChannelUserIdentifierAndReceiver<
-    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(userIdentifier: string, receiverSignerAddress: string): Promise<AppInstance<T>[] | []> {
-    return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
-      .andWhere(`app_instance."meta"::JSONB #> '{ "paymentId" }' IS NOT NULL`)
-      .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
-      )
-      .getMany() as Promise<AppInstance<T>[] | []>;
-  }
 }

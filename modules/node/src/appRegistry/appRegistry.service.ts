@@ -18,6 +18,8 @@ import {
   GenericConditionalTransferAppState,
   DefaultApp,
   ConditionalTransferTypes,
+  ProtocolParams,
+  AppAction,
 } from "@connext/types";
 import { getAddressFromAssetId, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -269,6 +271,7 @@ export class AppRegistryService implements OnModuleInit {
   private uninstallTransferMiddleware = async (
     appInstance: AppInstanceJson,
     role: ProtocolRoles,
+    params: ProtocolParams.Uninstall,
   ) => {
     // if we initiated the protocol, we dont need to have this check
     if (role === ProtocolRoles.initiator) {
@@ -295,6 +298,11 @@ export class AppRegistryService implements OnModuleInit {
 
     this.log.info(`Starting uninstallTransferMiddleware for ${appInstance.identityHash}`);
 
+    await this.transferService.addTransferSecret(
+      receiverApp.identityHash,
+      params.action as AppAction,
+    );
+
     if (receiverApp.type !== AppType.UNINSTALLED) {
       this.log.info(
         `Found receiver app ${receiverApp.identityHash} with type ${receiverApp.type}, attempting uninstall`,
@@ -303,6 +311,7 @@ export class AppRegistryService implements OnModuleInit {
         await this.cfCoreService.uninstallApp(
           receiverApp.identityHash,
           receiverApp.channel.multisigAddress,
+          params.action as any,
         );
         this.log.info(`Receiver app ${receiverApp.identityHash} uninstalled`);
       } catch (e) {
@@ -369,13 +378,13 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
-    const { appInstance, role } = cxt;
+    const { appInstance, role, params } = cxt;
     const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo!.name)) {
-      return this.uninstallTransferMiddleware(appInstance, role);
+      return this.uninstallTransferMiddleware(appInstance, role, params);
     }
 
     if (appRegistryInfo!.name === DepositAppName) {

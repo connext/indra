@@ -20,6 +20,7 @@ import {
   SimpleSignedTransferAppAction,
   SupportedApplicationNames,
   CF_METHOD_TIMEOUT,
+  AppAction,
 } from "@connext/types";
 import {
   stringify,
@@ -548,6 +549,10 @@ export class TransferService {
     return app;
   }
 
+  addTransferSecret(receiverAppIdentityHash: string, action?: AppAction) {
+    return this.transferRepository.addTransferSecret(receiverAppIdentityHash, action);
+  }
+
   // unlockable transfer:
   // sender app is installed with node as recipient
   // receiver app with same paymentId is uninstalled
@@ -591,7 +596,7 @@ export class TransferService {
         await this.cfCoreService.uninstallApp(
           senderApp.identityHash,
           senderApp.channel.multisigAddress,
-          correspondingReceiverApp.latestAction,
+          correspondingReceiverApp.transfer.secret,
         );
       } else {
         this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);

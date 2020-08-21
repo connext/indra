@@ -1,4 +1,4 @@
-import { AppInstanceJson, JSONSerializer } from "@connext/types";
+import { AppInstanceJson, JSONSerializer, GenericConditionalTransferAppName, ConditionalTransferAppNames } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
@@ -116,6 +116,18 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return res;
   }
 
+  findTransferAppByPaymentIdAndSender<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string, senderSignerAddress: string): Promise<AppInstance<T> | undefined> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
+      )
+      .getOne() as Promise<AppInstance<T> | undefined>;
+  }
+
   async findTransferAppByAppDefinitionPaymentIdAndSender(
     paymentId: string,
     senderIdentifier: string,
@@ -147,6 +159,31 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverAddress}"'`,
       )
       .getOne();
+  }
+
+  findTransferAppsByChannelUserIdentifierAndReceiver<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(userIdentifier: string, receiverSignerAddress: string): Promise<AppInstance<T>[] | []> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
+      .andWhere(`app_instance."meta"::JSONB #> '{ "paymentId" }' IS NOT NULL`)
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
+      )
+      .getMany() as Promise<AppInstance<T>[] | []>;
+  }
+
+  findTransferAppByPaymentIdAndReceiver<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string, receiverSignerAddress: string): Promise<AppInstance<T> | undefined> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
+      )
+      .getOne() as Promise<AppInstance<T>>;
   }
 
   async findRedeemedTransferAppByAppDefinitionPaymentIdFromNode(

@@ -6,6 +6,7 @@ import {
   ProtocolEventMessage,
   EventName,
   SupportedApplicationNames,
+  EventPayloads,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 
@@ -16,6 +17,7 @@ import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { TransferRepository } from "../transfer/transfer.repository";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -57,6 +59,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
+    private readonly transferRepository: TransferRepository,
   ) {
     this.log.setContext("ListenerService");
   }
@@ -133,8 +136,9 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_EVENT, data);
         await this.handleUninstall(data);
       },
-      UNINSTALL_FAILED_EVENT: (data): void => {
+      UNINSTALL_FAILED_EVENT: async (data): Promise<void> => {
         this.logEvent(UNINSTALL_FAILED_EVENT, data);
+        await this.handleUninstallFailed(data);
       },
       UPDATE_STATE_EVENT: async (data): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
@@ -174,6 +178,13 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
+  }
+
+  async handleUninstallFailed(data: EventPayloads.UninstallFailed) {
+    await this.transferRepository.removeTransferSecret(
+      data.params.appIdentityHash,
+      data.params.action,
+    );
   }
 
   async handleUninstall(data: UninstallMessage) {
