@@ -19,7 +19,7 @@ export const env = {
 export const ethProviderUrl = env.chainProviders[env.defaultChain];
 
 export const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
+export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic!).connect(ethProvider);
 
 export const defaultSigner = new ChannelSigner(
   Wallet.fromMnemonic(env.mnemonic!).privateKey,
