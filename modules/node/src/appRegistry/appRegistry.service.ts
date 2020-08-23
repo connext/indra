@@ -21,7 +21,7 @@ import {
   ProtocolParams,
   AppAction,
 } from "@connext/types";
-import { getAddressFromAssetId, toBN } from "@connext/utils";
+import { getAddressFromAssetId, toBN, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers";
 
@@ -36,6 +36,7 @@ import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
+import { TransferRepository } from "../transfer/transfer.repository";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -49,6 +50,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
     private readonly channelRepository: ChannelRepository,
+    private readonly transferRepository: TransferRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -286,16 +288,22 @@ export class AppRegistryService implements OnModuleInit {
     // only run validation against sender app uninstall
     if (senderAppLatestState.coinTransfers[1].to !== nodeSignerAddress) {
       // add secret for receiver app uninstalls
-      await this.transferService.addTransferSecret(
+      this.log.info(
+        `Found action for receiver: ${stringify(
+          params.action,
+          true,
+          0,
+        )}, adding to transfer tracker`,
+      );
+      await this.transferRepository.addTransferAction(
         paymentId,
         params.action as AppAction,
+        appInstance.identityHash,
       );
       return;
     }
 
-    let receiverApp = await this.transferService.findReceiverAppByPaymentId(
-      paymentId,
-    );
+    let receiverApp = await this.transferService.findReceiverAppByPaymentId(paymentId);
 
     // TODO: VERIFY THIS
     // okay to allow uninstall if receiver app was not installed ever

@@ -18,12 +18,22 @@ export class initTransferTable1598039003043 implements MigrationInterface {
     );
 
     await queryRunner.query(
-      `ALTER TABLE "transfer" ADD CONSTRAINT "FK_76dc9482640338f34e699253655" FOREIGN KEY ("receiverAppIdentityHash") REFERENCES "app_instance"("identityHash") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "transfer" 
+      ADD CONSTRAINT "FK_76dc9482640338f34e699253655" 
+        FOREIGN KEY ("receiverAppIdentityHash") 
+        REFERENCES "app_instance"("identityHash") 
+        ON DELETE NO ACTION 
+        ON UPDATE CASCADE`,
       undefined,
     );
 
     await queryRunner.query(
-      `ALTER TABLE "transfer" ADD CONSTRAINT "FK_76dc9487349338f34e699253655" FOREIGN KEY ("senderAppIdentityHash") REFERENCES "app_instance"("identityHash") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "transfer" 
+      ADD CONSTRAINT "FK_76dc9487349338f34e699253655" 
+        FOREIGN KEY ("senderAppIdentityHash") 
+        REFERENCES "app_instance"("identityHash") 
+        ON DELETE NO ACTION 
+        ON UPDATE CASCADE`,
       undefined,
     );
 
@@ -33,7 +43,12 @@ export class initTransferTable1598039003043 implements MigrationInterface {
     );
 
     await queryRunner.query(
-      `ALTER TABLE "app_instance" ADD CONSTRAINT "FK_76dc9488490367f34e699253655" FOREIGN KEY ("transferPaymentId") REFERENCES "transfer"("paymentId") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "app_instance" 
+      ADD CONSTRAINT "FK_76dc9488490367f34e699253655" 
+        FOREIGN KEY ("transferPaymentId") 
+        REFERENCES "transfer"("paymentId") 
+        ON DELETE NO ACTION 
+        ON UPDATE CASCADE`,
       undefined,
     );
   }

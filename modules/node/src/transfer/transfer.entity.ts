@@ -26,11 +26,11 @@ export class Transfer<T extends AppName> {
   @Column("jsonb", { nullable: true })
   action!: AppActions[T];
 
-  @OneToOne((type: any) => AppInstance)
+  @OneToOne((type: any) => AppInstance, { nullable: true, cascade: ["update"] })
   @JoinColumn()
   receiverApp!: AppInstance<T>;
 
-  @OneToOne((type: any) => AppInstance)
+  @OneToOne((type: any) => AppInstance, { nullable: true, cascade: ["update"] })
   @JoinColumn()
   senderApp!: AppInstance<T>;
 }
