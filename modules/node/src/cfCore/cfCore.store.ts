@@ -60,6 +60,7 @@ import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
+import { Transfer } from "../transfer/transfer.entity";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;
@@ -373,6 +374,24 @@ export class CFCoreStore implements IStoreService {
     stateChannelJson?: StateChannelJSON,
   ): Promise<void> {
     await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from(Transfer)
+        .where(`"senderAppIdentityHash" = :senderAppIdentityHash`, {
+          senderAppIdentityHash: appIdentityHash,
+        })
+        .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from(Transfer)
+        .where(`"receiverAppIdentityHash" = :receiverAppIdentityHash`, {
+          receiverAppIdentityHash: appIdentityHash,
+        })
+        .execute();
+
       await transactionalEntityManager
         .createQueryBuilder()
         .delete()
