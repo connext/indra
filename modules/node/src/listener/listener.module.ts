@@ -10,9 +10,10 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { TransferRepository } from "../transfer/transfer.repository";
 
 import ListenerService from "./listener.service";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Module({
   controllers: [],
@@ -27,7 +28,7 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
     MessagingModule,
     MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([ChannelRepository, AppInstanceRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, AppInstanceRepository, TransferRepository]),
   ],
   providers: [ListenerService],
 })

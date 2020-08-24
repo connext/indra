@@ -6,6 +6,8 @@ import {
   ProtocolEventMessage,
   EventName,
   SupportedApplicationNames,
+  UninstallFailedMessage,
+  GenericConditionalTransferAppState,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 
@@ -16,6 +18,8 @@ import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { TransferRepository } from "../transfer/transfer.repository";
+import { ConfigService } from "../config/config.service";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -54,9 +58,11 @@ export default class ListenerService implements OnModuleInit {
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
+    private readonly channelRepository: ChannelRepository,
+    private readonly transferRepository: TransferRepository,
   ) {
     this.log.setContext("ListenerService");
   }
@@ -133,8 +139,9 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_EVENT, data);
         await this.handleUninstall(data);
       },
-      UNINSTALL_FAILED_EVENT: (data): void => {
+      UNINSTALL_FAILED_EVENT: async (data): Promise<void> => {
         this.logEvent(UNINSTALL_FAILED_EVENT, data);
+        await this.handleUninstallFailed(data);
       },
       UPDATE_STATE_EVENT: async (data): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
@@ -174,6 +181,22 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
+  }
+
+  async handleUninstallFailed(data: UninstallFailedMessage) {
+    const { params } = data.data;
+    const receiverApp = await this.appInstanceRepository.findByIdentityHash(params.appIdentityHash);
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+    if (
+      receiverApp?.meta.paymentId &&
+      (receiverApp.latestState as GenericConditionalTransferAppState).coinTransfers[1].to !==
+        nodeSignerAddress
+    ) {
+      this.log.warn(
+        `Uninstall failed, removing stored action for paymentId ${receiverApp.meta.paymentId}`,
+      );
+      await this.transferRepository.removeTransferAction(receiverApp.meta.paymentId);
+    }
   }
 
   async handleUninstall(data: UninstallMessage) {

@@ -60,6 +60,7 @@ import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
+import { Transfer } from "../transfer/transfer.entity";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;

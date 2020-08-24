@@ -1,44 +1,100 @@
-import { EntityRepository, Repository } from "typeorm";
-import { GenericConditionalTransferAppName, ConditionalTransferAppNames } from "@connext/types";
+import { EntityRepository, Repository, EntityManager } from "typeorm";
+import { AppName, AppActions } from "@connext/types";
 
+import { Transfer } from "./transfer.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
-@EntityRepository(AppInstance)
-export class TransferRepository extends Repository<AppInstance> {
-  findTransferAppByPaymentIdAndSender<
-    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string, senderSignerAddress: string): Promise<AppInstance<T> | undefined> {
-    return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect("app_instance.channel", "channel")
-      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
-      )
-      .getOne() as Promise<AppInstance<T> | undefined>;
+@EntityRepository(Transfer)
+export class TransferRepository extends Repository<Transfer<any>> {
+  async removeTransferAction(paymentId: string) {
+    await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Transfer)
+        .set({
+          action: undefined,
+        })
+        .where("paymentId = :paymentId", { paymentId })
+        .execute();
+    });
   }
 
-  findTransferAppByPaymentIdAndReceiver<
-    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string, receiverSignerAddress: string): Promise<AppInstance<T> | undefined> {
-    return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect("app_instance.channel", "channel")
-      .where(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
-      )
-      .getOne() as Promise<AppInstance<T>>;
+  async addTransferAction<T extends AppName>(
+    paymentId: string,
+    action: AppActions[T],
+    receiverAppIdentityHash?: string,
+  ) {
+    await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Transfer)
+        .set({
+          action,
+        })
+        .where("paymentId = :paymentId", { paymentId })
+        .execute();
+
+      if (receiverAppIdentityHash) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .relation(AppInstance, "transfer")
+          .of(receiverAppIdentityHash)
+          .set(paymentId);
+      }
+    });
   }
 
-  findTransferAppsByChannelUserIdentifierAndReceiver<
-    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(userIdentifier: string, receiverSignerAddress: string): Promise<AppInstance<T>[] | []> {
-    return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
-      .andWhere(`app_instance."meta"::JSONB #> '{ "paymentId" }' IS NOT NULL`)
-      .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
-      )
-      .getMany() as Promise<AppInstance<T>[] | []>;
+  async addTransferReceiver<T extends AppName>(paymentId: string, receiverApp: AppInstance<T>) {
+    await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Transfer)
+        .set({
+          receiverApp,
+        })
+        .where("paymentId = :paymentId", { paymentId })
+        .execute();
+    });
+  }
+
+  async findByPaymentId<T extends AppName>(paymentId: string): Promise<Transfer<T> | undefined> {
+    return this.createQueryBuilder("transfer")
+      .leftJoinAndSelect("transfer.receiverApp", "receiverApp")
+      .leftJoinAndSelect("transfer.senderApp", "senderApp")
+      .where("transfer.paymentId = :paymentId", { paymentId })
+      .getOne();
+  }
+
+  async createTransfer<T extends AppName>(
+    paymentId: string,
+    senderApp: AppInstance<T>,
+    receiverApp?: AppInstance<T>,
+  ) {
+    await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(Transfer)
+        .values({
+          senderApp,
+          receiverApp,
+          paymentId,
+        })
+        .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(AppInstance, "transfer")
+        .of(senderApp.identityHash)
+        .set(paymentId);
+
+      if (receiverApp) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .relation(AppInstance, "transfer")
+          .of(receiverApp.identityHash)
+          .set(paymentId);
+      }
+    });
   }
 }
