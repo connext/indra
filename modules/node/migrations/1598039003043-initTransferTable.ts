@@ -22,7 +22,7 @@ export class initTransferTable1598039003043 implements MigrationInterface {
       ADD CONSTRAINT "FK_76dc9482640338f34e699253655" 
         FOREIGN KEY ("receiverAppIdentityHash") 
         REFERENCES "app_instance"("identityHash") 
-        ON DELETE NO ACTION 
+        ON DELETE SET NULL 
         ON UPDATE CASCADE`,
       undefined,
     );
@@ -32,7 +32,7 @@ export class initTransferTable1598039003043 implements MigrationInterface {
       ADD CONSTRAINT "FK_76dc9487349338f34e699253655" 
         FOREIGN KEY ("senderAppIdentityHash") 
         REFERENCES "app_instance"("identityHash") 
-        ON DELETE NO ACTION 
+        ON DELETE SET NULL 
         ON UPDATE CASCADE`,
       undefined,
     );
@@ -47,7 +47,7 @@ export class initTransferTable1598039003043 implements MigrationInterface {
       ADD CONSTRAINT "FK_76dc9488490367f34e699253655" 
         FOREIGN KEY ("transferPaymentId") 
         REFERENCES "transfer"("paymentId") 
-        ON DELETE NO ACTION 
+        ON DELETE SET NULL 
         ON UPDATE CASCADE`,
       undefined,
     );

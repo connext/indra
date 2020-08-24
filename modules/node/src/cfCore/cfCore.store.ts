@@ -377,15 +377,6 @@ export class CFCoreStore implements IStoreService {
       await transactionalEntityManager
         .createQueryBuilder()
         .delete()
-        .from(Transfer)
-        .where(`"senderAppIdentityHash" = :senderAppIdentityHash`, {
-          senderAppIdentityHash: appIdentityHash,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
         .from(SetStateCommitment)
         .where(`"appIdentityHash" = :appIdentityHash`, { appIdentityHash })
         .execute();
