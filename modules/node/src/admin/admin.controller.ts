@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Headers, UnauthorizedException } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  Headers,
+  UnauthorizedException,
+  NotFoundException,
+} from "@nestjs/common";
 import { ConfigService } from "../config/config.service";
 
 import { AdminService } from "./admin.service";
@@ -15,13 +22,21 @@ export class AdminController {
     private readonly configService: ConfigService,
   ) {}
   @Post("uninstall-deposit")
-  uninstallDepositApp(
+  async uninstallDepositApp(
     @Body() { multisigAddress, assetId }: UninstallDepositAppDto,
-    @Headers("auth-token") token: string,
+    @Headers("x-auth-token") token: string,
   ): Promise<string | undefined> {
     if (token !== this.configService.getAdminToken()) {
       throw new UnauthorizedException();
     }
-    return this.adminService.uninstallDepositAppForChannel(multisigAddress, assetId);
+    try {
+      const res = await this.adminService.uninstallDepositAppForChannel(multisigAddress, assetId);
+      return res;
+    } catch (e) {
+      if (e.message.includes("Channel does not exist for multisig")) {
+        throw new NotFoundException();
+      }
+      throw e;
+    }
   }
 }
