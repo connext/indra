@@ -18,7 +18,7 @@ export const withdrawFromChannel = async (
   // try to withdraw
   const preWithdrawalBalance = await client.getFreeBalance(assetId);
   const expected = preWithdrawalBalance[client.signerAddress].sub(amount);
-  const log = new ColorfulLogger("WithdrawFromChannel", env.logLevel);
+  const log = new ColorfulLogger("WithdrawFromChannel", env.logLevel, false, "H");
   log.info(`client.withdraw() called`);
   const start = Date.now();
   const { transaction } = await client.withdraw({

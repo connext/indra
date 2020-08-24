@@ -11,6 +11,7 @@ import { MessagingModule } from "../messaging/messaging.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 import { DepositModule } from "../deposit/deposit.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferService } from "./transfer.service";
@@ -29,7 +30,7 @@ import { TransferRepository } from "./transfer.repository";
     LinkedTransferModule,
     MessagingModule,
     SwapRateModule,
-    TypeOrmModule.forFeature([ChannelRepository, TransferRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, TransferRepository, AppInstanceRepository]),
   ],
   providers: [TransferService, transferProviderFactory],
 })

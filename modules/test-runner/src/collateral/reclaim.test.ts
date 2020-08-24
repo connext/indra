@@ -1,36 +1,47 @@
+import { ERC20 } from "@connext/contracts";
 import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
-import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
-import { getNatsClient } from "../util/nats";
-import { ERC20 } from "@connext/contracts";
+import {
+  addRebalanceProfile,
+  asyncTransferAsset,
+  createClient,
+  expect,
+  fundChannel,
+  getNatsClient,
+  getTestLoggers,
+} from "../util";
 
 const { AddressZero, One, Two } = constants;
 
-describe("Reclaim", () => {
+const name = "Reclaim Collateral";
+const { log, timeElapsed } = getTestLoggers(name);
+describe(name, () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
   let nats: Client;
+  let start: number;
 
   before(async () => {
     nats = getNatsClient();
   });
 
   beforeEach(async () => {
+    start = Date.now();
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    console.log("senderId", clientA.publicIdentifier);
-    console.log("sender multisig", clientA.multisigAddress);
-    console.log("recipientId", clientB.publicIdentifier);
-    console.log("recipient multisig", clientB.multisigAddress);
+    log.info(`senderId: ${clientA.publicIdentifier}`);
+    log.info(`sender multisig: ${clientA.multisigAddress}`);
+    log.info(`recipientId: ${clientB.publicIdentifier}`);
+    log.info(`recipient multisig: ${clientB.multisigAddress}`);
     tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
@@ -40,7 +51,7 @@ describe("Reclaim", () => {
     clientB.off();
   });
 
-  it("happy case: node should reclaim ETH with async transfer", async () => {
+  it("should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
       collateralizeThreshold: toBN("5"),
@@ -59,15 +70,6 @@ describe("Reclaim", () => {
     );
     await clientB.requestCollateral(AddressZero);
 
-    // transfer to node to get node over upper bound reclaim
-    // first transfer gets to upper bound
-    await asyncTransferAsset(
-      clientA,
-      clientB,
-      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
-      AddressZero,
-    );
-
     const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
@@ -82,12 +84,12 @@ describe("Reclaim", () => {
       });
       clientA
         .transfer({
-          amount: One.toString(),
+          amount: BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
           assetId: AddressZero,
           recipient: clientB.publicIdentifier,
           paymentId,
         })
-        .then((t) => console.log("t: ", t))
+        .then((t) => log.info(`t: : ${t}`))
         .catch(rej);
     });
 
@@ -100,7 +102,7 @@ describe("Reclaim", () => {
     ).to.be.true;
   });
 
-  it("happy case: node should reclaim tokens after async transfer", async () => {
+  it("should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
       collateralizeThreshold: toBN("5"),
@@ -130,14 +132,14 @@ describe("Reclaim", () => {
 
     clientA.on("UNINSTALL_EVENT", (msg) => {
       const { multisigAddress, uninstalledApp } = msg;
-      console.log("sender uninstall event multisig", multisigAddress);
-      console.log("final app state", uninstalledApp.latestState);
+      log.info(`sender uninstall event multisig: ${multisigAddress}`);
+      log.info(`final app state: ${uninstalledApp.latestState}`);
     });
 
     clientB.on("UNINSTALL_EVENT", (msg) => {
       const { multisigAddress, uninstalledApp } = msg;
-      console.log("receiver uninstall event multisig", multisigAddress);
-      console.log("final app state", uninstalledApp.latestState);
+      log.info(`receiver uninstall event multisig: ${multisigAddress}`);
+      log.info(`final app state: ${uninstalledApp.latestState}`);
     });
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
@@ -160,7 +162,7 @@ describe("Reclaim", () => {
           recipient: clientB.publicIdentifier,
           paymentId,
         })
-        .then((t) => console.log("t: ", t))
+        .then((t) => log.info(`t: : ${t}`))
         .catch(rej);
     });
 
@@ -174,7 +176,7 @@ describe("Reclaim", () => {
     ).to.be.true;
   });
 
-  it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
+  it.skip("node should reclaim ETH after linked transfer", async () => {});
 
-  it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
+  it.skip("node should reclaim tokens after linked transfer", async () => {});
 });

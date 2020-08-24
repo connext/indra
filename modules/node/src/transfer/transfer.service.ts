@@ -6,7 +6,6 @@ import {
   CoinTransfer,
   ConditionalTransferAppNames,
   ConditionalTransferTypes,
-  GenericConditionalTransferAppName,
   RequireOnlineApps,
   GraphBatchedTransferAppAction,
   GraphBatchedTransferAppState,
@@ -20,6 +19,7 @@ import {
   SimpleSignedTransferAppAction,
   SupportedApplicationNames,
   CF_METHOD_TIMEOUT,
+  GenericConditionalTransferAppName,
 } from "@connext/types";
 import {
   stringify,
@@ -35,7 +35,7 @@ import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { AppInstance, AppType } from "../appInstance/appInstance.entity";
+import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
@@ -46,6 +46,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const { Zero, HashZero } = constants;
 const { parseUnits } = utils;
@@ -63,7 +64,8 @@ export const getCancelAction = (
     | SimpleSignedTransferAppAction
     | GraphSignedTransferAppAction
     | GraphBatchedTransferAppAction
-    | SimpleLinkedTransferAppAction;
+    | SimpleLinkedTransferAppAction
+    | undefined;
   switch (transferType) {
     case ConditionalTransferTypes.OnlineTransfer:
     case ConditionalTransferTypes.LinkedTransfer:
@@ -90,8 +92,10 @@ export const getCancelAction = (
     }
     default: {
       const c: never = transferType;
-      this.log.error(`Unsupported conditionType ${c}`);
     }
+  }
+  if (!action) {
+    throw new Error(`No cancel action defined`);
   }
   return action;
 };
@@ -107,6 +111,7 @@ export class TransferService {
     private readonly swapRateService: SwapRateService,
     private readonly configService: ConfigService,
     private readonly transferRepository: TransferRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("TransferService");
@@ -123,13 +128,17 @@ export class TransferService {
 
   async pruneExpiredApps(_channel: Channel): Promise<void> {
     const channel = await this.cfCoreStore.getStateChannel(_channel.multisigAddress);
+    if (!channel) {
+      throw new Error(`Could not get state channel for ${_channel.multisigAddress}`);
+    }
     this.log.info(
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
-    const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
-    const expiredApps = channel.appInstances.filter(([, app]) => {
-      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
-    });
+    const current = await this.configService.getEthProvider(channel.chainId)!.getBlockNumber();
+    const expiredApps = channel.appInstances.filter(
+      ([, app]) =>
+        app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
+    );
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
     for (const [, app] of expiredApps) {
       try {
@@ -145,7 +154,7 @@ export class TransferService {
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
-  // receivers are online if needed
+  // receivers are online if needed or that payment ids are unique, etc
   async transferAppInstallFlow(
     senderAppIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
@@ -155,7 +164,19 @@ export class TransferService {
   ): Promise<void> {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
-    const paymentId = proposeInstallParams.meta["paymentId"];
+    const paymentId = proposeInstallParams.meta.paymentId;
+    const existing = await this.appInstanceRepository.findTransferAppByPaymentIdAndSender(
+      paymentId,
+      getSignerAddressFromPublicIdentifier(senderChannel.userIdentifier),
+    );
+    if (existing?.type !== AppType.PROPOSAL) {
+      throw new Error(
+        `Duplicate payment id ${paymentId} has already been used to send a transfer or sender app does not exist`,
+      );
+    }
+
+    // Create the transfer with the sender app and the payment id
+    await this.transferRepository.createTransfer(paymentId, existing);
 
     const requireOnline =
       RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];
@@ -177,7 +198,7 @@ export class TransferService {
     }
 
     // RECEIVER PROPOSAL
-    let receiverProposeRes: MethodResults.ProposeInstall & { appType: AppType };
+    let receiverProposeRes: (MethodResults.ProposeInstall & { appType: AppType }) | undefined;
     const receiverChainId = proposeInstallParams.meta.receiverChainId
       ? proposeInstallParams.meta.receiverChainId
       : senderChannel.chainId;
@@ -189,7 +210,7 @@ export class TransferService {
     this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
 
     try {
-      receiverProposeRes = await Promise.race([
+      receiverProposeRes = (await Promise.race([
         this.proposeReceiverAppByPaymentId(
           from,
           senderChannel.chainId,
@@ -208,7 +229,7 @@ export class TransferService {
           CF_METHOD_TIMEOUT * 3,
           `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
         ),
-      ]);
+      ])) as any;
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (requireOnline) {
@@ -221,7 +242,7 @@ export class TransferService {
         }
       }
       this.log.warn(
-        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver was offline`,
+        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver app not installed`,
       );
       return;
     }
@@ -252,6 +273,11 @@ export class TransferService {
         this.log.info(
           `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
         );
+        // Add the receiver app to the transfer
+        const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+          receiverProposeRes!.appIdentityHash,
+        );
+        await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
       }
     } catch (e) {
       this.log.error(`Error installing receiver app: ${e.message || e}`);
@@ -492,6 +518,11 @@ export class TransferService {
       this.log.info(
         `Receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
       );
+      // Add the receiver app to the transfer
+      const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+        proposeRes.appIdentityHash,
+      );
+      await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
     }
 
     return {
@@ -508,10 +539,10 @@ export class TransferService {
 
   async findSenderAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string): Promise<AppInstance<T>> {
+  >(paymentId: string): Promise<AppInstance<T> | undefined> {
     this.log.debug(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
+    const app = await this.appInstanceRepository.findTransferAppByPaymentIdAndReceiver<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
@@ -521,10 +552,10 @@ export class TransferService {
 
   async findReceiverAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
-  >(paymentId: string): Promise<AppInstance<T>> {
+  >(paymentId: string): Promise<AppInstance<T> | undefined> {
     this.log.debug(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndSender<T>(
+    const app = await this.appInstanceRepository.findTransferAppByPaymentIdAndSender<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
@@ -544,47 +575,62 @@ export class TransferService {
   async unlockSenderApps(senderIdentifier: string): Promise<void> {
     this.log.info(`unlockSenderApps: ${senderIdentifier}`);
     // eslint-disable-next-line max-len
-    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+    const senderTransferApps = await this.appInstanceRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
       senderIdentifier,
       this.cfCoreService.cfCore.signerAddress,
     );
 
     for (const senderApp of senderTransferApps) {
-      // eslint-disable-next-line max-len
-      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
-        senderApp.meta.paymentId,
-        this.cfCoreService.cfCore.signerAddress,
-      );
+      try {
+        // eslint-disable-next-line max-len
+        const correspondingReceiverApp = await this.appInstanceRepository.findTransferAppByPaymentIdAndSender(
+          senderApp.meta.paymentId,
+          this.cfCoreService.cfCore.signerAddress,
+        );
 
-      if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
-        continue;
-      }
+        if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
+          continue;
+        }
 
-      this.log.info(
-        `Found uninstalled corresponding receiver app for transfer app with paymentId: ${senderApp.meta.paymentId}`,
-      );
-      if (!isEqual(senderApp.latestState, correspondingReceiverApp.latestState)) {
         this.log.info(
-          `Sender app latest state is not equal to receiver app, taking action and uninstalling. senderApp: ${stringify(
-            senderApp.latestState,
-            true,
-            0,
-          )} correspondingReceiverApp: ${stringify(correspondingReceiverApp.latestState, true, 0)}`,
+          `Found uninstalled corresponding receiver app for transfer app with paymentId: ${senderApp.meta.paymentId}`,
         );
-        // need to take action before uninstalling
-        await this.cfCoreService.uninstallApp(
-          senderApp.identityHash,
-          senderApp.channel.multisigAddress,
-          correspondingReceiverApp.latestAction,
+        if (!isEqual(senderApp.latestState, correspondingReceiverApp.latestState)) {
+          this.log.info(
+            `Sender app latest state is not equal to receiver app, taking action and uninstalling. senderApp: ${stringify(
+              senderApp.latestState,
+              true,
+              0,
+            )} correspondingReceiverApp: ${stringify(
+              correspondingReceiverApp.latestState,
+              true,
+              0,
+            )}`,
+          );
+          // need to take action before uninstalling
+          if (!correspondingReceiverApp.transfer?.action) {
+            throw new Error(
+              `Receiver app has no transfer action and states are different, refusing to uninstall`,
+            );
+          }
+          await this.cfCoreService.uninstallApp(
+            senderApp.identityHash,
+            senderApp.channel.multisigAddress,
+            correspondingReceiverApp.transfer.action,
+          );
+        } else {
+          this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
+          await this.cfCoreService.uninstallApp(
+            senderApp.identityHash,
+            senderApp.channel.multisigAddress,
+          );
+        }
+        this.log.info(
+          `Finished uninstalling sender app with paymentId ${senderApp.meta.paymentId}`,
         );
-      } else {
-        this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
-        await this.cfCoreService.uninstallApp(
-          senderApp.identityHash,
-          senderApp.channel.multisigAddress,
-        );
+      } catch (e) {
+        this.log.error(`Error unlocking sender app: ${e.message}`);
       }
-      this.log.info(`Finished uninstalling sender app with paymentId ${senderApp.meta.paymentId}`);
     }
 
     this.log.info(`unlockSenderApps: ${senderIdentifier} complete`);

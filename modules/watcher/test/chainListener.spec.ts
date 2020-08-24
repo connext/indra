@@ -24,11 +24,12 @@ const logger = new ColorfulLogger(
 
 describe("ChainListener", () => {
   let challengeRegistry: Contract;
-  let provider: JsonRpcProvider;
+  let providers: { [chainId: number]: JsonRpcProvider };
   let chainListener: ChainListener;
   let setAndProgressState: any;
   let appInstance: AppWithCounterClass;
   let signers: ChannelSigner[];
+  let chainId: number;
 
   const action = {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
@@ -77,14 +78,15 @@ describe("ChainListener", () => {
   beforeEach(async () => {
     const context = await setupContext(false, [{ defaultTimeout: timeout }]);
     challengeRegistry = context["challengeRegistry"];
-    provider = context["provider"];
+    providers = context["providers"];
     setAndProgressState = context["setAndProgressState"];
     appInstance = context["activeApps"][0];
     signers = context["signers"];
+    chainId = parseInt(Object.keys(providers)[0]);
 
     chainListener = new ChainListener(
-      provider,
-      { ChallengeRegistry: challengeRegistry.address } as ContractAddresses,
+      providers,
+      { [chainId]: { ChallengeRegistry: challengeRegistry.address } as ContractAddresses },
       logger,
     );
   });
@@ -151,20 +153,20 @@ describe("ChainListener", () => {
     await chainListener.disable();
 
     // submit transaction
-    const startingBlock = await provider.getBlockNumber();
+    const startingBlock = await providers[chainId].getBlockNumber();
     logger.debug(`parsing past logs staring from block: ${startingBlock}`);
     const tx = await setAndProgressState(action);
     expect(tx).to.be.ok;
 
     // wait for block number to increase
     await new Promise((resolve) =>
-      provider.on("block", (block: number) => {
+      providers[chainId].on("block", (block: number) => {
         if (startingBlock < block) {
           return resolve();
         }
       }),
     );
-    expect(startingBlock).to.be.lessThan(await provider.getBlockNumber());
+    expect(startingBlock).to.be.lessThan(await providers[chainId].getBlockNumber());
 
     // parse logs
     const statesUpdated: ChallengeUpdatedEventPayload[] = [];

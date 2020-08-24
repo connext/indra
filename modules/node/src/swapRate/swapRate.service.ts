@@ -79,7 +79,7 @@ export class SwapRateService implements OnModuleInit {
     fromChainId: number,
     toChainId: number,
   ): Promise<string> {
-    let rate: string;
+    let rate: string | undefined;
 
     // HARDCODED RATES FOR DEMO
     rate = this.hardcodedDemoSwapRate(from, to, fromChainId, toChainId);
@@ -87,9 +87,11 @@ export class SwapRateService implements OnModuleInit {
       return rate;
     }
 
-    const swap = this.latestSwapRates
-      .get(fromChainId)
-      .find((s: SwapRate) => s.from === from && s.to === to);
+    const latest = this.latestSwapRates.get(fromChainId);
+    if (!latest) {
+      throw new Error(`Could not get latest rates for chain id ${fromChainId}`);
+    }
+    const swap = latest.find((s: SwapRate) => s.from === from && s.to === to);
     if (swap) {
       rate = swap.rate;
     } else {
@@ -102,6 +104,9 @@ export class SwapRateService implements OnModuleInit {
       } else {
         throw new Error(`No valid swap exists for ${from} to ${to}`);
       }
+    }
+    if (!rate) {
+      throw new Error(`Could not get rate for ${from}:${fromChainId} to ${to}:${toChainId}`);
     }
     return rate;
   }
@@ -137,7 +142,7 @@ export class SwapRateService implements OnModuleInit {
     }
 
     // check rate based on configured price oracle
-    let newRate: string;
+    let newRate: string | undefined;
     try {
       newRate = (await Promise.race([
         new Promise(
@@ -172,10 +177,15 @@ export class SwapRateService implements OnModuleInit {
       }
     }
 
+    if (newRate === "0" || newRate === "Infinity") {
+      this.log.debug(`Invalid swap rate for ${from} to ${to}: ${newRate}`);
+      return undefined;
+    }
+
     const newSwap: SwapRate = {
       from,
       to,
-      rate: newRate,
+      rate: newRate!,
       priceOracleType,
       blockNumber,
       fromChainId: chainId,
@@ -185,7 +195,7 @@ export class SwapRateService implements OnModuleInit {
       oldRate = this.latestSwapRates[rateIndex]?.rate;
       this.latestSwapRates[rateIndex] = newSwap;
     } else {
-      let rates: SwapRate[] = this.latestSwapRates.get(chainId);
+      let rates: SwapRate[] = this.latestSwapRates.get(chainId)!;
       if (!rates) {
         rates = [];
       }
@@ -193,7 +203,7 @@ export class SwapRateService implements OnModuleInit {
       this.latestSwapRates.set(chainId, rates);
     }
     const oldRateBn = parseEther(oldRate || "0");
-    const newRateBn = parseEther(newRate);
+    const newRateBn = parseEther(newRate || "0");
     if (!oldRateBn.eq(newRateBn)) {
       this.log.info(
         `Got swap rate at block ${blockNumber} for ${from} to ${to} on chain ${chainId}: ${newRate}`,
@@ -211,7 +221,7 @@ export class SwapRateService implements OnModuleInit {
 
   async broadcastRate(from: string, to: string, chainId: number): Promise<void> {
     const swap = this.latestSwapRates
-      .get(chainId)
+      .get(chainId)!
       .find((s: SwapRate) => s.from === from && s.to === to);
     if (!swap) {
       throw new Error(`No rate exists for ${from} to ${to}`);

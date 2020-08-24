@@ -8,7 +8,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { BigNumber, constants } from "ethers";
+import { BigNumber } from "ethers";
 import {
   Column,
   CreateDateColumn,
@@ -16,13 +16,14 @@ import {
   ManyToOne,
   PrimaryColumn,
   UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
 import { transformBN } from "../utils";
-
-const { Zero } = constants;
+import { Transfer } from "../transfer/transfer.entity";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -106,9 +107,13 @@ export class AppInstance<T extends AppName = any> {
   @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
+  @OneToOne((type: any) => Transfer, { nullable: true, cascade: true })
+  @JoinColumn()
+  transfer!: Transfer<T>;
+
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

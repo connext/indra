@@ -15,7 +15,7 @@ export const fundChannel = async (
   amount: BigNumber,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<void> => {
-  const log = new ColorfulLogger("FundChannel", env.logLevel);
+  const log = new ColorfulLogger("FundChannel", env.logLevel, false, "H");
   const tokenAddress = getAddressFromAssetId(assetId);
   const prevFreeBalance = await client.getFreeBalance(tokenAddress);
   await new Promise(async (resolve, reject) => {
@@ -76,7 +76,7 @@ export const requestCollateral = async (
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
   enforce: boolean = false,
 ): Promise<void> => {
-  const log = new ColorfulLogger("RequestCollateral", env.logLevel);
+  const log = new ColorfulLogger("RequestCollateral", env.logLevel, false, "H");
   const tokenAddress = getAddressFromAssetId(assetId);
   const preCollateralBal = await client.getFreeBalance(tokenAddress);
   log.debug(`calling client.requestCollateral()`);
@@ -88,7 +88,7 @@ export const requestCollateral = async (
     return;
   }
   if (!res) {
-    throw new Error("Node did not collateralized, and collateral should be enforced");
+    throw new Error("Node did not collateralize, and collateral should be enforced");
   }
   log.info(`waiting for collateral tx to be mined and ap to be uninstalled`);
   const { freeBalance } = await res.completed();

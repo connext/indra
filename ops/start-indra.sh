@@ -214,6 +214,7 @@ then
   echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
+  pull_if_unavailable "${project}_ethprovider:$version"
   chain_id_1=1337; chain_id_2=1338;
   bash ops/start-testnet.sh $chain_id_1 $chain_id_2
   INDRA_CHAIN_PROVIDERS="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
@@ -239,6 +240,8 @@ echo "Chain providers configured"
 
 ####################
 # Observability tools config
+
+LOGDNA_TAGS="indra-${INDRA_DOMAINNAME:-unknown}"
 
 logdna_image="logdna/logspout:v1.2.0";
 pull_if_unavailable "$logdna_image"
@@ -287,6 +290,7 @@ logdna_service="logdna:
     image: '$logdna_image'
     environment:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
+      TAGS: '$LOGDNA_TAGS'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'"
 

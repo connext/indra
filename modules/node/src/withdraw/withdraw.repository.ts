@@ -1,12 +1,7 @@
 import { EntityRepository, Repository } from "typeorm";
 
 import { Withdraw } from "./withdraw.entity";
-import {
-  OnchainTransaction,
-  TransactionReason,
-  TransactionStatus,
-} from "../onchainTransactions/onchainTransaction.entity";
-import { providers } from "ethers";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 @EntityRepository(Withdraw)
 export class WithdrawRepository extends Repository<Withdraw> {

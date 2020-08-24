@@ -45,7 +45,7 @@ const { Zero } = constants;
 
 @Injectable()
 export class CFCoreService {
-  private appRegistryMap: Map<string, DefaultApp>;
+  private appRegistryMap: Map<string, DefaultApp> = new Map();
   public emitter: TypedEmitter;
   constructor(
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
@@ -164,10 +164,10 @@ export class CFCoreService {
       contractAddresses,
       channel.multisigAddress,
       multisigOwners,
-      recipient,
-      assetId,
+      recipient!,
+      assetId!,
       amount,
-      nonce,
+      nonce!,
     );
   }
 
@@ -233,7 +233,7 @@ export class CFCoreService {
       return undefined;
     }
 
-    const raceRes = await Promise.race([
+    const raceRes: any = await Promise.race([
       new Promise(async (resolve, reject) => {
         try {
           await this.emitter.waitFor(
@@ -399,7 +399,7 @@ export class CFCoreService {
     const parameters = {
       appIdentityHash,
     } as MethodParams.GetAppInstanceDetails;
-    let appInstance: AppInstanceJson;
+    let appInstance: AppInstanceJson | undefined;
     try {
       this.logCfCoreMethodStart(MethodNames.chan_getAppInstance, parameters);
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
@@ -440,7 +440,7 @@ export class CFCoreService {
     return apps.filter(
       (app) =>
         app.appDefinition ===
-        this.getAppInfoByNameAndChain(appName, channel.chainId).appDefinitionAddress,
+        this.getAppInfoByNameAndChain(appName, channel.chainId)!.appDefinitionAddress,
     );
   }
 
@@ -466,25 +466,32 @@ export class CFCoreService {
   }
 
   public getAppInfoByAppDefinitionAddress(appDefinition: string): DefaultApp {
-    return this.appRegistryMap.get(appDefinition);
+    const app = this.appRegistryMap.get(appDefinition);
+    if (!app) {
+      throw new Error(`App info does not exist for appDefinition ${appDefinition}`);
+    }
+    return app;
   }
 
   public getAppInfoByNameAndChain(name: SupportedApplicationNames, chainId: number): DefaultApp {
-    return this.appRegistryMap.get(`${name}:${chainId}`);
+    const app = this.appRegistryMap.get(`${name}:${chainId}`);
+    if (!app) {
+      throw new Error(`App info does not exist for name ${name} on chain ${chainId}`);
+    }
+    return app;
   }
 
   public getAppRegistry(chainId: number): AppRegistry {
-    return Object.values(SupportedApplicationNames).map((name) =>
-      this.getAppInfoByNameAndChain(name, chainId),
+    return Object.values(SupportedApplicationNames).map(
+      (name) => this.getAppInfoByNameAndChain(name, chainId)!,
     );
   }
 
   async onModuleInit() {
-    this.appRegistryMap = new Map();
     this.configService.getSupportedChains().forEach((chainId) => {
       const contractAddresses = this.configService.getContractAddresses(chainId);
       RegistryOfApps.forEach((app) => {
-        const appDefinitionAddress = contractAddresses[app.name]; 
+        const appDefinitionAddress = contractAddresses[app.name];
         this.log.info(`Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`);
         // set both name and app definition as keys for better lookup
         this.appRegistryMap.set(appDefinitionAddress, {

@@ -60,6 +60,7 @@ import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
+import { Transfer } from "../transfer/transfer.entity";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;
@@ -103,15 +104,15 @@ export class CFCoreStore implements IStoreService {
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const allChannels = await this.channelRepository.find();
-    return allChannels.map((channel) => ChannelSerializer.toJSON(channel));
+    return allChannels.map((channel) => ChannelSerializer.toJSON(channel)!);
   }
 
-  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {
+  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const cacheRes = this.cache.wrap<StateChannelJSON, Channel>(
       `channel:multisig:${multisigAddress}`,
       60,
       async () => {
-        const res = await this.channelRepository.findByMultisigAddress(multisigAddress);
+        const res = (await this.channelRepository.findByMultisigAddress(multisigAddress))!;
         return res;
       },
       ChannelSerializer,
@@ -122,7 +123,7 @@ export class CFCoreStore implements IStoreService {
   async getStateChannelByOwnersAndChainId(
     owners: string[],
     chainId: number,
-  ): Promise<StateChannelJSON> {
+  ): Promise<StateChannelJSON | undefined> {
     const multisig = await this.cache.get(
       `channel:owners:${this.canonicalizeOwners(owners)}:${chainId}`,
     );
@@ -150,7 +151,9 @@ export class CFCoreStore implements IStoreService {
     return ChannelSerializer.toJSON(chan);
   }
 
-  async getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON> {
+  async getStateChannelByAppIdentityHash(
+    appIdentityHash: string,
+  ): Promise<StateChannelJSON | undefined> {
     const multisig = await this.cache.get(`channel:appIdentityHash:${appIdentityHash}`);
     if (multisig) {
       return this.getStateChannel(JSON.parse(multisig));
@@ -193,7 +196,7 @@ export class CFCoreStore implements IStoreService {
     let channel = new Channel();
     channel.multisigAddress = multisigAddress;
     channel.schemaVersion = StateSchemaVersion;
-    channel.userIdentifier = userIdentifier;
+    channel.userIdentifier = userIdentifier!;
     channel.nodeIdentifier = nodeIdentifier;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
@@ -211,13 +214,13 @@ export class CFCoreStore implements IStoreService {
       outcomeInterpreterParameters,
       initiatorIdentifier,
       responderIdentifier,
-    } = freeBalanceAppInstance;
+    } = freeBalanceAppInstance!;
 
     const freeBalanceApp = new AppInstance();
     freeBalanceApp.identityHash = identityHash;
     freeBalanceApp.appDefinition = appDefinition;
     freeBalanceApp.stateEncoding = stateEncoding;
-    freeBalanceApp.actionEncoding = actionEncoding;
+    freeBalanceApp.actionEncoding = actionEncoding!;
     freeBalanceApp.outcomeType = OutcomeType[outcomeType];
     freeBalanceApp.appSeqNo = appSeqNo;
     freeBalanceApp.latestState = latestState as any;
@@ -316,17 +319,11 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
-  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson> {
-    return this.cache.wrap<AppInstanceJson, AppInstance>(
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
+    return this.cache.wrap<AppInstanceJson, AppInstance | undefined>(
       `appInstance:identityHash:${appIdentityHash}`,
       60,
-      () => {
-        const res = this.appInstanceRepository.findByIdentityHashAndType(
-          appIdentityHash,
-          AppType.PROPOSAL,
-        );
-        return res;
-      },
+      () => this.appInstanceRepository.findByIdentityHashAndType(appIdentityHash, AppType.PROPOSAL),
       AppInstanceSerializer,
     );
   }
@@ -361,7 +358,7 @@ export class CFCoreStore implements IStoreService {
     await this.cache.set<StateChannelJSON>(
       `channel:multisig:${multisigAddress}`,
       60,
-      stateChannelJson,
+      stateChannelJson!,
     );
 
     await this.cache.set(
@@ -402,22 +399,16 @@ export class CFCoreStore implements IStoreService {
       await this.cache.set<StateChannelJSON>(
         `channel:multisig:${multisigAddress}`,
         60,
-        stateChannelJson,
+        stateChannelJson!,
       );
     });
   }
 
-  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
-    return this.cache.wrap<AppInstanceJson, AppInstance>(
+  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
+    return this.cache.wrap<AppInstanceJson, AppInstance | undefined>(
       `appInstance:identityHash:${appIdentityHash}`,
       60,
-      () => {
-        const res = this.appInstanceRepository.findByIdentityHashAndType(
-          appIdentityHash,
-          AppType.INSTANCE,
-        );
-        return res;
-      },
+      () => this.appInstanceRepository.findByIdentityHashAndType(appIdentityHash, AppType.INSTANCE),
       AppInstanceSerializer,
     );
   }
@@ -451,7 +442,7 @@ export class CFCoreStore implements IStoreService {
     await this.cache.set<StateChannelJSON>(
       `channel:multisig:${multisigAddress}`,
       60,
-      stateChannelJson,
+      stateChannelJson!,
     );
   }
 
@@ -477,7 +468,7 @@ export class CFCoreStore implements IStoreService {
     await this.cache.set<StateChannelJSON>(
       `channel:multisig:${multisigAddress}`,
       60,
-      stateChannelJson,
+      stateChannelJson!,
     );
   }
 
@@ -508,15 +499,15 @@ export class CFCoreStore implements IStoreService {
     await this.cache.set<StateChannelJSON>(
       `channel:multisig:${multisigAddress}`,
       60,
-      stateChannelJson,
+      stateChannelJson!,
     );
   }
 
-  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
     return this.appInstanceRepository.getFreeBalance(multisigAddress);
   }
 
-  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
 
@@ -694,8 +685,8 @@ export class CFCoreStore implements IStoreService {
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.stateProgressedEvents.map((event) =>
-      entityToStateProgressedEventPayload(event, challenge),
+    return challenge.stateProgressedEvents.map(
+      (event) => entityToStateProgressedEventPayload(event, challenge)!,
     );
   }
 
@@ -705,16 +696,16 @@ export class CFCoreStore implements IStoreService {
     // eslint-disable-next-line max-len
     const latestSetState = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
       appIdentityHash,
-      toBN(app.latestVersionNumber),
+      toBN(app!.latestVersionNumber),
     );
     // fetch onchain data
     const registry = new Contract(
-      latestSetState.challengeRegistryAddress,
+      latestSetState!.challengeRegistryAddress,
       ChallengeRegistry.abi,
       provider,
     );
     const onchainChallenge = await registry.getAppChallenge(appIdentityHash);
-    if (onchainChallenge.versionNumber.eq(latestSetState.versionNumber)) {
+    if (onchainChallenge.versionNumber.eq(latestSetState!.versionNumber)) {
       return;
     }
 
@@ -748,10 +739,10 @@ export class CFCoreStore implements IStoreService {
     } = onchainProgressedLogs[0];
 
     // ensure action from event can be applied on top of our app
-    if (!versionNumber.eq(app.latestVersionNumber + 1)) {
+    if (!versionNumber.eq(app!.latestVersionNumber + 1)) {
       throw new Error(
         `Action cannot be applied directly onto our record of app. Record has nonce of ${
-          app.latestVersionNumber
+          app!.latestVersionNumber
         }, and action results in nonce ${versionNumber.toString()}`,
       );
     }
@@ -762,7 +753,7 @@ export class CFCoreStore implements IStoreService {
     // for the initiator). This means there will NOT be an app instance
     // saved at the same nonce as the most recent single signed set-state
     // commitment
-    const appSigners = [app.initiatorIdentifier, app.responderIdentifier].map(
+    const appSigners = [app!.initiatorIdentifier, app!.responderIdentifier].map(
       getSignerAddressFromPublicIdentifier,
     );
     const turnTakerIdx = appSigners.findIndex((signer) => signer === turnTaker);
@@ -790,7 +781,7 @@ export class CFCoreStore implements IStoreService {
         .createQueryBuilder()
         .update(AppInstance)
         .set({
-          latestAction: defaultAbiCoder.decode([app.actionEncoding], encodedAction),
+          latestAction: defaultAbiCoder.decode([app!.actionEncoding], encodedAction),
         })
         .where("app.identityHash = :appIdentityHash", {
           appIdentityHash,
@@ -824,16 +815,16 @@ export class CFCoreStore implements IStoreService {
             app,
             signatures,
             appIdentity: {
-              channelNonce: toBN(app.appSeqNo),
+              channelNonce: toBN(app!.appSeqNo),
               participants: appSigners,
               multisigAddress: channel.multisigAddress,
-              appDefinition: app.appDefinition,
-              defaultTimeout: toBN(app.defaultTimeout),
+              appDefinition: app!.appDefinition,
+              defaultTimeout: toBN(app!.defaultTimeout),
             },
             appStateHash: onchainChallenge.appStateHash,
             versionNumber: onchainChallenge.versionNumber,
             stateTimeout: timeout.toString(),
-            challengeRegistryAddress: latestSetState.challengeRegistryAddress,
+            challengeRegistryAddress: latestSetState!.challengeRegistryAddress,
           })
           .execute();
       }
@@ -899,8 +890,8 @@ export class CFCoreStore implements IStoreService {
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.challengeUpdatedEvents.map((event) =>
-      entityToChallengeUpdatedPayload(event, challenge),
+    return challenge.challengeUpdatedEvents.map(
+      (event) => entityToChallengeUpdatedPayload(event, challenge)!,
     );
   }
 

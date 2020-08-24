@@ -46,8 +46,8 @@ export class SetStateCommitment {
   app!: AppInstance;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

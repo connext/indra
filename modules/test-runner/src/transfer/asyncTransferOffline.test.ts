@@ -18,6 +18,7 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
+  getTestLoggers,
   MessagingEventData,
   RECEIVED,
   REQUEST,
@@ -63,19 +64,24 @@ const recreateReceiverAndRetryTransfer = async (
   // Add delay to make sure messaging properly disconnects
   await delay(1000);
   const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
-
   // Check that client can recover and continue
   await asyncTransferAsset(senderClient, newClient, amount, assetId);
 };
 
-describe.skip("Async transfer offline tests", () => {
+// TODO: don't skip
+
+const name = "Offline Async Transfers";
+const { timeElapsed } = getTestLoggers(name);
+describe.skip(name, () => {
   let clock: any;
-  let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
+  let senderClient: IConnextClient;
   let signer: IChannelSigner;
+  let start: number;
   let store: IStoreService;
 
   beforeEach(async () => {
+    start = Date.now();
     signer = getRandomChannelSigner(ethProviderUrl);
     store = getMemoryStore();
     clock = lolex.install({
@@ -83,6 +89,7 @@ describe.skip("Async transfer offline tests", () => {
       advanceTimeDelta: 1,
       now: Date.now(),
     });
+    timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {

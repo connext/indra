@@ -74,7 +74,7 @@ export const cfCoreProviderFactory: Provider = {
       const signerAddress = await signer.getAddress();
       const ethBalance = await provider.getBalance(signerAddress);
       const contractAddresses = config.getContractAddresses(chainId);
-      const tokenContract = new Contract(contractAddresses.Token, ERC20.abi, provider);
+      const tokenContract = new Contract(contractAddresses.Token!, ERC20.abi, provider);
       const decimals = await config.getTokenDecimals(chainId);
       const tknBalance = await tokenContract.balanceOf(signerAddress);
 
