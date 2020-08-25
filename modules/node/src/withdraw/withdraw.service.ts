@@ -225,7 +225,7 @@ export class WithdrawService {
     await this.cfCoreService.uninstallApp(
       appInstance.identityHash,
       channel,
-      null,
+      undefined,
       { withdrawTx: txRes?.hash },
     );
 
