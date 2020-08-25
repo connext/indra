@@ -119,6 +119,7 @@ export class OnchainTransaction {
     LEFT JOIN "channel" ON "channel"."multisigAddress" = "onchain_transaction"."channelMultisigAddress"
   `,
 })
+
 export class AnonymizedOnchainTransaction {
   @ViewColumn()
   createdAt!: Date;

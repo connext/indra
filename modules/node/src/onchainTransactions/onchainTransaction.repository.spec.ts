@@ -57,7 +57,6 @@ describe("OnchainTransactionRepository", () => {
         CacheModule,
       ],
     }).compile();
-
     onchainTxRepository = module.get<OnchainTransactionRepository>(OnchainTransactionRepository);
     cfCoreStore = module.get<CFCoreStore>(CFCoreStore);
     configService = module.get<ConfigService>(ConfigService);
@@ -76,45 +75,46 @@ describe("OnchainTransactionRepository", () => {
     );
 
     const channel = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const reason = TransactionReason.COLLATERALIZATION;
 
     let testTx = getTestTransactionRequest();
     let txHash = getRandomBytes32();
-    let response = getTestTransactionResponse({
+    let res = getTestTransactionResponse({
       data: testTx.data as string,
+      hash: txHash,
+      nonce: 1,
       to: testTx.to,
       value: testTx.value as BigNumber,
-      hash: txHash,
     });
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.markFailed(response, { 1: "hello", 2: "world" });
+    await onchainTxRepository.addPending(res, res.nonce, res.from, reason, channel);
+    await onchainTxRepository.addResponse(res, res.nonce, reason, channel);
+    await onchainTxRepository.markFailedByTxHash(res, { 1: "hello", 2: "world" });
 
     testTx = getTestTransactionRequest();
     txHash = getRandomBytes32();
-    response = getTestTransactionResponse({
+    res = getTestTransactionResponse({
       data: testTx.data as string,
+      hash: txHash,
+      nonce: 2,
       to: testTx.to,
       value: testTx.value as BigNumber,
-      hash: txHash,
     });
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.markFailed(response, { 1: "hello", 2: "world", 3: KNOWN_ERRORS[0] });
+    await onchainTxRepository.addPending(res, res.nonce, res.from, reason, channel);
+    await onchainTxRepository.addResponse(res, res.nonce, reason, channel);
+    await onchainTxRepository.markFailedByTxHash(res, { 1: "foobar", 2: KNOWN_ERRORS[0] });
 
     testTx = getTestTransactionRequest();
     txHash = getRandomBytes32();
-    response = getTestTransactionResponse({
+    res = getTestTransactionResponse({
       data: testTx.data as string,
+      hash: txHash,
+      nonce: 3,
       to: testTx.to,
       value: testTx.value as BigNumber,
-      hash: txHash,
     });
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
-    await onchainTxRepository.markFailed(response, { 1: KNOWN_ERRORS[1] });
+    await onchainTxRepository.addPending(res, res.nonce, res.from, reason, channel);
+    await onchainTxRepository.addResponse(res, res.nonce, reason, channel);
+    await onchainTxRepository.markFailedByTxHash(res, { 1: KNOWN_ERRORS[1] });
 
     const transactions = await onchainTxRepository.findFailedTransactions(KNOWN_ERRORS);
 
