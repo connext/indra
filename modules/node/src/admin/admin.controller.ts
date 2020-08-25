@@ -5,6 +5,7 @@ import {
   Headers,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { ConfigService } from "../config/config.service";
 
@@ -36,7 +37,7 @@ export class AdminController {
       if (e.message.includes("Channel does not exist for multisig")) {
         throw new NotFoundException();
       }
-      throw e;
+      throw new BadRequestException(e.message);
     }
   }
 }
