@@ -8,7 +8,7 @@ import {
   ETH_AMOUNT_SM,
   expect,
   fundChannel,
-//   getNatsClient,
+//  getNatsClient,
 } from "./util";
 
 describe("Challenges", () => {

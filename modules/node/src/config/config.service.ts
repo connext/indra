@@ -50,6 +50,10 @@ export class ConfigService implements OnModuleInit {
     });
   }
 
+  getAdminToken(): string {
+    return this.get("INDRA_ADMIN_TOKEN");
+  }
+
   get(key: string): string {
     return this.envConfig[key];
   }
