@@ -45,10 +45,12 @@ export class DepositController extends AbstractController {
     this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
+    this.log.info(`Sending deposit transaction to chain`);
     const txHash = await this.connext.channelProvider.walletDeposit({
       amount: amount.toString(),
       assetId,
     });
+    this.log.info(`Sent deposit transaction to chain: ${txHash}`);
     const transaction = await this.ethProvider.getTransaction(txHash);
     const completed: Promise<PublicResults.RescindDepositRights> = new Promise(
       async (resolve, reject) => {
@@ -60,7 +62,6 @@ export class DepositController extends AbstractController {
             appIdentityHash,
             hash: txHash,
           });
-          this.log.info(`Sent deposit transaction to chain: ${txHash}`);
           await transaction.wait();
           const res = await this.rescindDepositRights({ appIdentityHash, assetId });
           this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
@@ -160,7 +161,7 @@ export class DepositController extends AbstractController {
     // get the app instance
     const app = await this.getDepositApp({ assetId });
     if (!app) {
-      this.log.debug(`No deposit app found for assset: ${assetId}`);
+      this.log.info(`No deposit app found for assset: ${assetId}`);
       const freeBalance = await this.connext.getFreeBalance(assetId);
       this.log.info(`Successfully rescinded deposit rights for ${assetId}`);
       return { freeBalance };
@@ -200,7 +201,6 @@ export class DepositController extends AbstractController {
   ////// PRIVATE METHODS
 
   private proposeDepositInstall = async (assetId: string): Promise<string> => {
-
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(
       this.connext.multisigAddress,

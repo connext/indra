@@ -18,8 +18,10 @@ import {
   GenericConditionalTransferAppState,
   DefaultApp,
   ConditionalTransferTypes,
+  ProtocolParams,
+  AppAction,
 } from "@connext/types";
-import { getAddressFromAssetId, toBN } from "@connext/utils";
+import { getAddressFromAssetId, toBN, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers";
 
@@ -34,6 +36,7 @@ import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
+import { TransferRepository } from "../transfer/transfer.repository";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -47,6 +50,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
     private readonly channelRepository: ChannelRepository,
+    private readonly transferRepository: TransferRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -269,6 +273,7 @@ export class AppRegistryService implements OnModuleInit {
   private uninstallTransferMiddleware = async (
     appInstance: AppInstanceJson,
     role: ProtocolRoles,
+    params: ProtocolParams.Uninstall,
   ) => {
     // if we initiated the protocol, we dont need to have this check
     if (role === ProtocolRoles.initiator) {
@@ -278,14 +283,27 @@ export class AppRegistryService implements OnModuleInit {
     const nodeSignerAddress = await this.configService.getSignerAddress();
     const senderAppLatestState = appInstance.latestState as GenericConditionalTransferAppState;
 
+    const paymentId = appInstance.meta.paymentId;
+
     // only run validation against sender app uninstall
     if (senderAppLatestState.coinTransfers[1].to !== nodeSignerAddress) {
+      // add secret for receiver app uninstalls
+      this.log.info(
+        `Found action for receiver: ${stringify(
+          params.action,
+          true,
+          0,
+        )}, adding to transfer tracker`,
+      );
+      await this.transferRepository.addTransferAction(
+        paymentId,
+        params.action as AppAction,
+        appInstance.identityHash,
+      );
       return;
     }
 
-    let receiverApp = await this.transferService.findReceiverAppByPaymentId(
-      appInstance.meta.paymentId,
-    );
+    let receiverApp = await this.transferService.findReceiverAppByPaymentId(paymentId);
 
     // TODO: VERIFY THIS
     // okay to allow uninstall if receiver app was not installed ever
@@ -300,7 +318,11 @@ export class AppRegistryService implements OnModuleInit {
         `Found receiver app ${receiverApp.identityHash} with type ${receiverApp.type}, attempting uninstall`,
       );
       try {
-        await this.cfCoreService.uninstallApp(receiverApp.identityHash, receiverApp.channel);
+        await this.cfCoreService.uninstallApp(
+          receiverApp.identityHash,
+          receiverApp.channel,
+          params.action as any,
+        );
         this.log.info(`Receiver app ${receiverApp.identityHash} uninstalled`);
       } catch (e) {
         this.log.error(
@@ -366,13 +388,13 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
-    const { appInstance, role } = cxt;
+    const { appInstance, role, params } = cxt;
     const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo!.name)) {
-      return this.uninstallTransferMiddleware(appInstance, role);
+      return this.uninstallTransferMiddleware(appInstance, role, params);
     }
 
     if (appRegistryInfo!.name === DepositAppName) {
