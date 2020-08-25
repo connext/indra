@@ -148,7 +148,7 @@ const performConditionalTransfer = async (params: {
 };
 
 const name = "Multichannel Store";
-const { log, timeElapsed } = getTestLoggers(name);
+const { timeElapsed } = getTestLoggers(name);
 describe(name, () => {
   let chainId: number;
   let initialRecipientFb: { [x: string]: BigNumber };
@@ -172,14 +172,12 @@ describe(name, () => {
     recipientKey = getRandomPrivateKey();
     senderSigner = new ChannelSigner(senderKey, ethProviderUrl);
     recipientSigner = new ChannelSigner(recipientKey, ethProviderUrl);
-    const sequelize = new Sequelize(
-      `sqlite:${env.storeDir}/store.sqlite`,
-      {
-        isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
-        logging: false,
-        transactionType: "IMMEDIATE",
-      },
-    );
+    const sequelize = new Sequelize({
+      dialect: "sqlite",
+      storage: `${env.storeDir}/store.sqlite`,
+      isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
+      logging: false,
+    });
     // create stores with same sequelize instance but with different prefixes
     const senderStore = getFileStore(
       env.storeDir,
@@ -213,7 +211,6 @@ describe(name, () => {
   afterEach(async () => {
     await sender.messaging.disconnect();
     await recipient.messaging.disconnect();
-    // clear stores
     await sender.store.clear();
     await recipient.store.clear();
   });
@@ -284,81 +281,4 @@ describe(name, () => {
     );
   });
 
-  it("Multiple linked transfers should work w clients sharing a sequelize instance", async () => {
-    // establish tests constants
-    const TRANSFER_AMT = toBN(10);
-    const reps = 3;
-
-    for (let i = 0; i < reps; i++) {
-      log.info(`Sending linked transfer #${i}`);
-      await performConditionalTransfer({
-        conditionType: ConditionalTransferTypes.LinkedTransfer,
-        sender,
-        recipient,
-        ASSET,
-        TRANSFER_AMT,
-      });
-    }
-
-    // verify transfer amounts
-    const finalSenderFb = await sender.getFreeBalance(ASSET);
-    const finalRecipientFb = await recipient.getFreeBalance(ASSET);
-    expect(finalSenderFb[sender.signerAddress]).to.be.eq(
-      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(toBN(reps))),
-    );
-    expect(finalRecipientFb[recipient.signerAddress]).to.be.eq(
-      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(toBN(reps))),
-    );
-  });
-
-  it("Multiple graph transfers should work w clients sharing a sequelize instance", async () => {
-    // establish tests constants
-    const TRANSFER_AMT = toBN(10);
-    const reps = 3;
-
-    for (let i = 0; i < reps; i++) {
-      log.info(`Sending signed transfer #${i}`);
-      // idk what a loop func even is
-      // eslint-disable-next-line no-loop-func
-      const finished = new Promise((resolve, reject) => {
-        recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-          const signature = await signGraphReceiptMessage(
-            receipt,
-            chainId,
-            verifyingContract,
-            recipientKey,
-          );
-          await recipient.resolveCondition({
-            conditionType: ConditionalTransferTypes.GraphTransfer,
-            paymentId: payload.paymentId,
-            responseCID: receipt.responseCID,
-            signature,
-          } as PublicParams.ResolveGraphTransfer);
-          resolve();
-        });
-      });
-      await performConditionalTransfer({
-        conditionType: ConditionalTransferTypes.GraphTransfer,
-        sender,
-        chainId,
-        verifyingContract,
-        requestCID: receipt.requestCID,
-        subgraphDeploymentID: receipt.subgraphDeploymentID,
-        recipient,
-        ASSET,
-        TRANSFER_AMT,
-      });
-      await finished;
-    }
-
-    // verify transfer amounts
-    const finalSenderFb = await sender.getFreeBalance(ASSET);
-    const finalRecipientFb = await recipient.getFreeBalance(ASSET);
-    expect(finalSenderFb[sender.signerAddress]).to.be.eq(
-      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(toBN(reps))),
-    );
-    expect(finalRecipientFb[recipient.signerAddress]).to.be.eq(
-      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(toBN(reps))),
-    );
-  });
 });

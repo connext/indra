@@ -191,7 +191,7 @@ export class Watcher implements IWatcher {
   // also catches up to current block from latest processed
   public enable = async (): Promise<void> => {
     if (this.enabled) {
-      this.log.info(`Watcher enabled`);
+      this.log.info(`Watcher is already enabled`);
       return;
     }
     // catch up to current block
@@ -218,22 +218,22 @@ export class Watcher implements IWatcher {
   // pauses all listeners and responses
   public disable = async (): Promise<void> => {
     if (!this.enabled) {
-      this.log.info(`Watcher disabled`);
+      this.log.info(`Watcher is already disabled`);
       return;
     }
-    const chainIds = Object.keys(this.providers);
-    for (const chainId of chainIds) {
+    for (const chainId of Object.keys(this.providers)) {
       const current = await this.providers[chainId].getBlockNumber();
-      this.log.debug(`Setting latest processed block to ${current}`);
+      this.log.info(`Setting latest processed block to ${current}`);
       await this.store.updateLatestProcessedBlock(current);
-
-      this.log.debug(`Disabling listener`);
-      await this.listener.disable();
-      this.off();
-
-      this.enabled = false;
-      this.log.info(`Watcher disabled`);
     }
+
+    this.log.debug(`Disabling listener`);
+    await this.listener.disable();
+    this.removeListeners();
+    this.off();
+
+    this.enabled = false;
+    this.log.info(`Watcher disabled`);
   };
 
   /////////////////////////////////////
@@ -334,6 +334,7 @@ export class Watcher implements IWatcher {
   private registerListeners = () => {
     const chainIds = Object.keys(this.providers);
     chainIds.forEach((chainId) => {
+      this.log.info(`Registering listener for ${ChallengeEvents.ChallengeUpdated}`);
       this.listener.attach(
         ChallengeEvents.ChallengeUpdated,
         async (event: ChallengeUpdatedEventPayload) => {
@@ -343,6 +344,8 @@ export class Watcher implements IWatcher {
           this.emit(WatcherEvents.CHALLENGE_UPDATED_EVENT, event);
         },
       );
+
+      this.log.info(`Registering listener for ${ChallengeEvents.StateProgressed}`);
       this.listener.attach(
         ChallengeEvents.StateProgressed,
         async (event: StateProgressedEventPayload) => {
@@ -352,7 +355,10 @@ export class Watcher implements IWatcher {
           this.emit(WatcherEvents.STATE_PROGRESSED_EVENT, event);
         },
       );
+
+      this.log.info(`Registering listener for new blocks`);
       this.providers[chainId].on("block", async (blockNumber: number) => {
+        this.log.debug(`Provider found a new block: ${blockNumber}`);
         await this.advanceDisputes();
         await this.store.updateLatestProcessedBlock(blockNumber);
       });
@@ -434,8 +440,12 @@ export class Watcher implements IWatcher {
     ) {
       return;
     }
-    await this.store.saveAppChallenge(event);
-    this.log.debug(`Saved challenge to store: ${stringify(event)}`);
+    try {
+      await this.store.saveAppChallenge(event);
+      this.log.debug(`Saved challenge to store: ${stringify(event)}`);
+    } catch (e) {
+      this.log.error(`Failed to save challenge to store: ${stringify(event)}`);
+    }
   };
 
   private respondToChallenge = async (
@@ -1101,10 +1111,14 @@ export class Watcher implements IWatcher {
     challenge: StoredAppChallenge,
   ) => {
     this.log.debug(`Transitioning challenge status from ${challenge.status} to ${status}`);
-    return this.store.saveAppChallenge({
-      ...challenge,
-      status,
-    });
+    try {
+      return await this.store.saveAppChallenge({
+        ...challenge,
+        status,
+      });
+    } catch (e) {
+      this.log.error(`Failed to updateChallengeStatus: ${e.message}`);
+    }
   };
 
   private isFreeBalanceApp = async (identityHash: string): Promise<boolean> => {

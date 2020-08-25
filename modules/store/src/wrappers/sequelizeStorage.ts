@@ -36,7 +36,6 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
       this.sequelize = new Sequelize(_sequelize as string, {
         logging: false,
         isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
-        // transactionType: Transaction.TYPES.IMMEDIATE,
       });
     } else {
       this.sequelize = _sequelize as Sequelize;
@@ -59,48 +58,28 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
   // Public Methods
 
   async init(): Promise<void> {
-    try {
-      await this.sequelize.sync({ force: false });
-    } catch (e) {
-      throw new Error(`init() failed: ${e.message}`);
-    }
+    await this.sequelize.sync({ force: false });
   }
 
   close(): Promise<void> {
-    try {
-      return this.sequelize.close();
-    } catch (e) {
-      throw new Error(`close() failed: ${e.message}`);
-    }
+    return this.sequelize.close();
   }
 
   getKey(...args: string[]): string {
-    try {
-      return args.join(this.separator);
-    } catch (e) {
-      throw new Error(`getKeys() failed: ${e.message}`);
-    }
+    return args.join(this.separator);
   }
 
   async getKeys(): Promise<string[]> {
-    try {
-      const relevantItems = await this.getRelevantItems();
-      return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
-    } catch (e) {
-      throw new Error(`getKeys() failed: ${e.message}`);
-    }
+    const relevantItems = await this.getRelevantItems();
+    return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
   }
 
   async getEntries(): Promise<[string, any][]> {
-    try {
-      const relevantItems = await this.getRelevantItems();
-      return relevantItems.map((item) => [
-        item.key.replace(`${this.prefix}${this.separator}`, ""),
-        item.value,
-      ]);
-    } catch (e) {
-      throw new Error(`getEntries() failed: ${e.message}`);
-    }
+    const relevantItems = await this.getRelevantItems();
+    return relevantItems.map((item) => [
+      item.key.replace(`${this.prefix}${this.separator}`, ""),
+      item.value,
+    ]);
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
@@ -113,8 +92,8 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    try {
-      const execute = async (options = {}) => {
+    const execute = async (options = {}) => {
+      try {
         await this.ConnextClientData.upsert(
           {
             key: `${this.prefix}${this.separator}${key}`,
@@ -122,39 +101,29 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
           },
           options,
         );
-      };
-      if (!this.shouldUseTransaction) {
-        return execute();
+      } catch (e) {
+        throw new Error(`setItem(${key}, ${value}) failed: ${e.message}`);
       }
-      return this.sequelize.transaction(async (t) => {
-        await execute({ transaction: t, lock: true });
-      });
-    } catch (e) {
-      throw new Error(`setItem(${key}, ..) failed: ${e.message}`);
-    }
+    };
+    return !this.shouldUseTransaction
+      ? await execute()
+      : await this.sequelize.transaction(async (t) => execute({ transaction: t, lock: true }));
   }
 
   async removeItem(key: string): Promise<void> {
-    try {
-      const execute = async (options = {}) => {
+    const execute = async (options = {}) => {
+      try {
         await this.ConnextClientData.destroy(
-          {
-            where: {
-              key: `${this.prefix}${this.separator}${key}`,
-            },
-          },
+          { where: { key: `${this.prefix}${this.separator}${key}` } },
           options,
         );
-      };
-      if (!this.shouldUseTransaction) {
-        return execute();
+      } catch (e) {
+        throw new Error(`removeItem(${key}) failed: ${e.message}`);
       }
-      return this.sequelize.transaction(async (t) => {
-        await execute({ transaction: t, lock: true });
-      });
-    } catch (e) {
-      throw new Error(`removeItem(${key}) failed: ${e.message}`);
-    }
+    };
+    return !this.shouldUseTransaction
+      ? await execute()
+      : await this.sequelize.transaction(async (t) => execute({ transaction: t, lock: true }));
   }
 
   ////////////////////////////////////////
