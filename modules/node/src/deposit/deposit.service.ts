@@ -222,7 +222,7 @@ export class DepositService {
     }
     if (onchain.status === TransactionStatus.PENDING) {
       throw new Error(
-        `Cannot uninstall deposit app (${appIdentityHash}) when associated transaction is pending on ${onchain.chainId}. Transaction: ${onchain.hash}`,
+        `Can't uninstall deposit app when associated transaction is pending: ${stringify(onchain)}`,
       );
     }
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);

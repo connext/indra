@@ -233,8 +233,8 @@ export default class ListenerService implements OnModuleInit {
     const receiverApp = await this.appInstanceRepository.findByIdentityHash(params.appIdentityHash);
     const nodeSignerAddress = await this.configService.getSignerAddress();
     if (
-      receiverApp?.meta.paymentId &&
-      (receiverApp.latestState as GenericConditionalTransferAppState).coinTransfers[1].to !==
+      receiverApp?.meta?.paymentId &&
+      (receiverApp?.latestState as GenericConditionalTransferAppState).coinTransfers[1].to !==
         nodeSignerAddress
     ) {
       this.log.warn(

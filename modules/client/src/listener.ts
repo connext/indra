@@ -570,7 +570,7 @@ export class ConnextListener {
           await this.connext.saveWithdrawCommitmentToStore(
             params,
             withdrawState.signatures,
-            protocolMeta.withdrawTx,
+            protocolMeta?.withdrawTx,
           );
         }
         break;

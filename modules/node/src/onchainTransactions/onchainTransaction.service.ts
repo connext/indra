@@ -251,7 +251,7 @@ export class OnchainTransactionService implements OnModuleInit {
             }: ${receipt.transactionHash} in ${Date.now() - start}ms`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
-          this.log.error(`added receipt, status should be success`);
+          this.log.debug(`added receipt, status should be success`);
         });
 
         return { ...tx, completed: () => completed };
