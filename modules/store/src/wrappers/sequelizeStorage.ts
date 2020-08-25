@@ -59,28 +59,48 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
   // Public Methods
 
   async init(): Promise<void> {
-    await this.sequelize.sync({ force: false });
+    try {
+      await this.sequelize.sync({ force: false });
+    } catch (e) {
+      throw new Error(`init() failed: ${e.message}`);
+    }
   }
 
   close(): Promise<void> {
-    return this.sequelize.close();
+    try {
+      return this.sequelize.close();
+    } catch (e) {
+      throw new Error(`close() failed: ${e.message}`);
+    }
   }
 
   getKey(...args: string[]): string {
-    return args.join(this.separator);
+    try {
+      return args.join(this.separator);
+    } catch (e) {
+      throw new Error(`getKeys() failed: ${e.message}`);
+    }
   }
 
   async getKeys(): Promise<string[]> {
-    const relevantItems = await this.getRelevantItems();
-    return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
+    try {
+      const relevantItems = await this.getRelevantItems();
+      return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
+    } catch (e) {
+      throw new Error(`getKeys() failed: ${e.message}`);
+    }
   }
 
   async getEntries(): Promise<[string, any][]> {
-    const relevantItems = await this.getRelevantItems();
-    return relevantItems.map((item) => [
-      item.key.replace(`${this.prefix}${this.separator}`, ""),
-      item.value,
-    ]);
+    try {
+      const relevantItems = await this.getRelevantItems();
+      return relevantItems.map((item) => [
+        item.key.replace(`${this.prefix}${this.separator}`, ""),
+        item.value,
+      ]);
+    } catch (e) {
+      throw new Error(`getEntries() failed: ${e.message}`);
+    }
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
@@ -93,8 +113,8 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    const execute = async (options = {}) => {
-      try {
+    try {
+      const execute = async (options = {}) => {
         await this.ConnextClientData.upsert(
           {
             key: `${this.prefix}${this.separator}${key}`,
@@ -102,58 +122,38 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
           },
           options,
         );
-      } catch (e) {
-        throw new Error(`setItem(${key}, ..) exec failed: ${e.message}`);
-      }
-    };
-    if (!this.shouldUseTransaction) {
-      try {
+      };
+      if (!this.shouldUseTransaction) {
         return execute();
-      } catch (e) {
-        throw new Error(`setItem(${key}, ..) query failed: ${e.message}`);
       }
-    }
-    try {
       return this.sequelize.transaction(async (t) => {
-        try {
-          await execute({ transaction: t, lock: true });
-        } catch (e) {
-          throw new Error(`setItem(${key}, ..) inner query failed: ${e.message}`);
-        }
+        await execute({ transaction: t, lock: true });
       });
     } catch (e) {
-      throw new Error(`setItem(${key}, ..) tx failed: ${e.message}`);
+      throw new Error(`setItem(${key}, ..) failed: ${e.message}`);
     }
   }
 
   async removeItem(key: string): Promise<void> {
-    const execute = async (options = {}) => {
-      try {
+    try {
+      const execute = async (options = {}) => {
         await this.ConnextClientData.destroy(
-          { where: { key: `${this.prefix}${this.separator}${key}` } },
+          {
+            where: {
+              key: `${this.prefix}${this.separator}${key}`,
+            },
+          },
           options,
         );
-      } catch (e) {
-        throw new Error(`removeItem(${key}, ..) exec failed: ${e.message}`);
-      }
-    };
-    if (!this.shouldUseTransaction) {
-      try {
+      };
+      if (!this.shouldUseTransaction) {
         return execute();
-      } catch (e) {
-        throw new Error(`removeItem(${key}, ..) query failed: ${e.message}`);
       }
-    }
-    try {
       return this.sequelize.transaction(async (t) => {
-        try {
-          await execute({ transaction: t, lock: true });
-        } catch (e) {
-          throw new Error(`removeItem(${key}, ..) inner query failed: ${e.message}`);
-        }
+        await execute({ transaction: t, lock: true });
       });
     } catch (e) {
-      throw new Error(`removeItem(${key}, ..) tx failed: ${e.message}`);
+      throw new Error(`removeItem(${key}) failed: ${e.message}`);
     }
   }
 
