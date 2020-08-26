@@ -1,4 +1,5 @@
 import {
+  addressBook,
   ChallengeRegistry,
   ConditionalTransactionCommitment,
   SetStateCommitment,
@@ -46,6 +47,15 @@ import { ChainListener } from "./chainListener";
 
 const { Zero, HashZero } = constants;
 const { Interface, defaultAbiCoder } = utils;
+
+// Block of first challenge registry deployed to each chain
+// testnets added to address-book at commit 8a868a48, mainnet at commit 097802b6
+const FIRST_POSSIBLE_BLOCKS = {
+  "1": 8354797,
+  "3": 5693645,
+  "4": 4467523,
+  "42": 11231793,
+};
 
 /**
  * Watchers will watch for contract events and respond to disputes on behalf
@@ -195,14 +205,21 @@ export class Watcher implements IWatcher {
       return;
     }
     // catch up to current block
-    const chainIds = Object.keys(this.providers);
-    for (const chainId of chainIds) {
-      const current = await this.providers[chainId].getBlockNumber();
-      const previous = await this.store.getLatestProcessedBlock();
-      if (previous < current) {
-        this.log.debug(`Processing missed events from blocks ${previous} - ${current}`);
+    for (const chainId of Object.keys(this.providers)) {
+      const provider = this.providers[chainId];
+      const saved = await this.store.getLatestProcessedBlock();
+      const deployHash = addressBook[chainId]?.ChallengeRegistry?.txHash;
+      const imported = deployHash ? (await provider.getTransaction(deployHash)).block : 0;
+      const hardcoded = FIRST_POSSIBLE_BLOCKS[chainId] || 0;
+
+      // Use the latest block out of above options
+      const startFrom = [saved, imported, hardcoded].reduce((cur, acc) => cur > acc ? cur : acc, 0);
+
+      const current = await provider.getBlockNumber();
+      if (startFrom < current) {
+        this.log.info(`Processing missed events from blocks ${startFrom} - ${current}`);
         // register any missed events
-        await this.catchupFrom(previous);
+        await this.catchupFrom(startFrom);
       }
 
       // register listener for any future events
@@ -300,8 +317,7 @@ export class Watcher implements IWatcher {
   // will insert + respond to any events that have occurred from
   // the latest processed block to the provided block
   private catchupFrom = async (blockNumber: number): Promise<void> => {
-    const chainIds = Object.keys(this.providers);
-    for (const chainId of chainIds) {
+    for (const chainId of Object.keys(this.providers)) {
       this.log.info(`Processing events from ${blockNumber} on ${chainId}`);
       const latest = await this.store.getLatestProcessedBlock();
       const current = await this.providers[chainId].getBlockNumber();
@@ -332,8 +348,7 @@ export class Watcher implements IWatcher {
   // should check every block for challenges that should be advanced,
   // and respond to any listener emitted chain events
   private registerListeners = () => {
-    const chainIds = Object.keys(this.providers);
-    chainIds.forEach((chainId) => {
+    Object.keys(this.providers).forEach((chainId) => {
       this.log.info(`Registering listener for ${ChallengeEvents.ChallengeUpdated}`);
       this.listener.attach(
         ChallengeEvents.ChallengeUpdated,
@@ -367,8 +382,7 @@ export class Watcher implements IWatcher {
 
   private removeListeners = () => {
     this.listener.detach();
-    const chainIds = Object.keys(this.providers);
-    chainIds.forEach((chainId) => this.providers[chainId].removeAllListeners());
+    Object.keys(this.providers).forEach((chainId) => this.providers[chainId].removeAllListeners());
   };
 
   private startAppChallenge = async (
