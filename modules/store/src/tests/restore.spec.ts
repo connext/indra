@@ -101,8 +101,6 @@ describe("Restore", () => {
       /////////////////////////
 
       const restoredChannel = await store.getStateChannel(channel.multisigAddress);
-      console.log("EXPECTED_CHANNEL: ", stringify(EXPECTED_CHANNEL));
-      console.log("restoredChannel: ", stringify(restoredChannel));
       expect(restoredChannel).to.deep.eq(EXPECTED_CHANNEL);
 
       await clearAndClose(store);
