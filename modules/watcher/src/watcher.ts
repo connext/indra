@@ -209,7 +209,8 @@ export class Watcher implements IWatcher {
       const provider = this.providers[chainId];
       const saved = await this.store.getLatestProcessedBlock();
       const deployHash = addressBook[chainId]?.ChallengeRegistry?.txHash;
-      const imported = deployHash ? (await provider.getTransaction(deployHash)).block : 0;
+      const deployTx = deployHash && await provider.getTransaction(deployHash);
+      const imported = deployTx?.block || 0;
       const hardcoded = FIRST_POSSIBLE_BLOCKS[chainId] || 0;
 
       // Use the latest block out of above options
