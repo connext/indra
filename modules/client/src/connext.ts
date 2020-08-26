@@ -989,7 +989,7 @@ export class ConnextClient implements IConnextClient {
   private assertFreeBalanceNotDisputed = async () => {
     const channel = await this.store.getStateChannel(this.multisigAddress);
     if (!channel || !channel.freeBalanceAppInstance) {
-      return; // TODO: should this ever really happen tho?
+      return;
     }
     const freeBalanceChallenge = await this.store.getAppChallenge(
       channel.freeBalanceAppInstance.identityHash,
