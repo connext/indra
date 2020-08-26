@@ -29,10 +29,6 @@ import {
   ValidationMiddleware,
   ProtocolName,
   MiddlewareContext,
-  ProtocolNames,
-  ProposeMiddlewareContext,
-  UninstallMiddlewareContext,
-  InstallMiddlewareContext,
 } from "@connext/types";
 import {
   deBigNumberifyJson,

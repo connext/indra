@@ -28,6 +28,7 @@ import {
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
+import { stringify } from "@connext/utils";
 
 const { getAddress } = utils;
 
@@ -144,6 +145,17 @@ class ChannelMessaging extends AbstractMessagingProvider {
     const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
       channel.multisigAddress,
     );
+    const restoreResponse = {
+      channel,
+      setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),
+      setStateCommitments: setStateCommitments.map((s) => [s.app.identityHash, setStateToJson(s)]),
+      conditionalCommitments: conditionalCommitments.map((c) => [
+        c.app.identityHash,
+        convertConditionalCommitmentToJson(c),
+      ]),
+    };
+
+    this.log.info(`Sending info for client to restore: ${stringify(restoreResponse)}`);
     return {
       channel,
       setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),

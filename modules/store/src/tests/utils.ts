@@ -50,6 +50,7 @@ const env = {
 };
 
 type TestStoreOptions = StoreOptions & {
+  asyncStorageKey?: string;
   fileDir?: string;
 };
 

@@ -3,6 +3,7 @@ import {
   StoredAppChallengeStatus,
   StateChannelJSON,
   SetStateCommitmentJSON,
+  IStoreService,
 } from "@connext/types";
 import { toBNJson, toBN, getRandomBytes32 } from "@connext/utils";
 
@@ -24,7 +25,7 @@ import {
 
 const storeTypes = Object.keys(StoreTypes);
 
-const clearAndClose = async (store) => {
+const clearAndClose = async (store: IStoreService) => {
   await store.clear();
   await store.close();
 };

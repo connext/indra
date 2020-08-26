@@ -1,5 +1,4 @@
 import { isDirectory } from "@connext/utils";
-import { expect } from "chai";
 import fs from "fs";
 import { Sequelize } from "sequelize";
 import { v4 as uuid } from "uuid";
@@ -16,6 +15,7 @@ import {
   TEST_STORE_PAIR,
   testAsyncStorageKey,
 } from "./utils";
+import StoreService from "../store";
 
 const storeTypes = Object.keys(StoreTypes);
 
@@ -29,16 +29,16 @@ describe("Instantiation", () => {
     for (const type of storeTypes) {
       it(`should work for ${type}`, async () => {
         const store = await createStore(type as StoreTypes);
-        await setAndGet(store);
+        await setAndGet(store as StoreService);
 
         // test + validate entries
-        const entries = await store.getEntries();
+        const entries = await (store as StoreService).getEntries();
         expect(entries.length).to.eq(1);
         expect(entries[0]).to.deep.equal([TEST_STORE_PAIR.path, TEST_STORE_PAIR.value]);
 
         // test clearing
         await store.clear();
-        const keys = await store.getKeys();
+        const keys = await (store as StoreService).getKeys();
         expect(keys.length).to.be.eq(0);
       });
     }
@@ -48,9 +48,9 @@ describe("Instantiation", () => {
     for (const type of storeTypes) {
       it(`should work for ${type}`, async () => {
         const store = await createStore(type as StoreTypes);
-        await setAndGet(store, TEST_STORE_PAIR);
-        await store.removeItem(TEST_STORE_PAIR.path);
-        const val = await store.getItem(TEST_STORE_PAIR.path);
+        await setAndGet(store as StoreService, TEST_STORE_PAIR);
+        await (store as StoreService).removeItem(TEST_STORE_PAIR.path);
+        const val = await (store as StoreService).getItem(TEST_STORE_PAIR.path);
         expect(val).to.be.undefined;
       });
     }
@@ -58,11 +58,11 @@ describe("Instantiation", () => {
 
   it("memory storage should be able to support multiple stores", async () => {
     const store1 = await createStore(StoreTypes.Memory);
-    await store1.setItem("test", "store1");
+    await (store1 as StoreService).setItem("test", "store1");
     const store2 = await createStore(StoreTypes.Memory);
-    await store2.setItem("test", "store2");
-    const item1 = await store1.getItem("test");
-    const item2 = await store2.getItem("test");
+    await (store2 as StoreService).setItem("test", "store2");
+    const item1 = await (store1 as StoreService).getItem("test");
+    const item2 = await (store2 as StoreService).getItem("test");
     expect(item1).to.eq("store1");
     expect(item2).to.eq("store2");
     await store1.clear();
@@ -70,12 +70,18 @@ describe("Instantiation", () => {
 
   it("postgres storage should be able to create multiple stores with different prefixes", async () => {
     const sharedSequelize = new Sequelize(postgresConnectionUri, { logging: false });
-    const store1 = await createStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store1" });
-    await store1.setItem("test", "store1");
-    const store2 = await createStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store2" });
-    await store2.setItem("test", "store2");
-    const item1 = await store1.getItem("test");
-    const item2 = await store2.getItem("test");
+    const store1 = await createStore(StoreTypes.Postgres, {
+      sequelize: sharedSequelize,
+      prefix: "store1",
+    });
+    await (store1 as StoreService).setItem("test", "store1");
+    const store2 = await createStore(StoreTypes.Postgres, {
+      sequelize: sharedSequelize,
+      prefix: "store2",
+    });
+    await (store2 as StoreService).setItem("test", "store2");
+    const item1 = await (store1 as StoreService).getItem("test");
+    const item2 = await (store2 as StoreService).getItem("test");
     expect(item1).to.eq("store1");
     expect(item2).to.eq("store2");
     await store1.clear();
@@ -83,9 +89,9 @@ describe("Instantiation", () => {
 
   it("localStorage should include multiple keys", async () => {
     const store = await createStore(StoreTypes.LocalStorage);
-    const preInsert = await store.getEntries();
-    await setAndGetMultiple(store, length);
-    expect((await store.getEntries()).length).to.equal(preInsert.length + length);
+    const preInsert = await (store as StoreService).getEntries();
+    await setAndGetMultiple(store as StoreService, length);
+    expect((await (store as StoreService).getEntries()).length).to.equal(preInsert.length + length);
     await store.clear();
   });
 
@@ -93,9 +99,9 @@ describe("Instantiation", () => {
   it.skip("AsyncStorage should include a single key matching asyncStorageKey", async () => {
     const store = await createStore(StoreTypes.AsyncStorage, { asyncStorageKey });
 
-    await setAndGetMultiple(store, length);
+    await setAndGetMultiple(store as StoreService, length);
 
-    await testAsyncStorageKey(store, asyncStorageKey);
+    await testAsyncStorageKey(store as StoreService, asyncStorageKey);
     await store.clear();
   });
 
@@ -103,8 +109,8 @@ describe("Instantiation", () => {
   // be included/if its still relevant
   it.skip("FileStorage should include a single key matching asyncStorageKey", async () => {
     const store = await createStore(StoreTypes.File, { asyncStorageKey });
-    await setAndGetMultiple(store, length);
-    await testAsyncStorageKey(store, asyncStorageKey);
+    await setAndGetMultiple(store as StoreService, length);
+    await testAsyncStorageKey(store as StoreService, asyncStorageKey);
     await store.clear();
   });
 
@@ -127,7 +133,10 @@ describe("Instantiation", () => {
     const key1 = uuid();
     const key2 = uuid();
     expect(key1).to.not.equal(key2);
-    await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
+    await Promise.all([
+      (store as StoreService).setItem(key2, testValue),
+      (store as StoreService).setItem(key1, testValue),
+    ]);
     const files = fs.readdirSync(fileDir);
     const verifyFile = (fileName: string): void => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
@@ -149,7 +158,10 @@ describe("Instantiation", () => {
       fileDir: fileDirB,
     });
     const key = uuid();
-    await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
+    await Promise.all([
+      (storeA as StoreService).setItem(key, testValue),
+      (storeB as StoreService).setItem(key, testValue),
+    ]);
     const filesA = fs.readdirSync(fileDir);
     const filesB = fs.readdirSync(fileDir);
     const verifyFile = (fileDir: string[]): void => {
@@ -171,7 +183,7 @@ describe("Instantiation", () => {
         await Promise.all(
           Array(5)
             .fill(0)
-            .map(() => setAndGet(store)),
+            .map(() => setAndGet(store as StoreService)),
         );
       });
     }
@@ -182,7 +194,7 @@ describe("Instantiation", () => {
       it(`${type} should work`, async () => {
         const store = await createStore(type as StoreTypes, { fileDir });
         const expected = `expected/string`;
-        expect(store.getKey("expected", "string")).to.be.equal(expected);
+        expect((store as StoreService).getKey("expected", "string")).to.be.equal(expected);
       });
     }
   });
