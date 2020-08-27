@@ -9,7 +9,7 @@ database=$project
 service=${project}_database
 service_id="`docker service ps -q $service | head -n 1`"
 
-if [[ -x "$service_id" ]]
+if [[ -n "$service_id" ]]
 then container_id="`docker inspect --format '{{.Status.ContainerStatus.ContainerID}}' $service_id`"
 else
   container_id="`docker container ls --filter 'status=running' --format '{{.ID}} {{.Names}}' |\

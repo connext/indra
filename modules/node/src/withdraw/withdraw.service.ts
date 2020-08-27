@@ -130,21 +130,6 @@ export class WithdrawService {
       appInstance.identityHash,
     );
 
-    // Create the same commitment from scratch
-    /*
-    const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
-      {
-        amount: state.transfers[0].amount,
-        // eslint-disable-next-line max-len
-        assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
-          .tokenAddress,
-        recipient: state.transfers[0].to,
-        nonce: state.nonce,
-      } as PublicParams.Withdraw,
-      channel,
-    );
-    */
-
     // first try to deploy multisig. if this fails, cancel the withdrawal
     try {
       await this.deployMultisig(channel);
