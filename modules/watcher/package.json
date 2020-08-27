@@ -2,7 +2,7 @@
   "name": "@connext/watcher",
   "version": "7.3.8",
   "description": "Responds to disputes on behalf of a channel participant.",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "license": "MIT",
   "files": [

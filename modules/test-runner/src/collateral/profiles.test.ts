@@ -32,7 +32,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("throws error if collateral targets are higher than reclaim", async () => {

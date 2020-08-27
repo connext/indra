@@ -60,15 +60,13 @@ const recreateReceiverAndRetryTransfer = async (
   transferParams: any,
 ) => {
   const { amount, assetId } = transferParams;
-  await receiverClient.messaging.disconnect();
+  await receiverClient.off();
   // Add delay to make sure messaging properly disconnects
   await delay(1000);
   const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
   // Check that client can recover and continue
   await asyncTransferAsset(senderClient, newClient, amount, assetId);
 };
-
-// TODO: don't skip
 
 const name = "Offline Async Transfers";
 const { timeElapsed } = getTestLoggers(name);
@@ -94,8 +92,8 @@ describe.skip(name, () => {
 
   afterEach(async () => {
     clock && clock.reset && clock.reset();
-    await senderClient.messaging.disconnect();
-    await receiverClient.messaging.disconnect();
+    await senderClient.off();
+    await receiverClient.off();
   });
 
   /**
@@ -162,7 +160,7 @@ describe.skip(name, () => {
       ),
       new Promise((resolve: Function) => {
         senderClient.once(EventNames.UPDATE_STATE_EVENT, async (data) => {
-          await senderClient.messaging.disconnect();
+          await senderClient.off();
           resolve();
         });
       }),

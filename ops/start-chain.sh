@@ -44,7 +44,7 @@ else
   opts="--entrypoint bash --mount type=bind,source=$root,target=/root"
 fi
 
-echo "Running ${INDRA_ENV}-mode image for testnet ${chain_id}: ${image}"
+echo "Running ${INDRA_ENV:-dev}-mode image for testnet ${chain_id}: ${image}"
 
 docker run $opts \
   --detach \

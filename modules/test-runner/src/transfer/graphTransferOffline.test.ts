@@ -324,10 +324,7 @@ describe(name, () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    sender.off();
-    await sender.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
+    await sender.off();
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 
@@ -344,10 +341,7 @@ describe(name, () => {
       whichFails: "sender",
       error: CLIENT_INSTALL_FAILED(true),
     });
-    sender.off();
-    await sender.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
+    await sender.off();
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 
@@ -370,10 +364,7 @@ describe(name, () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    receiver.off();
-    await receiver.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
+    await receiver.off();
     await recreateClientAndRetryTransfer(
       "receiver",
       sender,
@@ -399,9 +390,7 @@ describe(name, () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall),
       event: EventNames.UNINSTALL_FAILED_EVENT,
     });
-    receiver.off();
-    await receiver.messaging.disconnect();
-    await delay(1000); // Add delay to make sure messaging properly deactivates
+    await receiver.off();
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
 
@@ -426,9 +415,7 @@ describe(name, () => {
     expect(failureEvent.data.params).to.be.ok;
     expect(failureEvent.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall));
     // recreate client, node should reclaim
-    await sender.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
+    await sender.off();
     const recreatedSender = await createClient({ signer: senderSigner, store: sender.store });
     const postReclaim = await recreatedSender.getFreeBalance(tokenAddress);
     expect(postReclaim[recreatedSender.nodeSignerAddress]).to.be.greaterThan(

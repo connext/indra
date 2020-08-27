@@ -36,7 +36,7 @@ nats_host="${project}_nats_$tag"
 network="${project}"
 node_host="${project}_$tag"
 node_port="8080"
-postgres_db="${project}_$tag"
+postgres_db="${project}"
 postgres_host="${project}_database_$tag"
 postgres_password="$project"
 postgres_port="5432"
@@ -85,7 +85,7 @@ docker run \
   --name="$nats_host" \
   --network="$network" \
   --rm \
-  provide/nats-server:latest
+  provide/nats-server:indra -D -V
 
 echo "Starting $redis_host.."
 docker run \
@@ -129,9 +129,4 @@ docker run \
   --network="$network" \
   --rm \
   --volume="$root:/root" \
-  ${project}_builder -c '
-    echo "Node Tester Container launched!";echo
-    shopt -s globstar
-    cd modules/node
-    npm run '"$cmd"' -- '"$@"'
-  '
+  ${project}_builder -c "bash modules/node/ops/test.sh $cmd"

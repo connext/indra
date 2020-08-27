@@ -18,7 +18,6 @@ import { Wallet, Contract, providers, constants, utils, BigNumber } from "ethers
 import { DEFAULT_DECIMALS } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-
 const { AddressZero, Zero } = constants;
 const { getAddress, parseEther } = utils;
 
@@ -63,11 +62,14 @@ export class ConfigService implements OnModuleInit {
     return Wallet.fromMnemonic(this.get(`INDRA_MNEMONIC`)).privateKey;
   }
 
-  getSigner(chainId: number): IChannelSigner {
-    const providers = this.getIndraChainProviders();
-    const provider = getEthProvider(providers[chainId], chainId);
-    const signer = new ChannelSigner(this.getPrivateKey(), provider);
-    return signer;
+  getSigner(chainId?: number): IChannelSigner {
+    if (chainId) {
+      const providers = this.getIndraChainProviders();
+      const provider = getEthProvider(providers[chainId], chainId);
+      const signer = new ChannelSigner(this.getPrivateKey(), provider);
+      return signer;
+    }
+    return new ChannelSigner(this.getPrivateKey());
   }
 
   getProviderUrls(): string[] {

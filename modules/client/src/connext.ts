@@ -35,6 +35,8 @@ import {
   SupportedApplicationNames,
   WithdrawalMonitorObject,
   WithdrawAppName,
+  IWatcher,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import {
   delay,
@@ -42,6 +44,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  computeCancelDisputeHash,
 } from "@connext/utils";
 import { BigNumber, Contract, providers, constants, utils } from "ethers";
 
@@ -78,6 +81,7 @@ export class ConnextClient implements IConnextClient {
   public signerAddress: string;
   public store: IStoreService;
   public token: Contract;
+  public watcher: IWatcher;
 
   private opts: InternalClientOptions;
 
@@ -101,6 +105,7 @@ export class ConnextClient implements IConnextClient {
     this.node = opts.node;
     this.store = opts.store;
     this.token = opts.token;
+    this.watcher = opts.watcher;
 
     this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userIdentifier;
@@ -275,21 +280,47 @@ export class ConnextClient implements IConnextClient {
   };
 
   ///////////////////////////////////
+  // DISPUTE METHODS
+  public initiateChallenge = (
+    params: PublicParams.InitiateChallenge,
+  ): Promise<PublicResults.InitiateChallenge> => {
+    return this.watcher.initiate(params.appIdentityHash);
+  };
+
+  public cancelChallenge = async (
+    params: PublicParams.CancelChallenge,
+  ): Promise<PublicResults.CancelChallenge> => {
+    const { appInstance } = (await this.getAppInstance(params.appIdentityHash)) || {};
+    if (!appInstance) {
+      throw new Error(`Could not find record of app with hash ${params.appIdentityHash}`);
+    }
+    const cancelHash = computeCancelDisputeHash(
+      appInstance.identityHash,
+      appInstance.latestVersionNumber,
+    );
+    const signature = await this.channelProvider.signMessage(cancelHash);
+    return this.node.cancelChallenge(params.appIdentityHash, signature);
+  };
+
+  ///////////////////////////////////
   // CORE CHANNEL METHODS
 
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
+    await this.assertFreeBalanceNotDisputed();
     return this.depositController.deposit(params);
   };
 
   public requestDepositRights = async (
     params: PublicParams.RequestDepositRights,
   ): Promise<MethodResults.RequestDepositRights> => {
+    await this.assertFreeBalanceNotDisputed();
     return this.depositController.requestDepositRights(params);
   };
 
   public rescindDepositRights = async (
     params: PublicParams.RescindDepositRights,
   ): Promise<PublicResults.RescindDepositRights> => {
+    await this.assertFreeBalanceNotDisputed();
     return this.depositController.rescindDepositRights(params);
   };
 
@@ -304,8 +335,8 @@ export class ConnextClient implements IConnextClient {
   };
 
   public swap = async (params: PublicParams.Swap): Promise<PublicResults.Swap> => {
-    const res = await this.swapController.swap(params);
-    return res;
+    await this.assertFreeBalanceNotDisputed();
+    return this.swapController.swap(params);
   };
 
   /**
@@ -315,6 +346,7 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: PublicParams.Transfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
+    await this.assertFreeBalanceNotDisputed();
     return this.createTransferController.createTransfer({
       amount: params.amount,
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
@@ -326,11 +358,13 @@ export class ConnextClient implements IConnextClient {
     }) as Promise<PublicResults.ConditionalTransfer>;
   };
 
-  public withdraw = (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
+  public withdraw = async (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
+    await this.assertFreeBalanceNotDisputed();
     return this.withdrawalController.withdraw(params);
   };
 
-  public respondToNodeWithdraw = (appInstance: AppInstanceJson): Promise<void> => {
+  public respondToNodeWithdraw = async (appInstance: AppInstanceJson): Promise<void> => {
+    await this.assertFreeBalanceNotDisputed();
     return this.withdrawalController.respondToNodeWithdraw(appInstance);
   };
 
@@ -346,6 +380,7 @@ export class ConnextClient implements IConnextClient {
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
     // paymentId is generated for hashlock transfer
+    await this.assertFreeBalanceNotDisputed();
     if (params.conditionType === ConditionalTransferTypes.HashLockTransfer && !params.paymentId) {
       const lockHash = soliditySha256(["bytes32"], [params.preImage]);
       const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
@@ -357,6 +392,7 @@ export class ConnextClient implements IConnextClient {
   public conditionalTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
+    await this.assertFreeBalanceNotDisputed();
     params.assetId = params.assetId || CONVENTION_FOR_ETH_ASSET_ID;
     return this.createTransferController.createTransfer(params);
   };
@@ -468,12 +504,11 @@ export class ConnextClient implements IConnextClient {
     return this.listener.waitFor(event, timeout, filter);
   }
 
-  // TODO: allow for removing listeners attached via a specific event
-  // by manipulating the context of the events
-
-  public off = () => {
-    this.listener.detach();
-    this.channelProvider.removeAllListeners();
+  public off = async () => {
+    await this.messaging.disconnect();
+    await this.listener.detach();
+    await this.channelProvider.removeAllListeners();
+    await delay(500); // give messaging a bit more time to finish disconnecting
   };
 
   public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {
@@ -572,6 +607,7 @@ export class ConnextClient implements IConnextClient {
     action: AppAction,
     stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> => {
+    await this.assertFreeBalanceNotDisputed();
     // check the app is actually installed
     const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
@@ -602,6 +638,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public installApp = async (appIdentityHash: string): Promise<MethodResults.Install> => {
+    await this.assertFreeBalanceNotDisputed();
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appIdentityHash);
     if (alreadyInstalled) {
@@ -617,6 +654,7 @@ export class ConnextClient implements IConnextClient {
     appIdentityHash: string,
     action?: AppAction,
   ): Promise<MethodResults.Uninstall> => {
+    await this.assertFreeBalanceNotDisputed();
     // check the app is actually installed
     const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
@@ -945,5 +983,21 @@ export class ConnextClient implements IConnextClient {
       );
     }
     return undefined;
+  };
+
+  private assertFreeBalanceNotDisputed = async () => {
+    const channel = await this.store.getStateChannel(this.multisigAddress);
+    if (!channel || !channel.freeBalanceAppInstance) {
+      return;
+    }
+    const freeBalanceChallenge = await this.store.getAppChallenge(
+      channel.freeBalanceAppInstance.identityHash,
+    );
+    if (
+      freeBalanceChallenge &&
+      freeBalanceChallenge.status !== StoredAppChallengeStatus.NO_CHALLENGE
+    ) {
+      throw new Error(`Free balance app has been disputed, cannot use channel.`);
+    }
   };
 }

@@ -20,6 +20,7 @@ export const AppRegistryProviderId = "APP_REGISTRY";
 export const AuthProviderId = "AUTH";
 export const CFCoreProviderId = "CF_CORE";
 export const ChannelMessagingProviderId = "CHANNEL_MESSAGING";
+export const ChallengeMessagingProviderId = "CHALLENGE_MESSAGING";
 export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
 export const LockProviderId = "LOCK";
 export const MedianizerProviderId = "MEDIANIZER";

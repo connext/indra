@@ -1,6 +1,6 @@
 import { Watcher } from "../../src";
 import {
-  IWatcherStoreService,
+  IStoreService,
   WatcherEvents,
   ChallengeCompletedEventData,
   StoredAppChallengeStatus,
@@ -11,7 +11,7 @@ import { mineBlock } from "./contracts";
 export const waitForDisputeCompletion = async (
   appIds: string[],
   watcher: Watcher,
-  store: IWatcherStoreService,
+  store: IStoreService,
   networkContext: TestNetworkContext,
 ) => {
   // Get stored challenges before setting outcome
@@ -27,7 +27,7 @@ export const waitForDisputeCompletion = async (
   const [completed] = await Promise.all([
     Promise.all(
       appIds.map((id) =>
-        watcher.waitFor(WatcherEvents.ChallengeCompletedEvent, 10_000, (data) =>
+        watcher.waitFor(WatcherEvents.CHALLENGE_COMPLETED_EVENT, 10_000, (data) =>
           matchesId(data, id),
         ),
       ),

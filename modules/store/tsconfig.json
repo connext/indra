@@ -5,12 +5,12 @@
     "incremental": true,
     "noUnusedLocals": false,
     "outDir": "dist",
-    "strict": false,
+    "strict": true,
     "target": "es6",
     "declarationDir": "dist/",
     "module": "commonjs"
   },
-  "exclude": ["dist", "node_modules", "**/*spec.ts"],
+  "exclude": ["dist", "node_modules"],
   "include": [ "src/**/*.ts" ]
 }
 

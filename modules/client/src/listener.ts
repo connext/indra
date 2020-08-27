@@ -41,6 +41,9 @@ import {
   UnlockedGraphSignedTransferMeta,
   GraphBatchedTransferAppState,
   GraphBatchedTransferAppAction,
+  WatcherEvents,
+  WatcherEventData,
+  WatcherEvent,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -75,9 +78,15 @@ const {
   UPDATE_STATE_FAILED_EVENT,
 } = EventNames;
 
-type CallbackStruct = {
+type ProtocolCallback = {
   [index in keyof typeof EventNames]: (data: ProtocolEventMessage<index>) => Promise<any> | void;
 };
+
+type WatcherCallback = {
+  [index in keyof typeof WatcherEvents]: (data: WatcherEventData[index]) => Promise<any> | void;
+};
+
+type CallbackStruct = WatcherCallback | ProtocolCallback;
 
 export class ConnextListener {
   private log: ILoggerService;
@@ -201,6 +210,38 @@ export class ConnextListener {
     WITHDRAWAL_STARTED_EVENT: (msg): void => {
       this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
+
+    // Watcher events
+    CHALLENGE_UPDATED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_UPDATED_EVENT, msg);
+    },
+    STATE_PROGRESSED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.STATE_PROGRESSED_EVENT, msg);
+    },
+    CHALLENGE_PROGRESSED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, msg);
+    },
+    CHALLENGE_PROGRESSION_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT, msg);
+    },
+    CHALLENGE_OUTCOME_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_OUTCOME_FAILED_EVENT, msg);
+    },
+    CHALLENGE_OUTCOME_SET_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_OUTCOME_SET_EVENT, msg);
+    },
+    CHALLENGE_COMPLETED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_COMPLETED_EVENT, msg);
+    },
+    CHALLENGE_COMPLETION_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_COMPLETION_FAILED_EVENT, msg);
+    },
+    CHALLENGE_CANCELLED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_CANCELLED_EVENT, msg);
+    },
+    CHALLENGE_CANCELLATION_FAILED_EVENT: (msg) => {
+      this.emitAndLog(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT, msg);
+    },
   };
 
   constructor(connext: ConnextClient) {
@@ -242,7 +283,6 @@ export class ConnextListener {
 
   public detach(): void {
     this.typedEmitter.detach();
-    this.channelProvider.removeAllListeners();
   }
 
   public register = async (): Promise<void> => {
@@ -256,8 +296,12 @@ export class ConnextListener {
 
   private registerProtocolCallbacks = (): void => {
     Object.entries(this.protocolCallbacks).forEach(([event, callback]: any): any => {
-      this.channelProvider.off(event);
-      this.channelProvider.on(event, callback);
+      if (Object.keys(WatcherEvents).includes(event)) {
+        this.connext.watcher.on(event, callback);
+      } else {
+        this.channelProvider.off(event);
+        this.channelProvider.on(event, callback);
+      }
     });
   };
 
@@ -267,6 +311,10 @@ export class ConnextListener {
         ? (data as EventPayload[typeof PROTOCOL_MESSAGE_EVENT]).protocol
         : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
+    this.post(event, bigNumberifyJson(data));
+  }
+
+  private emitAndLogWatcher<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void {
     this.post(event, bigNumberifyJson(data));
   }
 
@@ -521,7 +569,7 @@ export class ConnextListener {
           await this.connext.saveWithdrawCommitmentToStore(
             params,
             withdrawState.signatures,
-            protocolMeta.withdrawTx,
+            protocolMeta?.withdrawTx,
           );
         }
         break;

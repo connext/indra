@@ -87,7 +87,7 @@ export class WithdrawService {
     }
 
     if (!uninstallData.uninstalledApp.latestState.finalized) {
-      throw new Error(`Error, cannot reclaim on withdraw app that is not finalized. AppId: ${appIdentityHash}`)
+      throw new Error(`Error, cannot reclaim on withdraw app that is not finalized. AppId: ${appIdentityHash}`);
     }
 
     const action = uninstallData!.action as WithdrawAppAction;
@@ -106,7 +106,7 @@ export class WithdrawService {
         recipient: this.cfCoreService.cfCore.signerAddress,
         nonce: state.nonce,
       },
-      appInstance.multisigAddress,
+      channel,
     );
     await commitment.addSignatures(state.signatures[0], state.signatures[1]);
     const tx = await commitment.getSignedTransaction();
@@ -126,8 +126,8 @@ export class WithdrawService {
   */
   async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
     let state = appInstance.latestState as WithdrawAppState;
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
-      appInstance.multisigAddress,
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(
+      appInstance.identityHash,
     );
 
     // first try to deploy multisig. if this fails, cancel the withdrawal
@@ -138,63 +138,62 @@ export class WithdrawService {
       this.log.warn(
         `Cancelling user ${appInstance.initiatorIdentifier} withdrawal by uninstalling withdrawal app ${appInstance.identityHash}`,
       );
-      await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress);
+      await this.cfCoreService.uninstallApp(appInstance.identityHash, channel);
       this.log.warn(`User ${appInstance.initiatorIdentifier} withdrawal canceled`);
     }
+
+    // Create the same commitment from scratch
+    const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
+      {
+        amount: state.transfers[0].amount,
+        // eslint-disable-next-line max-len
+        assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
+          .tokenAddress,
+        recipient: state.transfers[0].to,
+        nonce: state.nonce,
+      } as PublicParams.Withdraw,
+      channel,
+    );
+
+    const signer = this.configService.getSigner(
+      (await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress))!,
+    );
+
+    // Sign commitment
+    const hash = generatedCommitment.hashToSign();
+    const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
+
+    // take action _before_ sending tx so that there is no double spend risk
+    await this.cfCoreService.takeAction(appInstance.identityHash, channel, {
+      signature: counterpartySignatureOnWithdrawCommitment,
+    } as WithdrawAppAction);
+
+    state = appInstance.latestState as WithdrawAppState;
+
+    // Update the db entity with signature
+    let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
+    if (!withdraw) {
+      this.log.error(
+        `Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`,
+      );
+    } else {
+      await this.withdrawRepository.addCounterpartySignatureAndFinalize(
+        withdraw,
+        counterpartySignatureOnWithdrawCommitment,
+      );
+    }
+
+    await generatedCommitment.addSignatures(
+      counterpartySignatureOnWithdrawCommitment, // our sig
+      state.signatures[0], // user sig
+    );
+
+    const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
 
     // try to submit the user's withdrawal tx onchain
     // uninstall withdrawal app with tx hash if it's available, otherwise do not provide
     let txRes: OnchainTransactionResponse | undefined;
-    let withdraw: Withdraw | undefined;
     try {
-      // Create the same commitment from scratch
-      const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
-        {
-          amount: state.transfers[0].amount,
-          // eslint-disable-next-line max-len
-          assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
-            .tokenAddress,
-          recipient: state.transfers[0].to,
-          nonce: state.nonce,
-        } as PublicParams.Withdraw,
-        appInstance.multisigAddress,
-      );
-
-      const signer = this.configService.getSigner(
-        (await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress))!,
-      );
-
-      // Sign commitment
-      const hash = generatedCommitment.hashToSign();
-      const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
-
-      // take action _before_ sending tx so that there is no double spend risk
-      await this.cfCoreService.takeAction(appInstance.identityHash, appInstance.multisigAddress, {
-        signature: counterpartySignatureOnWithdrawCommitment,
-      } as WithdrawAppAction);
-
-      state = appInstance.latestState as WithdrawAppState;
-
-      // Update the db entity with signature
-      withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
-      if (!withdraw) {
-        this.log.error(
-          `Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`,
-        );
-      } else {
-        await this.withdrawRepository.addCounterpartySignatureAndFinalize(
-          withdraw,
-          counterpartySignatureOnWithdrawCommitment,
-        );
-      }
-
-      await generatedCommitment.addSignatures(
-        counterpartySignatureOnWithdrawCommitment, // our sig
-        state.signatures[0], // user sig
-      );
-
-      const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
-
       txRes = await this.submitWithdrawToChain(
         channel,
         signedWithdrawalCommitment,
@@ -207,9 +206,10 @@ export class WithdrawService {
     } catch (e) {
       this.log.error(`Unable to submit withdrawal tx: ${e.message}`);
     }
+
     await this.cfCoreService.uninstallApp(
       appInstance.identityHash,
-      appInstance.multisigAddress,
+      channel,
       undefined,
       { withdrawTx: txRes?.hash },
     );
@@ -316,7 +316,7 @@ export class WithdrawService {
         recipient: this.cfCoreService.cfCore.signerAddress,
         nonce,
       } as PublicParams.Withdraw,
-      channel.multisigAddress,
+      channel,
     );
 
     const signer = this.configService.getSigner(channel.chainId);

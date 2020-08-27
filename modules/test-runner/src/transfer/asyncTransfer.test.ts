@@ -1,4 +1,4 @@
-import { getLocalStore, getMemoryStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
 import {
   getRandomBytes32,
@@ -46,8 +46,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("client A transfers eth to client B through node", async () => {
@@ -55,14 +55,6 @@ describe(name, () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
-  });
-
-  it("client A transfers eth to client B through node with localstorage", async () => {
-    const localStorageClient = await createClient({ store: getLocalStore() });
-    const transfer = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    await fundChannel(localStorageClient, transfer.amount, transfer.assetId);
-    await requestCollateral(clientB, transfer.assetId);
-    await asyncTransferAsset(localStorageClient, clientB, transfer.amount, transfer.assetId);
   });
 
   it("should transfer tokens to online peer (case-insensitive assetId)", async () => {
@@ -84,8 +76,7 @@ describe(name, () => {
       store: recevierStore,
     });
     await requestCollateral(receiver, transfer.assetId);
-    await receiver.messaging.disconnect();
-    receiver.off();
+    await receiver.off();
 
     const paymentId = getRandomBytes32();
     await clientA.transfer({
@@ -125,7 +116,7 @@ describe(name, () => {
     expect(receiverClient.publicIdentifier).to.eq(receiverIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
-    receiverClient.messaging.disconnect();
+    await receiverClient.off();
   });
 
   it.skip("latency test: deposit, collateralize, many transfers, withdraw", async () => {

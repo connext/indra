@@ -30,9 +30,9 @@ describe.skip(name, () => {
   });
 
   afterEach(async () => {
-    await gateway.messaging.disconnect();
-    await indexerA.messaging.disconnect();
-    await indexerB.messaging.disconnect();
+    await gateway.off();
+    await indexerA.off();
+    await indexerB.off();
   });
 
   it("Clients transfer assets between themselves", async function () {

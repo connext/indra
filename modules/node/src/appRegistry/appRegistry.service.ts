@@ -144,14 +144,14 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.installApp(appIdentityHash, installerChannel);
       // any tasks that need to happen after install, i.e. DB writes
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.message || e}`);
       await this.cfCoreService.rejectInstallApp(
         appIdentityHash,
-        installerChannel!.multisigAddress,
+        installerChannel!,
         e.message,
       );
       return;
@@ -162,7 +162,7 @@ export class AppRegistryService implements OnModuleInit {
       this.log.warn(
         `Run post install tasks failed: ${e.message || e}, uninstalling app ${appIdentityHash}`,
       );
-      await this.cfCoreService.uninstallApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.uninstallApp(appIdentityHash, installerChannel);
     }
   }
 
@@ -320,7 +320,7 @@ export class AppRegistryService implements OnModuleInit {
       try {
         await this.cfCoreService.uninstallApp(
           receiverApp.identityHash,
-          receiverApp.channel.multisigAddress,
+          receiverApp.channel,
           params.action as any,
         );
         this.log.info(`Receiver app ${receiverApp.identityHash} uninstalled`);
