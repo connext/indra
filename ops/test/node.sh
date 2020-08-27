@@ -33,7 +33,7 @@ chain_host_1="testnet_$chain_id_1"
 chain_host_2="testnet_$chain_id_2"
 
 nats_host="${project}_nats_$tag"
-network="${project}_$tag"
+network="${project}"
 node_host="${project}_$tag"
 node_port="8080"
 postgres_db="${project}_$tag"
