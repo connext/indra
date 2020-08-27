@@ -305,13 +305,16 @@ export class ChannelService {
       )}`,
     );
     const { assetId, collateralizeThreshold, target, reclaimThreshold } = profile;
-    if (reclaimThreshold.lt(target) || collateralizeThreshold.gt(target)) {
+    if (
+      (!reclaimThreshold.isZero() && reclaimThreshold.lt(target)) ||
+      collateralizeThreshold.gt(target)
+    ) {
       throw new Error(`Rebalancing targets not properly configured: ${stringify(profile)}`);
     }
 
     // reclaim targets cannot be less than collateralize targets, otherwise we get into a loop of
     // collateralize/reclaim
-    if (reclaimThreshold.lt(collateralizeThreshold)) {
+    if (!reclaimThreshold.isZero() && reclaimThreshold.lt(collateralizeThreshold)) {
       throw new Error(
         `Reclaim targets cannot be less than collateralize targets: ${stringify(profile)}`,
       );

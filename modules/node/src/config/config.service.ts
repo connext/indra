@@ -297,22 +297,49 @@ export class ConfigService implements OnModuleInit {
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     if (assetId === AddressZero) {
-      return {
-        assetId: AddressZero,
-        channels: [],
-        id: 0,
+      let defaultProfileEth = {
         collateralizeThreshold: parseEther(`0.05`),
         target: parseEther(`0.1`),
         reclaimThreshold: Zero,
       };
+      try {
+        const parsed = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_ETH"));
+        if (parsed) {
+          defaultProfileEth = {
+            collateralizeThreshold: BigNumber.from(parsed.collateralizeThreshold),
+            target: BigNumber.from(parsed.target),
+            reclaimThreshold: BigNumber.from(parsed.reclaimThreshold),
+          };
+        }
+      } catch (e) {}
+      return {
+        assetId: AddressZero,
+        channels: [],
+        id: 0,
+        ...defaultProfileEth,
+      };
     }
+    let defaultProfileToken = {
+      collateralizeThreshold: parseEther(`0.05`),
+      target: parseEther(`0.1`),
+      reclaimThreshold: Zero,
+    };
+    try {
+      defaultProfileToken = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN"));
+      const parsed = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN"));
+      if (parsed) {
+        defaultProfileToken = {
+          collateralizeThreshold: BigNumber.from(parsed.collateralizeThreshold),
+          target: BigNumber.from(parsed.target),
+          reclaimThreshold: BigNumber.from(parsed.reclaimThreshold),
+        };
+      }
+    } catch (e) {}
     return {
       assetId,
       channels: [],
       id: 0,
-      collateralizeThreshold: parseEther(`5`),
-      target: parseEther(`20`),
-      reclaimThreshold: Zero,
+      ...defaultProfileToken,
     };
   }
 
