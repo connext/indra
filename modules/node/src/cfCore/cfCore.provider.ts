@@ -11,7 +11,7 @@ import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
 import { formatUnits } from "ethers/lib/utils";
-import { NetworkContexts, MinimalTransaction, StateChannelJSON } from "@connext/types";
+import { NetworkContexts, MinimalTransaction } from "@connext/types";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 
 const { EtherSymbol } = constants;
@@ -61,8 +61,8 @@ export const cfCoreProviderFactory: Provider = {
       log.newContext("CFCore"),
       false, // only clients sync on cf core start
       {
-        sendTransaction: (tx: MinimalTransaction, json: StateChannelJSON) => {
-          return onchainTransactionService.sendMultisigDeployment(tx, json);
+        sendTransaction: (tx: MinimalTransaction, chainId: number, multisigAddress: string) => {
+          return onchainTransactionService.sendMultisigDeployment(tx, chainId, multisigAddress);
         },
       },
     );

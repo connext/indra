@@ -94,7 +94,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
+    await clientA.off();
   });
 
   it("Happy case: should return stateChannelJSON from store with multisig address", async () => {

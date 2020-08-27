@@ -4,6 +4,17 @@ import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureStri
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 import { NodeResponses } from "./node";
+import { ChallengeInitiatedResponse } from "./watcher";
+
+////////////////////////////////////////
+// disputes
+type InitiateChallengeParameters = {
+  appIdentityHash: string;
+};
+
+type CancelChallengeParameters = {
+  appIdentityHash: string;
+};
 
 ////////////////////////////////////////
 // deposit
@@ -81,8 +92,8 @@ type ResolveHashLockTransferResponse = {
 
 type LinkedTransferParameters = {
   conditionType:
-    typeof ConditionalTransferTypes.LinkedTransfer |
-    typeof ConditionalTransferTypes.OnlineTransfer
+    | typeof ConditionalTransferTypes.LinkedTransfer
+    | typeof ConditionalTransferTypes.OnlineTransfer;
   amount: BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
@@ -98,7 +109,7 @@ type LinkedTransferResponse = {
 };
 
 type ResolveLinkedTransferParameters = {
-  conditionType: typeof ConditionalTransferTypes.LinkedTransfer
+  conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
   paymentId: Bytes32;
   preImage: Bytes32;
 };
@@ -337,13 +348,17 @@ export namespace PublicParams {
   export type Swap = SwapParameters;
   export type Transfer = TransferParameters;
   export type Withdraw = WithdrawParameters;
+  export type InitiateChallenge = InitiateChallengeParameters;
+  export type CancelChallenge = CancelChallengeParameters;
 }
 
 export type PublicParam =
+  | CancelChallengeParameters
   | CheckDepositRightsParameters
   | ConditionalTransferParameters
   | DepositParameters
   | HashLockTransferParameters
+  | InitiateChallengeParameters
   | LinkedTransferParameters
   | RequestDepositRightsParameters
   | RescindDepositRightsParameters
@@ -380,6 +395,8 @@ export namespace PublicResults {
   export type Swap = SwapResponse;
   export type Transfer = TransferResponse;
   export type Withdraw = WithdrawResponse;
+  export type InitiateChallenge = ChallengeInitiatedResponse;
+  export type CancelChallenge = providers.TransactionResponse;
 }
 
 export type PublicResult =
@@ -388,6 +405,8 @@ export type PublicResult =
   | DepositResponse
   | HashLockTransferResponse
   | LinkedTransferResponse
+  | PublicResults.CancelChallenge
+  | PublicResults.InitiateChallenge
   | RequestCollateralResponse
   | RequestDepositRightsResponse
   | RescindDepositRightsResponse

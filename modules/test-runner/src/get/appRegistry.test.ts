@@ -21,7 +21,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("Happy case: user receives all the app registry information", async () => {

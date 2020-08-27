@@ -35,10 +35,10 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
-    await clientC.messaging.disconnect();
-    await clientD.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
+    await clientC.off();
+    await clientD.off();
   });
 
   it("User transfers ETH to multiple clients", async () => {

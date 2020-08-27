@@ -45,10 +45,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
-    clientA.off();
-    clientB.off();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("should reclaim ETH with async transfer", async () => {

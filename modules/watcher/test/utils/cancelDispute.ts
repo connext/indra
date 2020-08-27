@@ -1,25 +1,25 @@
 import { AppWithCounterClass } from "./appWithCounter";
 import { Watcher } from "../../src";
-import { IWatcherStoreService, WatcherEvents } from "@connext/types";
+import { IStoreService, WatcherEvents } from "@connext/types";
 import { expect, nullify, verifyCancelChallenge } from ".";
 
 export const cancelDispute = async (
   app: AppWithCounterClass,
   watcher: Watcher,
-  store: IWatcherStoreService,
+  store: IStoreService,
   failsWith: string | undefined = undefined,
 ) => {
   const existing = await store.getAppChallenge(app.identityHash);
   expect(existing).to.be.ok;
   const req = await app.getCancelDisputeRequest(existing!.versionNumber);
   const watcherPromise = failsWith
-    ? watcher.waitFor(WatcherEvents.ChallengeCancellationFailedEvent, 10_000)
-    : watcher.waitFor(WatcherEvents.ChallengeCancelledEvent, 10_000);
+    ? watcher.waitFor(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT, 10_000)
+    : watcher.waitFor(WatcherEvents.CHALLENGE_CANCELLED_EVENT, 10_000);
 
   const contractPromise = failsWith
     ? Promise.resolve()
     : watcher.waitFor(
-        WatcherEvents.ChallengeUpdatedEvent,
+        WatcherEvents.CHALLENGE_UPDATED_EVENT,
         10_000,
         (data) => data.identityHash === app.identityHash,
       );
@@ -29,7 +29,8 @@ export const cancelDispute = async (
     new Promise(async (resolve, reject) => {
       try {
         const ret = await watcher.cancel(app.identityHash, req);
-        resolve(ret);
+        const receipt = await ret.wait();
+        resolve(receipt);
       } catch (e) {
         if (failsWith) {
           resolve(e.message);

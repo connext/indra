@@ -19,6 +19,7 @@ import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.ent
 import { Challenge, ProcessedBlock } from "../challenge/challenge.entity";
 import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
 import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
+import { Transfer } from "../transfer/transfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -70,7 +71,7 @@ import { removeAppCommitments1595210814094 } from "../../migrations/159521081409
 import { updateTxEnum1595439120210 } from "../../migrations/1595439120210-update-tx-enum";
 import { addAppIdTx1596488084652 } from "../../migrations/1596488084652-add-app-id-tx";
 import { transactionAppFlag1596924706697 } from "../../migrations/1596924706697-transaction-app-flag";
-import { storeLatestAction1597957131361 } from "../../migrations/1597957131361-store-latest-action";
+import { initTransferTable1598039003043 } from "../../migrations/1598039003043-initTransferTable";
 
 export const entities = [
   AppInstance,
@@ -82,12 +83,14 @@ export const entities = [
   ConditionalTransactionCommitment,
   SetStateCommitment,
   SetupCommitment,
+  Transfer,
   Withdraw,
   WithdrawCommitment,
   Challenge,
   ProcessedBlock,
   StateProgressedEvent,
   ChallengeUpdatedEvent,
+  Transfer,
 ];
 
 export const migrations = [
@@ -140,7 +143,7 @@ export const migrations = [
   updateTxEnum1595439120210,
   addAppIdTx1596488084652,
   transactionAppFlag1596924706697,
-  storeLatestAction1597957131361,
+  initTransferTable1598039003043,
 ];
 
 @Injectable()
@@ -154,13 +157,6 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
     }
 
     return {
-      ...this.config.getPostgresConfig(),
-      entities,
-      logging: ["info", "error"],
-      migrations,
-      migrationsRun: true,
-      synchronize: false,
-      type: "postgres",
       cache: {
         type: "ioredis",
         options: {
@@ -168,6 +164,13 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
           port: Number(hostPort[1]),
         },
       },
+      entities,
+      logging: ["warn", "error"],
+      migrations,
+      migrationsRun: true,
+      synchronize: false,
+      type: "postgres",
+      ...this.config.getPostgresConfig(),
     };
   }
 }

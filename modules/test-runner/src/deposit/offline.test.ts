@@ -56,8 +56,7 @@ const makeFailingDepositCall = async (opts: {
     }
   });
   // disable client
-  await client.messaging.disconnect();
-  client.off();
+  await client.off();
 };
 
 const recreateClientAndRetryDepositCall = async (
@@ -95,8 +94,10 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    client && (await client.store.clear());
-    client && (await client.messaging.disconnect());
+    if (client) {
+      await client.store.clear();
+      await client.off();
+    }
   });
 
   /**

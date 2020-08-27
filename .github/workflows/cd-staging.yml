@@ -147,5 +147,5 @@ jobs:
             export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
             make restart-prod;
             docker container prune -f;
-            docker image ls -q | xargs docker image rm || true;
+            docker image ls -q | xargs docker image rm -f || true;
           '

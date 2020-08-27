@@ -23,6 +23,7 @@ import {
   Address,
   SupportedApplicationNames,
   AppRegistry,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -40,8 +41,25 @@ import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../consta
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { ChannelSerializer } from "../channel/channel.repository";
 
 const { Zero } = constants;
+
+export const assertNoChallenges = (channel: Channel) => {
+  if (!channel.challenges) {
+    return;
+  }
+  const uncancelled = channel.challenges.filter(
+    (c) => c.status !== StoredAppChallengeStatus.NO_CHALLENGE,
+  );
+  if (uncancelled.length > 0) {
+    throw new Error(
+      `Cannot interact with channel, channel has active challenges: ${stringify(
+        channel.challenges,
+      )}`,
+    );
+  }
+};
 
 @Injectable()
 export class CFCoreService {
@@ -150,15 +168,16 @@ export class CFCoreService {
 
   async createWithdrawCommitment(
     params: PublicParams.Withdraw,
-    multisigAddress: string,
+    channel: Channel,
   ): Promise<WithdrawCommitment> {
+    assertNoChallenges(channel);
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
-    const { data: channel } = await this.getStateChannel(multisigAddress);
+    const json = ChannelSerializer.toJSON(channel)!;
     const contractAddresses = this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
-      getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
-      getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
+      getSignerAddressFromPublicIdentifier(json.userIdentifiers[0]),
+      getSignerAddressFromPublicIdentifier(json.userIdentifiers[1]),
     ];
     return new WithdrawCommitment(
       contractAddresses,
@@ -173,7 +192,9 @@ export class CFCoreService {
 
   async proposeInstallApp(
     params: MethodParams.ProposeInstall,
+    channel: Channel,
   ): Promise<MethodResults.ProposeInstall> {
+    assertNoChallenges(channel);
     this.logCfCoreMethodStart(MethodNames.chan_proposeInstall, params);
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
@@ -195,6 +216,7 @@ export class CFCoreService {
     meta: object = {},
     stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
+    assertNoChallenges(channel);
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
     const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
@@ -227,7 +249,7 @@ export class CFCoreService {
 
     let proposeRes: MethodResults.ProposeInstall;
     try {
-      proposeRes = await this.proposeInstallApp(params);
+      proposeRes = await this.proposeInstallApp(params, channel);
     } catch (err) {
       this.log.error(`Error installing app, proposal failed. Params: ${JSON.stringify(params)}`);
       return undefined;
@@ -268,13 +290,11 @@ export class CFCoreService {
     return proposeRes as MethodResults.ProposeInstall;
   }
 
-  async installApp(
-    appIdentityHash: string,
-    multisigAddress: string,
-  ): Promise<MethodResults.Install> {
+  async installApp(appIdentityHash: string, channel: Channel): Promise<MethodResults.Install> {
+    assertNoChallenges(channel);
     const parameters: MethodParams.Install = {
       appIdentityHash,
-      multisigAddress,
+      multisigAddress: channel.multisigAddress,
     };
     this.logCfCoreMethodStart(MethodNames.chan_install, parameters);
     const installRes = await this.cfCore.rpcRouter.dispatch({
@@ -283,19 +303,20 @@ export class CFCoreService {
       parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_install, installRes.result.result);
-    const installSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.install`;
+    const installSubject = `${this.cfCore.publicIdentifier}.channel.${channel.multisigAddress}.app-instance.${appIdentityHash}.install`;
     await this.messagingService.publish(installSubject, installRes.result.result.appInstance);
     return installRes.result.result as MethodResults.Install;
   }
 
   async rejectInstallApp(
     appIdentityHash: string,
-    multisigAddress: string,
+    channel: Channel,
     reason: string,
   ): Promise<MethodResults.RejectInstall> {
+    assertNoChallenges(channel);
     const parameters: MethodParams.RejectInstall = {
       appIdentityHash,
-      multisigAddress,
+      multisigAddress: channel.multisigAddress,
       reason,
     };
     this.logCfCoreMethodStart(MethodNames.chan_rejectInstall, parameters);
@@ -310,15 +331,16 @@ export class CFCoreService {
 
   async takeAction(
     appIdentityHash: string,
-    multisigAddress: string,
+    channel: Channel,
     action: AppAction,
     stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> {
+    assertNoChallenges(channel);
     const parameters = {
       action,
       appIdentityHash,
       stateTimeout,
-      multisigAddress,
+      multisigAddress: channel.multisigAddress,
     } as MethodParams.TakeAction;
     this.logCfCoreMethodStart(MethodNames.chan_takeAction, parameters);
 
@@ -334,13 +356,14 @@ export class CFCoreService {
 
   async uninstallApp(
     appIdentityHash: string,
-    multisigAddress: string,
+    channel: Channel,
     action?: AppAction,
     protocolMeta?: any,
   ): Promise<MethodResults.Uninstall> {
+    assertNoChallenges(channel);
     const parameters = {
       appIdentityHash,
-      multisigAddress,
+      multisigAddress: channel.multisigAddress,
       action,
       protocolMeta,
     } as MethodParams.Uninstall;
@@ -353,7 +376,7 @@ export class CFCoreService {
 
     this.logCfCoreMethodResult(MethodNames.chan_uninstall, uninstallResponse.result.result);
     // TODO: this is only here for channelProvider, fix this eventually
-    const uninstallSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.uninstall`;
+    const uninstallSubject = `${this.cfCore.publicIdentifier}.channel.${channel.multisigAddress}.app-instance.${appIdentityHash}.uninstall`;
     await this.messagingService.publish(uninstallSubject, {
       ...uninstallResponse.result.result,
       protocolMeta,
@@ -514,5 +537,11 @@ export class CFCoreService {
         } as DefaultApp);
       });
     });
+  }
+
+  async onApplicationShutdown(signal: string) {
+    this.log.warn(`Disconnecting messaging service before app shutdown...`);
+    await this.messagingService.disconnect();
+    this.emitter.detach();
   }
 }

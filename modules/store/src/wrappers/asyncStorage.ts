@@ -18,7 +18,7 @@ export class WrappedAsyncStorage implements KeyValueStorage {
     private readonly asyncStorage: IAsyncStorage,
     private readonly prefix: string = storeDefaults.PREFIX,
     private readonly separator: string = storeDefaults.SEPARATOR,
-    private readonly asyncStorageKey: string = storeKeys.DEFAULT_ASYNC_STORAGE,
+    private readonly asyncStorageKey: string = storeKeys.STORE,
   ) {
     this.loadData();
   }
@@ -35,7 +35,7 @@ export class WrappedAsyncStorage implements KeyValueStorage {
     return new Promise(
       async (resolve, reject): Promise<void> => {
         if (this.initializing) {
-          this.onInit((cb: InitCallback) => resolve(cb));
+          this.onInit((data: AsyncStorageData) => resolve(data));
         } else {
           try {
             this.initializing = true;

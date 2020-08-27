@@ -136,14 +136,16 @@ class ChannelMessaging extends AbstractMessagingProvider {
       throw new Error(`Found channel, but no setup commitment. This should not happen.`);
     }
     // get active app set state commitments
-    const setStateCommitments = await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
-      channel.multisigAddress,
-    );
+    const setStateCommitments =
+      await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
+        channel.multisigAddress,
+      );
 
     // get active app conditional transaction commitments
-    const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
-      channel.multisigAddress,
-    );
+    const conditionalCommitments =
+      await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
+        channel.multisigAddress,
+      );
     return {
       channel,
       setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),

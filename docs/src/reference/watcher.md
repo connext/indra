@@ -110,7 +110,7 @@ type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: providers.JsonRpcProvider | string;
   context: ContractAddresses;
-  store: IWatcherStoreService;
+  store: IStoreService;
   logger?: ILoggerService | ILogger;
   logLevel?: number;
 };
@@ -130,7 +130,7 @@ The options object contains the following fields:
   A json containing all the addresses across the relevant network (should be derived from your `address-book.json`). This will be shared with an internal instance of the ChainListener class.
 
 - `store`:
-  `IWatcherStoreService` is an interface containing all the store methods for saving challenge records. You can use any connext store, or implement your own. See [challenge storage](#challengestorage) for more detail.
+  `IStoreService` is an interface containing all the store methods for saving challenge records. You can use any connext store, or implement your own. See [challenge storage](#challengestorage) for more detail.
 
 - `logger (optional)`:
   Optional logger, can use the exported logger from the `@connext/utils` package

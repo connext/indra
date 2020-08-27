@@ -1,4 +1,4 @@
-import { MinimalTransaction, TransactionReceipt, StateChannelJSON } from "@connext/types";
+import { MinimalTransaction, TransactionReceipt } from "@connext/types";
 import { getGasPrice, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers, BigNumber } from "ethers";
@@ -116,36 +116,60 @@ export class OnchainTransactionService implements OnModuleInit {
 
   async sendMultisigDeployment(
     transaction: MinimalTransaction,
-    json: StateChannelJSON,
-  ): Promise<TransactionReceipt> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
-    const queue = this.queues.get(channel.chainId);
-    const tx: OnchainTransactionResponse = (await queue?.add(
-      () =>
-        new Promise((resolve, reject) =>
-          this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
-            .then((res) => resolve(res))
-            .catch((e) => reject(e.message)),
-        ),
-    )) as any;
-    // make sure to wait for the transaction to be completed here, since
-    // the multisig deployment is followed by a call to `getOwners`.
-    // and since the cf-core transaction service expects the tx to be
-    // mined
-    await tx.completed();
-    const stored = await this.onchainTransactionRepository.findByHash(tx.hash);
-    if (!stored) {
-      throw new Error(`No stored tx found for hash ${tx.hash}`);
+    chainId: number,
+    multisigAddress: string,
+  ): Promise<providers.TransactionResponse> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
+      this.queues.get(chainId)!.add(() => {
+        this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
+    // make sure the wait function of the response includes the database
+    // updates required to truly mark the transaction as completed
+    const wait: Promise<TransactionReceipt> = new Promise(async (resolve, reject) => {
+      try {
+        const receipt = await tx.wait();
+        await this.onchainTransactionRepository.addReceipt(receipt);
+        resolve(receipt);
+      } catch (e) {
+        reject(e);
+      }
+    });
+    return { ...tx, wait: () => wait };
+  }
+
+  async sendDisputeTransaction(
+    transaction: MinimalTransaction,
+    chainId: number,
+    multisigAddress: string,
+  ): Promise<providers.TransactionResponse> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const queue = this.queues.get(chainId);
+    if (!queue) {
+      throw new Error(`Unsupported chainId ${chainId}. Expected one of: ${Array.from(this.queues.keys())}`);
     }
-    return {
-      to: stored.to,
-      from: stored.from,
-      gasUsed: stored.gasUsed,
-      logsBloom: stored.logsBloom,
-      blockHash: stored.blockHash,
-      transactionHash: stored.hash,
-      blockNumber: stored.blockNumber,
-    } as TransactionReceipt;
+    const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
+      queue.add(() => {
+        this.sendTransaction(transaction, TransactionReason.DISPUTE, channel)
+          .then((result) => resolve(result))
+          .catch((error) => reject(error.message));
+      });
+    });
+    // make sure the wait function of the response includes the database
+    // updates required to truly mark the transaction as completed
+    const wait: Promise<TransactionReceipt> = new Promise(async (resolve, reject) => {
+      try {
+        const receipt = await tx.wait();
+        await this.onchainTransactionRepository.addReceipt(receipt);
+        resolve(receipt);
+      } catch (e) {
+        reject(e);
+      }
+    });
+    return { ...tx, wait: () => wait };
   }
 
   private async sendTransaction(
@@ -227,7 +251,7 @@ export class OnchainTransactionService implements OnModuleInit {
             }: ${receipt.transactionHash} in ${Date.now() - start}ms`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
-          this.log.error(`added receipt, status should be success`);
+          this.log.debug(`added receipt, status should be success`);
         });
 
         return { ...tx, completed: () => completed };

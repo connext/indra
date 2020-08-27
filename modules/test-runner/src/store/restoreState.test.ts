@@ -55,7 +55,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
+    await clientA.off();
   });
 
   it("client can delete its store and restore from a remote backup", async () => {
@@ -88,8 +88,7 @@ describe(name, () => {
     await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
-    await clientA.messaging.disconnect();
-    clientA.off();
+    await clientA.off();
     await delay(1000);
 
     // recreate client
@@ -115,8 +114,7 @@ describe(name, () => {
 
     // first clear the client store and take client offline
     await store.clear();
-    await clientA.messaging.disconnect();
-    clientA.off();
+    await clientA.off();
 
     // send the transfer
     const sent = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 30_000);

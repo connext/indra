@@ -53,6 +53,7 @@ export class RpcRouter {
   }
 
   unsubscribeAll() {
+    this.requestHandler.incoming.removeAllListeners();
     this.requestHandler.outgoing.removeAllListeners();
   }
 

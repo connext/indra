@@ -98,7 +98,7 @@ const fundChannelAndSwap = async (opts: {
         }
       });
     }
-    await client.messaging.disconnect();
+    await client.off();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
     // recreate client and retry swap after failure

@@ -52,6 +52,7 @@ export type ProposeMessage = ProtocolEventMessage<typeof EventNames["PROPOSE_INS
 export type RejectProposalMessage = ProtocolEventMessage<typeof EventNames["REJECT_INSTALL_EVENT"]>;
 export type SyncMessage = ProtocolEventMessage<typeof EventNames["SYNC"]>;
 export type UninstallMessage = ProtocolEventMessage<typeof EventNames["UNINSTALL_EVENT"]>;
+export type UninstallFailedMessage = ProtocolEventMessage<typeof EventNames["UNINSTALL_FAILED_EVENT"]>;
 export type UpdateStateMessage = ProtocolEventMessage<typeof EventNames["UPDATE_STATE_EVENT"]>;
 
 ////////////////////////////////////////
