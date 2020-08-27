@@ -504,12 +504,10 @@ export class ConnextClient implements IConnextClient {
     return this.listener.waitFor(event, timeout, filter);
   }
 
-  // TODO: allow for removing listeners attached via a specific event
-  // by manipulating the context of the events
-
-  public off = () => {
-    this.listener.detach();
-    this.channelProvider.removeAllListeners();
+  public off = async () => {
+    await this.listener.detach();
+    await this.messaging.disconnect();
+    await this.channelProvider.removeAllListeners();
   };
 
   public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {
