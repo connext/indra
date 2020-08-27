@@ -122,6 +122,10 @@ export class TransferService {
   @Interval(3600_000)
   async pruneChannels() {
     const channels = await this.channelRepository.findAll();
+    const addresses = this.configService.getAddressBook();
+    Object.entries(addresses).map((addrs) => addrs);
+    // const hashLockApps = await this.appInstanceRepository.findInstalledAppsByAppDefinition();
+    console.log("channels: ", channels);
     for (const channel of channels) {
       await this.pruneExpiredApps(channel);
     }
