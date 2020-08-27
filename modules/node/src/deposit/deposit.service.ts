@@ -150,7 +150,11 @@ export class DepositService {
         this.log.info(
           `Releasing deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );
-        await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+        try {
+          await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+        } catch (e) {
+          this.log.warn(e.message);
+        }
         this.log.info(
           `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );

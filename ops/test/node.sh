@@ -85,7 +85,7 @@ docker run \
   --name="$nats_host" \
   --network="$network" \
   --rm \
-  provide/nats-server:latest
+  provide/nats-server:indra -D -V
 
 echo "Starting $redis_host.."
 docker run \

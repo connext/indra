@@ -33,7 +33,7 @@ describe("Mostly happy paths", () => {
   let chainId: number;
   let ethProvider: Provider;
 
-  before(async () => {
+  beforeEach(async () => {
     const start = Date.now();
     let tx: TransactionResponse;
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -42,7 +42,6 @@ describe("Mostly happy paths", () => {
       .overrideProvider(ConfigService)
       .useClass(MockConfigService)
       .compile();
-
     app = moduleFixture.createNestApplication();
     await app.init();
     configService = moduleFixture.get<ConfigService>(ConfigService);
@@ -83,11 +82,15 @@ describe("Mostly happy paths", () => {
     logTime(log, start, "Done setting up test env");
   });
 
-  after(async () => {
+  afterEach(async () => {
     try {
+      log.info(`Test finished, turning client listeners off`);
+      await clientA.off();
+      await clientB.off();
       log.info(`Test finished, shutting app down`);
-      await delay(2000); // Give the node a sec to stop making db queries
+      await delay(1000);
       await app.close();
+      await delay(1000);
       log.info(`Application was shutdown successfully`);
     } catch (e) {
       log.warn(`Application was shutdown unsuccessfully: ${e.message}`);

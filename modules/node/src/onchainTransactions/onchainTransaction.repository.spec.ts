@@ -2,6 +2,7 @@ import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getRandomBytes32 } from "@connext/utils";
 import { BigNumber } from "ethers";
+import { getConnection } from "typeorm";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -27,7 +28,6 @@ import { CacheModule } from "../caching/cache.module";
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { TransactionReason } from "./onchainTransaction.entity";
 import { KNOWN_ERRORS } from "./onchainTransaction.service";
-import { getConnection } from "typeorm";
 
 describe("OnchainTransactionRepository", () => {
   let onchainTxRepository: OnchainTransactionRepository;
