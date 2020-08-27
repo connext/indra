@@ -538,4 +538,10 @@ export class CFCoreService {
       });
     });
   }
+
+  async onApplicationShutdown(signal: string) {
+    this.log.warn(`Disconnecting messaging service before app shutdown...`);
+    await this.messagingService.disconnect();
+    this.emitter.detach();
+  }
 }
