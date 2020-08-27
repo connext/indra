@@ -1,5 +1,6 @@
 import { connect } from "@connext/client";
-import { WatcherEvents } from "@connext/types";
+import { getMemoryStore } from "@connext/store";
+import { IConnextClient, WatcherEvents } from "@connext/types";
 import {
   ColorfulLogger,
   delay,
@@ -8,9 +9,7 @@ import {
   stringify,
 } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
-import { getMemoryStore } from "@connext/store";
 import { Test, TestingModule } from "@nestjs/testing";
-import { IConnextClient } from "@connext/types";
 import { Provider } from "@ethersproject/providers";
 import { constants, utils, Wallet } from "ethers";
 
@@ -23,8 +22,8 @@ import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-describe("Challenges", () => {
-  const log = new ColorfulLogger("Challenges", env.logLevel, true, "Test");
+describe.skip("Challenges", () => {
+  const log = new ColorfulLogger("Challenges", 3, true, "Test");
 
   let app: INestApplication;
   let configService: ConfigService;
@@ -68,7 +67,7 @@ describe("Challenges", () => {
     await ethProvider.waitForTransaction(tx.hash);
 
     clientB = await connect({
-      store: getMemoryStore(),
+      store: getMemoryStore({ prefix: "Babe" }),
       signer: getRandomChannelSigner(ethProvider),
       ethProviderUrl,
       messagingUrl: env.messagingUrl,
@@ -85,25 +84,12 @@ describe("Challenges", () => {
     await depositA.completed();
     await depositB.completed();
 
-    logTime(log, start, "Done setting up test env");
-  });
-
-  afterEach(async () => {
-    try {
-      await clientA.off();
-      await clientB.off();
-      await app.close();
-      await delay(1000);
-      log.info(`Application was shutdown successfully`);
-    } catch (e) {
-      log.warn(`Application was shutdown unsuccessfully: ${e.message}`);
-    }
-  });
-
-  it("client should be able to initiate a dispute", async () => {
     const logEvent = (name: WatcherEvents) => {
       clientA.watcher.on(name, (data) => {
-        log.info(`New Event: ${name} w data: ${stringify(data)}`);
+        log.info(`[A] New Event: ${name} w data: ${stringify(data)}`);
+      });
+      clientB.watcher.on(name, (data) => {
+        log.info(`[B] New Event: ${name} w data: ${stringify(data)}`);
       });
     };
     logEvent(WatcherEvents.CHALLENGE_UPDATED_EVENT);
@@ -116,6 +102,23 @@ describe("Challenges", () => {
     logEvent(WatcherEvents.CHALLENGE_COMPLETION_FAILED_EVENT);
     logEvent(WatcherEvents.CHALLENGE_CANCELLED_EVENT);
     logEvent(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT);
+
+    logTime(log, start, "Done setting up test env");
+  });
+
+  afterEach(async () => {
+    try {
+      await clientA?.off();
+      await clientB?.off();
+      await app.close();
+      await delay(1000);
+      log.info(`Application was shutdown successfully`);
+    } catch (e) {
+      log.warn(`Application was shutdown unsuccessfully: ${e.message}`);
+    }
+  });
+
+  it("client should be able to initiate a dispute", async () => {
     const transferRes = await clientA.transfer({
       amount: parseEther("0.02"),
       assetId: AddressZero,
@@ -168,16 +171,23 @@ describe("Challenges", () => {
     });
     expect(challengeRes.appChallenge.hash).to.be.a("string");
     expect(challengeRes.freeBalanceChallenge.hash).to.be.a("string");
+    log.info(`freeBalanceChallenge: ${stringify(challengeRes.freeBalanceChallenge)}`);
 
     const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
-    log.info(`freebalance app: ${stringify(channel.freeBalanceAppInstance)}`);
-    const freeBalanceChallenge = await clientA.store.getAppChallenge(
-      channel.freeBalanceAppInstance.identityHash,
-    );
+    const freeBalanceId = channel.freeBalanceAppInstance.identityHash;
+
+    const challenges = await clientA.store.getActiveChallenges();
+    log.info(`There are ${challenges.length} active challenges `);
+    log.info(`freebalance id: ${freeBalanceId} | app id ${app.identityHash}`);
+
+    const freeBalanceChallenge = await clientA.store.getAppChallenge(freeBalanceId);
+    log.info(`Free Balance challenge 1: ${
+      stringify(challenges.find(c => c.identityHash === freeBalanceId ))
+    }`);
+    log.info(`Free Balance challenge 2: ${stringify(freeBalanceChallenge)}`);
     expect(freeBalanceChallenge).to.be.ok;
 
-    log.info(`challengeRes: ${stringify(challengeRes)}`);
-    return expect(clientA.deposit({ assetId: AddressZero, amount: parseEther("0.02") })).to.be.rejectedWith("foobydooby");
+    return expect(clientA.deposit({ assetId: AddressZero, amount: parseEther("0.02") })).to.be.rejectedWith("dispute");
   });
 });
 

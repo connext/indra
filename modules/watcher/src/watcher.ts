@@ -317,12 +317,10 @@ export class Watcher implements IWatcher {
 
   // will insert + respond to any events that have occurred from
   // the latest processed block to the provided block
-  private catchupFrom = async (blockNumber: number): Promise<void> => {
+  private catchupFrom = async (starting: number): Promise<void> => {
     for (const chainId of Object.keys(this.providers)) {
-      this.log.info(`Processing events from ${blockNumber} on ${chainId}`);
-      const latest = await this.store.getLatestProcessedBlock();
+      this.log.info(`Processing events from ${starting} on ${chainId}`);
       const current = await this.providers[chainId].getBlockNumber();
-      const starting = latest > blockNumber ? latest : blockNumber;
       if (starting > current) {
         throw new Error(
           `Cannot process future blocks (current: ${current}, starting: ${starting})`,
@@ -342,7 +340,7 @@ export class Watcher implements IWatcher {
       await this.store.updateLatestProcessedBlock(current);
       // cleanup any listeners
       this.removeListeners();
-      this.log.info(`Caught up to with events in blocks ${starting} - ${current} from ${latest}`);
+      this.log.info(`Done processing events in blocks ${starting} - ${current}`);
     }
   };
 
@@ -383,7 +381,7 @@ export class Watcher implements IWatcher {
 
   private removeListeners = () => {
     this.listener.detach();
-    Object.keys(this.providers).forEach((chainId) => this.providers[chainId].removeAllListeners());
+    Object.values(this.providers).forEach((provider) => provider.removeAllListeners());
   };
 
   private startAppChallenge = async (
@@ -471,15 +469,15 @@ export class Watcher implements IWatcher {
     const current = await this.providers[challenge.chainId].getBlockNumber();
     let tx: providers.TransactionResponse | string;
     if (challenge.finalizesAt.lte(current) && !challenge.finalizesAt.isZero()) {
-      this.log.debug(
+      this.log.info(
         `Challenge timeout elapsed (finalizesAt: ${challenge.finalizesAt.toString()}, current: ${current})`,
       );
       tx = await this.respondToChallengeAfterTimeout(challenge!);
     } else {
-      this.log.debug(
+      this.log.info(
         `Challenge timeout not elapsed or 0 (finalizesAt: ${challenge.finalizesAt.toString()}, current: ${current})`,
       );
-      tx = await this.respondToChallengeDuringTimeout(challenge!);
+      tx = await this.respondToChallengeBeforeTimeout(challenge!);
     }
     return tx;
   };
@@ -488,7 +486,7 @@ export class Watcher implements IWatcher {
   // commitments available in the store. this function will error if the dispute
   // must be advanced to a different state (ie a timeout has elapsed), and
   // should only be used to progress a challenge
-  private respondToChallengeDuringTimeout = async (
+  private respondToChallengeBeforeTimeout = async (
     challenge: StoredAppChallenge,
   ): Promise<providers.TransactionResponse | string> => {
     const { identityHash, versionNumber, status } = challenge;

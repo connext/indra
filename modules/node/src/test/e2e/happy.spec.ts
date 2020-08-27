@@ -84,10 +84,8 @@ describe("Mostly happy paths", () => {
 
   afterEach(async () => {
     try {
-      log.info(`Test finished, turning client listeners off`);
       await clientA.off();
       await clientB.off();
-      log.info(`Test finished, shutting app down`);
       await app.close();
       await delay(1000);
       log.info(`Application was shutdown successfully`);

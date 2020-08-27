@@ -179,40 +179,33 @@ export class ChainListener implements IChainListener {
         `Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`,
       );
 
-      progressedLogs.concat(updatedLogs).forEach((log) => {
-        const parsed = new Interface(ChallengeRegistry.abi).parseLog(log);
-        const { identityHash, versionNumber } = parsed.args;
-        switch (parsed.name) {
-          case ChallengeEvents.ChallengeUpdated: {
-            const { appStateHash, finalizesAt, status } = parsed.args;
-            this.evtChallengeUpdated.post({
-              identityHash,
-              status,
-              appStateHash,
-              versionNumber,
-              finalizesAt,
-              chainId,
-            });
-            break;
-          }
-          case ChallengeEvents.StateProgressed: {
-            const { action, timeout, turnTaker, signature } = parsed.args;
-            this.evtStateProgressed.post({
-              identityHash,
-              action,
-              versionNumber,
-              timeout,
-              turnTaker,
-              signature,
-              chainId,
-            });
-            break;
-          }
-          default: {
-            throw new Error(`Unrecognized event name from parsed logs: ${parsed.name}`);
-          }
-        }
+      progressedLogs.forEach((log) => {
+        const args = (new Interface(ChallengeRegistry.abi).parseLog(log)).args;
+        const { action, identityHash, signature, timeout, turnTaker, versionNumber } = args;
+        this.evtStateProgressed.post({
+          identityHash,
+          action,
+          versionNumber,
+          timeout,
+          turnTaker,
+          signature,
+          chainId,
+        });
       });
+
+      updatedLogs.forEach((log) => {
+        const args = (new Interface(ChallengeRegistry.abi).parseLog(log)).args;
+        const { appStateHash, finalizesAt, identityHash, status, versionNumber } = args;
+        this.evtChallengeUpdated.post({
+          identityHash,
+          status,
+          appStateHash,
+          versionNumber,
+          finalizesAt,
+          chainId,
+        });
+      });
+
     }
   };
 
@@ -310,8 +303,7 @@ export class ChainListener implements IChainListener {
   // Private methods
 
   private removeChallengeRegistryListeners = (): void => {
-    const chainIds = Object.keys(this.providers);
-    chainIds.forEach((chainId) => {
+    Object.keys(this.providers).forEach(chainId => {
       this.registries[chainId].removeAllListeners(ChallengeEvents.StateProgressed);
       this.registries[chainId].removeAllListeners(ChallengeEvents.ChallengeUpdated);
     });

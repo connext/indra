@@ -48,7 +48,6 @@ export interface IStoreService {
   restore(): Promise<void>;
 
   //// Misc Getters
-  getActiveChallenges(): Promise<StoredAppChallenge[]>;
   getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
   getLatestProcessedBlock(): Promise<number>;
 
@@ -62,8 +61,15 @@ export interface IStoreService {
   ): Promise<void>;
 
   //// AppChallenges
+  getActiveChallenges(): Promise<StoredAppChallenge[]>;
   getAppChallenge(appIdentityHash: Bytes32): Promise<StoredAppChallenge | undefined>;
   saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void>;
+
+  //// AppChallenge Events
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void>;
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void>;
+  getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
+  getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]>;
 
   //// AppInstance
   createAppInstance(
@@ -104,10 +110,6 @@ export interface IStoreService {
     stateChannel?: StateChannelJSON,
   ): Promise<void>;
 
-  //// ChallengeUpdatedEvents
-  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void>;
-  getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
-
   //// Commitments
   getConditionalTransactionCommitment(
     appIdentityHash: Bytes32,
@@ -132,10 +134,6 @@ export interface IStoreService {
     signedSetupCommitment: MinimalTransaction,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
-
-  //// StateProgressedEvents
-  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void>;
-  getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]>;
 
   //// User Withdrawals
   saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
