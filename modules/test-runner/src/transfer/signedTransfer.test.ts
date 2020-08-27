@@ -164,8 +164,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("clientA signed transfers eth to clientB through node, clientB is online", async () => {
@@ -270,7 +270,7 @@ describe(name, () => {
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
     // disconnect so that it cant be unlocked
-    await clientA.messaging.disconnect();
+    await clientA.off();
 
     const signature = await signReceiptMessage(domainSeparator, receipt, privateKeyB);
 
@@ -356,8 +356,8 @@ describe(name, () => {
     const [senderAppId] = await sendSignedTransfer(transfer);
 
     // disconnect so receiver cannot uninstall
-    clientB.messaging.disconnect();
-    clientB.off();
+    await clientB.off();
+    await clientB.off();
 
     await expect(clientA.uninstallApp(senderAppId)).to.eventually.be.rejected;
   });
@@ -371,7 +371,7 @@ describe(name, () => {
     const [senderAppId] = await sendSignedTransfer(transfer);
 
     // disconnect so sender cannot unlock
-    clientA.messaging.disconnect();
+    await clientA.off();
 
     await Promise.all([
       new Promise((res) => {

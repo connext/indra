@@ -46,8 +46,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("client A transfers eth to client B through node", async () => {
@@ -76,8 +76,7 @@ describe(name, () => {
       store: recevierStore,
     });
     await requestCollateral(receiver, transfer.assetId);
-    await receiver.messaging.disconnect();
-    receiver.off();
+    await receiver.off();
 
     const paymentId = getRandomBytes32();
     await clientA.transfer({
@@ -117,7 +116,7 @@ describe(name, () => {
     expect(receiverClient.publicIdentifier).to.eq(receiverIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
-    receiverClient.messaging.disconnect();
+    await receiverClient.off();
   });
 
   it.skip("latency test: deposit, collateralize, many transfers, withdraw", async () => {

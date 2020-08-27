@@ -505,9 +505,10 @@ export class ConnextClient implements IConnextClient {
   }
 
   public off = async () => {
-    await this.listener.detach();
     await this.messaging.disconnect();
+    await this.listener.detach();
     await this.channelProvider.removeAllListeners();
+    await delay(500); // give messaging a bit more time to finish disconnecting
   };
 
   public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {

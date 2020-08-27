@@ -208,8 +208,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("client A hashlock transfers eth to client B through node", async () => {
@@ -255,8 +255,7 @@ describe(name, () => {
 
     // return promise with [sender ret, receiver event data]
     // sender result
-    clientB.messaging.disconnect();
-    clientB.off();
+    await clientB.off();
     await expect(
       clientA.conditionalTransfer({
         amount: transfer.amount.toString(),

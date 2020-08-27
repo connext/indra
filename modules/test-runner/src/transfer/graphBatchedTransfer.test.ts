@@ -217,8 +217,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("clientA signed transfers eth to clientB through node, clientB is online", async () => {
@@ -354,8 +354,8 @@ describe(name, () => {
     const { transferRes } = await createBatchedTransfer(clientA, clientB, transfer);
 
     // disconnect so receiver cannot uninstall
-    clientB.messaging.disconnect();
-    clientB.off();
+    await clientB.off();
+    await clientB.off();
 
     await expect(clientA.uninstallApp(transferRes.appIdentityHash)).to.eventually.be.rejected;
   });
@@ -374,7 +374,7 @@ describe(name, () => {
 
     const totalPaid = transfer.amount.div(3);
     // disconnect so sender cannot unlock
-    clientA.messaging.disconnect();
+    await clientA.off();
 
     const attestationSignature = await signGraphReceiptMessage(
       receipt,

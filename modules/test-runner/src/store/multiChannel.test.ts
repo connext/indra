@@ -209,8 +209,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await sender.messaging.disconnect();
-    await recipient.messaging.disconnect();
+    await sender.off();
+    await recipient.off();
     await sender.store.clear();
     await recipient.store.clear();
   });

@@ -66,7 +66,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("should deposit ETH", async () => {

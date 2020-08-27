@@ -22,7 +22,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("should collateralize ETH", async () => {

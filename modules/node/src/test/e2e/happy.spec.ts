@@ -88,7 +88,6 @@ describe("Mostly happy paths", () => {
       await clientA.off();
       await clientB.off();
       log.info(`Test finished, shutting app down`);
-      await delay(1000);
       await app.close();
       await delay(1000);
       log.info(`Application was shutdown successfully`);

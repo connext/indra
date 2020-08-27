@@ -2,6 +2,7 @@ import { connect } from "@connext/client";
 import { WatcherEvents } from "@connext/types";
 import {
   ColorfulLogger,
+  delay,
   getRandomChannelSigner,
   logTime,
   stringify,
@@ -22,9 +23,8 @@ import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-// TODO: unskip once tests are passing
-describe.skip("Challenges", () => {
-  const log = new ColorfulLogger("Challenges", 3, true, "Test");
+describe("Challenges", () => {
+  const log = new ColorfulLogger("Challenges", env.logLevel, true, "Test");
 
   let app: INestApplication;
   let configService: ConfigService;
@@ -35,7 +35,7 @@ describe.skip("Challenges", () => {
   let sugarDaddy: Wallet;
   let start: number;
 
-  before(async () => {
+  beforeEach(async () => {
     start = Date.now();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -52,9 +52,7 @@ describe.skip("Challenges", () => {
     sugarDaddy = Wallet.fromMnemonic(env.mnemonic!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     log.info(`ethProviderUrl: ${ethProviderUrl}`);
-  });
 
-  beforeEach(async () => {
     let tx;
     clientA = await connect({
       store: getMemoryStore(),
@@ -91,7 +89,15 @@ describe.skip("Challenges", () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
+    try {
+      await clientA.off();
+      await clientB.off();
+      await app.close();
+      await delay(1000);
+      log.info(`Application was shutdown successfully`);
+    } catch (e) {
+      log.warn(`Application was shutdown unsuccessfully: ${e.message}`);
+    }
   });
 
   it("client should be able to initiate a dispute", async () => {

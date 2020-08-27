@@ -29,8 +29,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("clientA on chainA can deposit and transfer to clientB on chainB", async () => {
