@@ -139,10 +139,7 @@ export class Watcher implements IWatcher {
     const signer =
       typeof providedSigner === "string" ? new ChannelSigner(providedSigner) : providedSigner;
 
-    // TODO: rm below once watcher works. {} as chainProviders means don't watch anything
-    const listener = new ChainListener({}, context, log);
-    // const listener = new ChainListener(chainProviders, context, log);
-
+    const listener = new ChainListener(chainProviders, context, log);
     const watcher = new Watcher(
       signer,
       chainProviders,
