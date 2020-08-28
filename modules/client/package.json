@@ -3,6 +3,7 @@
   "version": "7.3.9",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "src",
