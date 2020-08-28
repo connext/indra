@@ -49,7 +49,7 @@ describe(name, () => {
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 
-  it.only("should collateralize tokens with a target", async () => {
+  it("should collateralize tokens with a target", async () => {
     const requestedTarget = utils.parseEther("50"); // 20 < requested < 100
     const response = (await client.requestCollateral(tokenAddress, requestedTarget))!;
     expect(response).to.be.ok;
