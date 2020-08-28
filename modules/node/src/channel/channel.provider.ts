@@ -1,7 +1,7 @@
 import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { utils, constants } from "ethers";
+import { utils, constants, BigNumber } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -71,10 +71,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
       chainId,
     );
     try {
+      const requestedTarget = data.amount ? BigNumber.from(data.amount) : undefined;
       const response = await this.channelService.rebalance(
         channel.multisigAddress,
         getAddress(data.assetId || constants.AddressZero),
         RebalanceType.COLLATERALIZE,
+        requestedTarget,
       );
       return (
         response && {

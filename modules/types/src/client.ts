@@ -1,4 +1,4 @@
-import { providers } from "ethers";
+import { providers, BigNumberish } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
@@ -117,7 +117,7 @@ export interface IConnextClient {
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   unsubscribeToSwapRates(from: Address, to: Address): Promise<void>;
-  requestCollateral(tokenAddress: Address): Promise<R.RequestCollateral>;
+  requestCollateral(tokenAddress: Address, amount?: BigNumberish): Promise<R.RequestCollateral>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
   getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;

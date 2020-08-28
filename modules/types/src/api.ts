@@ -1,5 +1,5 @@
 import { AppRegistry } from "./app";
-import { providers } from "ethers";
+import { providers, BigNumberish } from "ethers";
 
 import {
   Address,
@@ -78,7 +78,10 @@ export interface INodeApiClient {
     paymentId: string,
     conditionType: ConditionalTransferTypes,
   ): Promise<NodeResponses.InstallConditionalTransferReceiverApp>;
-  requestCollateral(assetId: Address): Promise<NodeResponses.RequestCollateral>;
+  requestCollateral(
+    assetId: Address,
+    amount?: BigNumberish,
+  ): Promise<NodeResponses.RequestCollateral>;
   fetchLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
   fetchSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   fetchGraphTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
