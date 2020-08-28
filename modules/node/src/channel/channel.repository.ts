@@ -93,6 +93,7 @@ export class ChannelRepository extends Repository<Channel> {
 
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
     return this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.challenges", "challenge")
       .leftJoinAndSelect("channel.appInstances", "appInstance")
       .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
       .getOne();
@@ -104,6 +105,7 @@ export class ChannelRepository extends Repository<Channel> {
   ): Promise<Channel | undefined> {
     log.debug(`Retrieving channel for user ${userIdentifier} on ${chainId}`);
     return this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.challenges", "challenge")
       .leftJoinAndSelect("channel.appInstances", "appInstance")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
       .andWhere("channel.chainId = :chainId", { chainId })
@@ -123,6 +125,7 @@ export class ChannelRepository extends Repository<Channel> {
     // when you return just `channel` you will only have one app instance
     // that matches the appId
     const channel = await this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.challenges", "challenge")
       .leftJoin("channel.appInstances", "appInstance")
       .where("appInstance.identityHash = :appIdentityHash", { appIdentityHash })
       .getOne();
@@ -130,7 +133,7 @@ export class ChannelRepository extends Repository<Channel> {
       return undefined;
     }
     return this.findOne(channel.multisigAddress, {
-      relations: ["appInstances"],
+      relations: ["appInstances", "challenges"],
     });
   }
 

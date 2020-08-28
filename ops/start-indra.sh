@@ -148,10 +148,14 @@ mkdir -p $snapshots_dir
 
 if [[ "$INDRA_ENV" == "prod" ]]
 then
+  database_image="image: '$database_image'"
   db_volume="database"
   db_secret="${project}_database"
   new_secret $db_secret
 else
+  database_image="image: '$database_image'
+    ports:
+      - '5432:5432'"
   db_volume="database_dev"
   db_secret="${project}_database_dev"
   new_secret "$db_secret" "$project"
@@ -310,7 +314,8 @@ fi
 
 echo "Launching ${project}"
 
-cat - > $root/${project}.docker-compose.yml <<EOF
+rm -rf $root/docker-compose.yml $root/${project}.docker-compose.yml
+cat - > $root/docker-compose.yml <<EOF
 version: '3.4'
 
 networks:
@@ -351,8 +356,10 @@ services:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_CHAIN_PROVIDERS: '$INDRA_CHAIN_PROVIDERS'
       INDRA_CONTRACT_ADDRESSES: '$INDRA_CONTRACT_ADDRESSES'
-      INDRA_MNEMONIC_FILE: '$INDRA_MNEMONIC_FILE'
+      INDRA_DEFAULT_REBALANCE_PROFILE_ETH: '$INDRA_DEFAULT_REBALANCE_PROFILE_ETH'
+      INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN: '$INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
+      INDRA_MNEMONIC_FILE: '$INDRA_MNEMONIC_FILE'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
       INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
@@ -373,7 +380,7 @@ services:
 
   database:
     $common
-    image: '$database_image'
+    $database_image
     environment:
       AWS_ACCESS_KEY_ID: '$INDRA_AWS_ACCESS_KEY_ID'
       AWS_SECRET_ACCESS_KEY: '$INDRA_AWS_SECRET_ACCESS_KEY'
@@ -403,7 +410,7 @@ services:
 
 EOF
 
-docker stack deploy -c $root/${project}.docker-compose.yml $project
+docker stack deploy -c $root/docker-compose.yml $project
 
 echo "The $project stack has been deployed, waiting for the proxy to start responding.."
 timeout=$(expr `date +%s` + 60)

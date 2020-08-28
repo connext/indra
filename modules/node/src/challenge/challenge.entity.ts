@@ -54,7 +54,7 @@ export class Challenge<T extends AppName = any> {
   @OneToMany((type) => ChallengeUpdatedEvent, (event) => event.challenge)
   challengeUpdatedEvents!: ChallengeUpdatedEvent<T>[];
 
-  @ManyToOne((type: any) => Channel)
+  @ManyToOne((type: any) => Channel, (channel) => channel.challenges)
   channel!: Channel;
 
   @CreateDateColumn()

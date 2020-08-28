@@ -1,4 +1,4 @@
-import { providers } from "ethers";
+import { providers, BigNumberish } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
@@ -32,6 +32,7 @@ export interface ClientOptions {
   messagingUrl?: string; // optional override for messaging endpoint
   skipSync?: boolean;
   skipInitStore?: boolean;
+  watcherEnabled?: boolean;
 }
 
 export interface IConnextClient {
@@ -83,10 +84,15 @@ export interface IConnextClient {
   // Low-level channel methods
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   checkDepositRights(params: P.CheckDepositRights): Promise<R.CheckDepositRights>;
-  requestDepositRights(params: P.RequestDepositRights): Promise<mR.RequestDepositRights>;
+  requestDepositRights(params: P.RequestDepositRights): Promise<R.RequestDepositRights>;
   rescindDepositRights(params: P.RescindDepositRights): Promise<R.RescindDepositRights>;
   restart(): Promise<void>;
   restoreState(): Promise<void>;
+
+  ///////////////////////////////////
+  // Dispute methods
+  initiateChallenge(params: P.InitiateChallenge): Promise<R.InitiateChallenge>;
+  cancelChallenge(params: P.CancelChallenge): Promise<R.CancelChallenge>;
 
   ///////////////////////////////////
   // Node easy access methods
@@ -111,7 +117,7 @@ export interface IConnextClient {
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   unsubscribeToSwapRates(from: Address, to: Address): Promise<void>;
-  requestCollateral(tokenAddress: Address): Promise<R.RequestCollateral>;
+  requestCollateral(tokenAddress: Address, amount?: BigNumberish): Promise<R.RequestCollateral>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
   getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;

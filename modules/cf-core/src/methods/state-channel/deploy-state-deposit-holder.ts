@@ -5,7 +5,12 @@ import {
   MinimalTransaction,
   TransactionReceipt,
 } from "@connext/types";
-import { delay, getGasPrice, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import {
+  delay,
+  getGasPrice,
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+} from "@connext/utils";
 import { Contract, Signer, utils, constants, providers } from "ethers";
 
 import {
@@ -150,7 +155,12 @@ export class DeployStateDepositController extends MethodController {
     let error: any;
     if (transactionService) {
       log.info("Sending multisig deployment transaction using transaction service");
-      receipt = await transactionService.sendTransaction(minTx, preProtocolStateChannel.toJson());
+      const response = await transactionService.sendTransaction(
+        minTx,
+        preProtocolStateChannel.chainId,
+        preProtocolStateChannel.multisigAddress,
+      );
+      receipt = await response.wait();
     } else {
       // try with nonce retry logic
       for (let tryCount = 1; tryCount <= retryCount; tryCount += 1) {

@@ -157,13 +157,6 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
     }
 
     return {
-      ...this.config.getPostgresConfig(),
-      entities,
-      logging: ["info", "error"],
-      migrations,
-      migrationsRun: true,
-      synchronize: false,
-      type: "postgres",
       cache: {
         type: "ioredis",
         options: {
@@ -171,6 +164,13 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
           port: Number(hostPort[1]),
         },
       },
+      entities,
+      logging: ["warn", "error"],
+      migrations,
+      migrationsRun: true,
+      synchronize: false,
+      type: "postgres",
+      ...this.config.getPostgresConfig(),
     };
   }
 }

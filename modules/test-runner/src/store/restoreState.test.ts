@@ -17,7 +17,6 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
-  getNatsClient,
   getTestLoggers,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
@@ -37,7 +36,6 @@ describe(name, () => {
 
   beforeEach(async () => {
     start = Date.now();
-    const nats = getNatsClient();
     signerA = getRandomChannelSigner(ethProviderUrl);
     store = getLocalStore();
     clientA = await createClient({ signer: signerA, store, id: "A" });
@@ -50,12 +48,12 @@ describe(name, () => {
       reclaimThreshold: toBN("0"),
     };
     // set rebalancing profile to reclaim collateral
-    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
+    await addRebalanceProfile(clientA, REBALANCE_PROFILE);
     timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
+    clientA.off();
   });
 
   it("client can delete its store and restore from a remote backup", async () => {
@@ -88,8 +86,7 @@ describe(name, () => {
     await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
-    await clientA.messaging.disconnect();
-    clientA.off();
+    await clientA.off();
     await delay(1000);
 
     // recreate client
@@ -115,8 +112,7 @@ describe(name, () => {
 
     // first clear the client store and take client offline
     await store.clear();
-    await clientA.messaging.disconnect();
-    clientA.off();
+    await clientA.off();
 
     // send the transfer
     const sent = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 30_000);

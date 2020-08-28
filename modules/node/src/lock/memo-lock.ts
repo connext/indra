@@ -198,7 +198,7 @@ export class MemoLock {
           return reject(err);
         }
         if (res === "NO_LOCK") {
-          return reject(new Error(`Trying to unlock invalid lock: ${lockName} ${lockValue}`));
+          return reject(new Error(`Can't release a lock that doesn't exist: ${lockName}`));
         }
         resolve();
       });

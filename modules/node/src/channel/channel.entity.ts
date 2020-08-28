@@ -17,6 +17,7 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+import { Challenge } from "../challenge/challenge.entity";
 
 @Entity()
 export class Channel {
@@ -70,6 +71,9 @@ export class Channel {
 
   @OneToMany((type: any) => OnchainTransaction, (tx: OnchainTransaction) => tx.channel)
   transactions!: OnchainTransaction[];
+
+  @OneToMany((type: any) => Challenge, (challenge: Challenge) => challenge.channel)
+  challenges!: Challenge[];
 
   @CreateDateColumn()
   createdAt!: Date;

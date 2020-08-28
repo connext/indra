@@ -32,6 +32,7 @@ const clearAndClose = async (store) => {
 const chainId = TEST_STORE_CHANNEL.chainId;
 
 describe("Methods", () => {
+
   describe("getSchemaVersion", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
@@ -54,7 +55,6 @@ describe("Methods", () => {
         const channel = TEST_STORE_CHANNEL;
         const nullValue = await store.getStateChannel(channel.multisigAddress);
         expect(nullValue).to.be.undefined;
-
         // can be called multiple times in a row and preserve the data
         for (let i = 0; i < 3; i++) {
           await store.createStateChannel(
@@ -64,17 +64,14 @@ describe("Methods", () => {
           );
           const retrieved = await store.getStateChannel(channel.multisigAddress);
           expect(retrieved).to.deep.eq(channel);
-
           const setup = await store.getSetupCommitment(channel.multisigAddress);
           expect(setup).to.containSubset(TEST_STORE_MINIMAL_TX);
-
           const setState = await store.getSetStateCommitments(
             channel.freeBalanceAppInstance!.identityHash,
           );
           expect(setState.length).to.be.eq(1);
           expect(setState[0]).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
         }
-
         await clearAndClose(store);
       });
     });
@@ -208,7 +205,8 @@ describe("Methods", () => {
           expect(updatedState.length).to.be.eq(1);
           expect(updatedState[0]).to.containSubset(editedSetState);
           const chan = await store.getStateChannel(multisigAddress);
-          expect(chan.appInstances).to.deep.eq([[app.identityHash, edited]]);
+          expect(chan).to.be.an("object");
+          expect(chan!.appInstances).to.deep.eq([[app.identityHash, edited]]);
         }
         await clearAndClose(store);
       });
@@ -224,7 +222,7 @@ describe("Methods", () => {
           ...TEST_STORE_CHANNEL,
           proposedAppInstances: [[app.identityHash, app]],
           appInstances: [],
-        };
+        } as StateChannelJSON;
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
           appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
@@ -239,7 +237,7 @@ describe("Methods", () => {
         };
         const multisigAddress = channel.multisigAddress;
         await store.createStateChannel(
-          channel as StateChannelJSON,
+          channel,
           TEST_STORE_MINIMAL_TX,
           freeBalanceSetState0,
         );
@@ -268,7 +266,8 @@ describe("Methods", () => {
           const retrieved = await store.getAppInstance(app.identityHash);
           expect(retrieved).to.be.undefined;
           const chan = await store.getStateChannel(multisigAddress);
-          expect(chan).to.deep.eq({
+          expect(chan).to.be.an("object");
+          expect(chan)!.to.deep.eq({
             ...channel,
             proposedAppInstances: [],
           });
@@ -311,8 +310,9 @@ describe("Methods", () => {
           const retrieved = await store.getAppProposal(proposal.identityHash);
           expect(retrieved).to.deep.eq(proposal);
           const chan = await store.getStateChannel(multisigAddress);
-          expect(chan.monotonicNumProposedApps).to.be.eq(channel.monotonicNumProposedApps);
-          expect(chan.proposedAppInstances).to.deep.eq([[proposal.identityHash, proposal]]);
+          expect(chan).to.be.an("object");
+          expect(chan!.monotonicNumProposedApps).to.be.eq(channel.monotonicNumProposedApps);
+          expect(chan!.proposedAppInstances).to.deep.eq([[proposal.identityHash, proposal]]);
         }
         await clearAndClose(store);
       });
@@ -344,7 +344,8 @@ describe("Methods", () => {
           const retrieved = await store.getAppProposal(proposal.identityHash);
           expect(retrieved).to.be.undefined;
           const chan = await store.getStateChannel(multisigAddress);
-          expect(chan.proposedAppInstances).to.deep.eq([]);
+          expect(chan).to.be.an("object");
+          expect(chan!.proposedAppInstances).to.deep.eq([]);
         }
         await clearAndClose(store);
       });
@@ -368,7 +369,8 @@ describe("Methods", () => {
         const retrieved = await store.getFreeBalance(multisigAddress);
         expect(retrieved).to.deep.eq(freeBalance);
         const chan = await store.getStateChannel(multisigAddress);
-        expect(chan.freeBalanceAppInstance).to.deep.eq(freeBalance);
+        expect(chan).to.be.an("object");
+        expect(chan!.freeBalanceAppInstance).to.deep.eq(freeBalance);
         await clearAndClose(store);
       });
     });

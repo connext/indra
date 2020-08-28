@@ -9,7 +9,7 @@ import {
   Bytes32,
   FreeBalanceResponse,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify, getRandomBytes32 } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, providers } from "ethers";
 
@@ -28,6 +28,7 @@ import {
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { ChannelRepository } from "../channel/channel.repository";
 
 const { Zero, AddressZero } = constants;
 
@@ -39,6 +40,7 @@ export class DepositService {
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
     private readonly appInstanceRepository: AppInstanceRepository,
+    private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
   }
@@ -148,7 +150,11 @@ export class DepositService {
         this.log.info(
           `Releasing deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );
-        await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+        try {
+          await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+        } catch (e) {
+          this.log.warn(e.message);
+        }
         this.log.info(
           `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );
@@ -220,10 +226,11 @@ export class DepositService {
     }
     if (onchain.status === TransactionStatus.PENDING) {
       throw new Error(
-        `Cannot uninstall deposit app (${appIdentityHash}) when associated transaction is pending on ${onchain.chainId}. Transaction: ${onchain.hash}`,
+        `Can't uninstall deposit app when associated transaction is pending: ${stringify(onchain)}`,
       );
     }
-    await this.cfCoreService.uninstallApp(appIdentityHash, multisigAddress);
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    await this.cfCoreService.uninstallApp(appIdentityHash, channel);
     await this.onchainTransactionService.setAppUninstalled(true, onchain.hash);
   }
 

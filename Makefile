@@ -159,7 +159,10 @@ test-watcher: watcher
 	bash ops/test/watcher.sh
 
 test-node: node
-	bash ops/test/node.sh
+	bash ops/test/node.sh test
+
+watch-node:
+	bash ops/test/node.sh watch
 
 test-tps: bot
 	bash ops/test/tps.sh 5 0 10

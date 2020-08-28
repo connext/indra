@@ -151,7 +151,7 @@ export class AdminService {
       return;
     }
 
-    await this.cfCoreService.uninstallApp(forAssetId.identityHash, multisigAddress);
+    await this.cfCoreService.uninstallApp(forAssetId.identityHash, channel);
     return forAssetId.identityHash;
   }
 }

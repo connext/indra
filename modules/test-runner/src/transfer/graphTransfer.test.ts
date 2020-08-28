@@ -75,8 +75,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.messaging.disconnect();
-    await clientB.messaging.disconnect();
+    await clientA.off();
+    await clientB.off();
   });
 
   it("clientA signed transfers eth to clientB through node, clientB is online", async () => {
@@ -317,7 +317,7 @@ describe(name, () => {
     } as PublicParams.GraphTransfer);
     await receiverInstall;
     // disconnect so that it cant be unlocked
-    await clientA.messaging.disconnect();
+    await clientA.off();
 
     const signature = await signGraphReceiptMessage(
       receipt,
@@ -468,8 +468,8 @@ describe(name, () => {
     ]);
 
     // disconnect so receiver cannot uninstall
-    clientB.messaging.disconnect();
-    clientB.off();
+    await clientB.off();
+    await clientB.off();
 
     await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
       .rejected;
@@ -508,7 +508,7 @@ describe(name, () => {
     ]);
 
     // disconnect so sender cannot unlock
-    clientA.messaging.disconnect();
+    await clientA.off();
 
     await Promise.all([
       new Promise((res) => {

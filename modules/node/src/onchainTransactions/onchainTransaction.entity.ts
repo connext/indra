@@ -17,6 +17,7 @@ export enum TransactionReason {
   COLLATERALIZATION = "COLLATERALIZATION",
   NODE_WITHDRAWAL = "NODE_WITHDRAWAL",
   MULTISIG_DEPLOY = "MULTISIG_DEPLOY",
+  DISPUTE = "DISPUTE",
 }
 
 export enum TransactionStatus {
@@ -118,6 +119,7 @@ export class OnchainTransaction {
     LEFT JOIN "channel" ON "channel"."multisigAddress" = "onchain_transaction"."channelMultisigAddress"
   `,
 })
+
 export class AnonymizedOnchainTransaction {
   @ViewColumn()
   createdAt!: Date;

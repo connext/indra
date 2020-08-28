@@ -34,13 +34,13 @@ export class LockService {
       const locks = Object.keys(this.locks).map((n) => abbreviate(n));
       this.log.warn(`Waiting on lock for ${lockName} (locked: ${locks})`);
     } else {
-      this.log.warn(`Acquiring lock for ${lockName} (TTL: ${LOCK_SERVICE_TTL} ms)`);
+      this.log.info(`Acquiring lock for ${lockName} (TTL: ${LOCK_SERVICE_TTL} ms)`);
     }
 
     const start = Date.now();
     try {
       const val = await this.memoLock.acquireLock(lockName);
-      this.log.warn(
+      this.log.info(
         `Acquired lock for ${lockName} (value ${val}) after waiting ${Date.now() - start} ms`,
       );
       this.locks[lockName] = start;
@@ -52,12 +52,12 @@ export class LockService {
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    this.log.warn(`Releasing lock for ${lockName} after ${Date.now() - this.locks[lockName]} ms`);
+    this.log.info(`Releasing lock for ${lockName} after ${Date.now() - this.locks[lockName]} ms`);
     try {
       await this.memoLock.releaseLock(lockName, lockValue);
-      this.log.warn(`Done releasing lock for ${lockName}`);
+      this.log.info(`Done releasing lock for ${lockName}`);
     } catch (e) {
-      this.log.error(`Error unlocking resource ${lockName} (${lockValue}): ${e.stack}`);
+      this.log.warn(e.message);
     } finally {
       delete this.locks[lockName];
     }

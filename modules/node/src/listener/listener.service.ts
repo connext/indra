@@ -1,13 +1,15 @@
 import {
   AppAction,
-  EventNames,
-  UninstallMessage,
-  SyncMessage,
-  ProtocolEventMessage,
   EventName,
-  SupportedApplicationNames,
-  UninstallFailedMessage,
+  EventNames,
   GenericConditionalTransferAppState,
+  ProtocolEventMessage,
+  SupportedApplicationNames,
+  SyncMessage,
+  UninstallFailedMessage,
+  UninstallMessage,
+  WatcherEventData,
+  WatcherEvents,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 
@@ -47,9 +49,15 @@ const {
   UPDATE_STATE_FAILED_EVENT,
 } = EventNames;
 
-type CallbackStruct = {
+type ProtocolCallback = {
   [index in keyof typeof EventNames]: (data: ProtocolEventMessage<index>) => Promise<any> | void;
 };
+
+type WatcherCallback = {
+  [index in keyof typeof WatcherEvents]: (data: WatcherEventData[index]) => Promise<any> | void;
+};
+
+type CallbackStruct = WatcherCallback | ProtocolCallback;
 
 @Injectable()
 export default class ListenerService implements OnModuleInit {
@@ -67,12 +75,17 @@ export default class ListenerService implements OnModuleInit {
     this.log.setContext("ListenerService");
   }
 
-  logEvent<T extends EventName>(event: T, res: ProtocolEventMessage<T>): void {
-    this.log.debug(
-      `${event} event fired from ${res && res.from ? res.from : null}, data: ${
-        res ? JSON.stringify(res.data) : `event did not have a result`
-      }`,
-    );
+  // TODO: better typing
+  logEvent<T extends EventName>(event: T, res: any): void {
+    if (Object.keys(WatcherEvents).includes(event)) {
+      this.log.debug(`${event} event caught, data: ${JSON.stringify(res)}`);
+    } else {
+      this.log.debug(
+        `${event} event fired from ${res && res.from ? res.from : null}, data: ${
+          res ? JSON.stringify(res.data) : `event did not have a result`
+        }`,
+      );
+    }
   }
 
   getEventListeners(): CallbackStruct {
@@ -180,6 +193,38 @@ export default class ListenerService implements OnModuleInit {
       WITHDRAWAL_STARTED_EVENT: (data): void => {
         this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
+
+      // watcher events
+      CHALLENGE_UPDATED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_UPDATED_EVENT, msg);
+      },
+      STATE_PROGRESSED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.STATE_PROGRESSED_EVENT, msg);
+      },
+      CHALLENGE_PROGRESSED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_PROGRESSED_EVENT, msg);
+      },
+      CHALLENGE_PROGRESSION_FAILED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_PROGRESSION_FAILED_EVENT, msg);
+      },
+      CHALLENGE_OUTCOME_FAILED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_OUTCOME_FAILED_EVENT, msg);
+      },
+      CHALLENGE_OUTCOME_SET_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_OUTCOME_SET_EVENT, msg);
+      },
+      CHALLENGE_COMPLETED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_COMPLETED_EVENT, msg);
+      },
+      CHALLENGE_COMPLETION_FAILED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_COMPLETION_FAILED_EVENT, msg);
+      },
+      CHALLENGE_CANCELLED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_CANCELLED_EVENT, msg);
+      },
+      CHALLENGE_CANCELLATION_FAILED_EVENT: (msg) => {
+        this.logEvent(WatcherEvents.CHALLENGE_CANCELLATION_FAILED_EVENT, msg);
+      },
     };
   }
 
@@ -188,8 +233,8 @@ export default class ListenerService implements OnModuleInit {
     const receiverApp = await this.appInstanceRepository.findByIdentityHash(params.appIdentityHash);
     const nodeSignerAddress = await this.configService.getSignerAddress();
     if (
-      receiverApp?.meta.paymentId &&
-      (receiverApp.latestState as GenericConditionalTransferAppState).coinTransfers[1].to !==
+      receiverApp?.meta?.paymentId &&
+      (receiverApp?.latestState as GenericConditionalTransferAppState).coinTransfers[1].to !==
         nodeSignerAddress
     ) {
       this.log.warn(

@@ -36,7 +36,9 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    client && (await client.messaging.disconnect());
+    if (client) {
+      await client.off();
+    }
   });
 
   it("Happy case: user creates channel with mainnet network string", async () => {
@@ -154,7 +156,7 @@ describe(name, () => {
     expect(retrievedToken).to.eq(tokenDeposit);
 
     // disconnect + reconnect
-    await client.messaging.disconnect();
+    await client.off();
     await client.store.clear();
     client = await createClient({ signer });
 
@@ -185,7 +187,7 @@ describe(name, () => {
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(initDepositApps.length).to.be.eq(2);
-    await client.messaging.disconnect();
+    await client.off();
 
     await sendOnchainValue(client.multisigAddress, One);
     await sendOnchainValue(
@@ -229,7 +231,7 @@ describe(name, () => {
       recipient: Wallet.createRandom().address,
       assetId: AddressZero,
     });
-    await client.messaging.disconnect();
+    await client.off();
 
     // now try to restart client (should succeed)
     expect(await createClient({ signer: pk, store })).to.be.ok;

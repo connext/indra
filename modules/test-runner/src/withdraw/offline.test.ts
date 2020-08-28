@@ -87,7 +87,7 @@ describe(name, () => {
 
   const recreateClientAndRetryWithdraw = async (client: IConnextClient, withdrawParams: any) => {
     const { amount, assetId } = withdrawParams;
-    await client.messaging.disconnect();
+    await client.off();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
     const newClient = await createClient({ signer, store: client.store });
@@ -185,7 +185,7 @@ describe(name, () => {
           // make sure any updates to the store from event have time to be
           // written
           await delay(500);
-          await client.messaging.disconnect();
+          await client.off();
           resolve();
         });
         // promise will not resolve until it fails to find tx, dont await

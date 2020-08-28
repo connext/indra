@@ -92,6 +92,7 @@ export const getCancelAction = (
     }
     default: {
       const c: never = transferType;
+      throw new Error(`Can't get cancel action for unrecognized transfer type: ${c}`);
     }
   }
   if (!action) {
@@ -127,23 +128,21 @@ export class TransferService {
   }
 
   async pruneExpiredApps(_channel: Channel): Promise<void> {
-    const channel = await this.cfCoreStore.getStateChannel(_channel.multisigAddress);
-    if (!channel) {
-      throw new Error(`Could not get state channel for ${_channel.multisigAddress}`);
-    }
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
+      _channel.multisigAddress,
+    );
     this.log.info(
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
     const current = await this.configService.getEthProvider(channel.chainId)!.getBlockNumber();
-    const expiredApps = channel.appInstances.filter(
-      ([, app]) =>
-        app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
+    const expiredApps = channel.appInstances.filter((app) =>
+      app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
     );
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
-    for (const [, app] of expiredApps) {
+    for (const app of expiredApps) {
       try {
         // Uninstall all expired apps without taking action
-        await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+        await this.cfCoreService.uninstallApp(app.identityHash, channel);
       } catch (e) {
         this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
       }
@@ -187,7 +186,7 @@ export class TransferService {
         `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
       // if errors, it will reject the sender's proposal in the calling function
-      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel.multisigAddress);
+      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel);
       this.log.info(
         `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
@@ -236,7 +235,7 @@ export class TransferService {
         if (receiverProposeRes?.appIdentityHash) {
           await this.cfCoreService.rejectInstallApp(
             receiverProposeRes.appIdentityHash,
-            receiverChannel.multisigAddress,
+            receiverChannel,
             `Receiver offline for transfer`,
           );
         }
@@ -254,7 +253,7 @@ export class TransferService {
       );
       // this should throw so it doesn't install receiver app in case of error
       // will reject in caller function
-      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel.multisigAddress);
+      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel);
       this.log.info(
         `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
@@ -266,10 +265,7 @@ export class TransferService {
         this.log.info(
           `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
         );
-        await this.cfCoreService.installApp(
-          receiverProposeRes.appIdentityHash,
-          receiverChannel.multisigAddress,
-        );
+        await this.cfCoreService.installApp(receiverProposeRes.appIdentityHash, receiverChannel);
         this.log.info(
           `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
         );
@@ -286,14 +282,14 @@ export class TransferService {
         this.log.warn(`Canceling sender payment`);
         await this.cfCoreService.uninstallApp(
           senderAppIdentityHash,
-          senderChannel.multisigAddress,
+          senderChannel,
           getCancelAction(transferType),
         );
         this.log.warn(`Sender payment canceled`);
         if (receiverProposeRes?.appIdentityHash) {
           await this.cfCoreService.rejectInstallApp(
             receiverProposeRes.appIdentityHash,
-            receiverChannel.multisigAddress,
+            receiverChannel,
             `Receiver offline for transfer`,
           );
         }
@@ -452,24 +448,27 @@ export class TransferService {
       receiverChainId,
     );
 
-    const res = await this.cfCoreService.proposeInstallApp({
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
+    const res = await this.cfCoreService.proposeInstallApp(
+      {
+        abiEncodings: {
+          actionEncoding,
+          stateEncoding,
+        },
+        appDefinition,
+        initialState,
+        initiatorDeposit: receiverAmount,
+        initiatorDepositAssetId: receiverAssetId,
+        meta,
+        multisigAddress: receiverChannel.multisigAddress,
+        outcomeType,
+        responderIdentifier: receiverIdentifier,
+        responderDeposit: Zero,
+        responderDepositAssetId: receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
+        defaultTimeout: MINIMUM_APP_TIMEOUT,
+        stateTimeout: Zero,
       },
-      appDefinition,
-      initialState,
-      initiatorDeposit: receiverAmount,
-      initiatorDepositAssetId: receiverAssetId,
-      meta,
-      multisigAddress: receiverChannel.multisigAddress,
-      outcomeType,
-      responderIdentifier: receiverIdentifier,
-      responderDeposit: Zero,
-      responderDepositAssetId: receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
-      defaultTimeout: MINIMUM_APP_TIMEOUT,
-      stateTimeout: Zero,
-    });
+      receiverChannel,
+    );
     return { ...res, appType: AppType.PROPOSAL };
   }
 
@@ -511,10 +510,7 @@ export class TransferService {
       this.log.info(
         `Installing receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
       );
-      await this.cfCoreService.installApp(
-        proposeRes.appIdentityHash,
-        receiverChannel.multisigAddress,
-      );
+      await this.cfCoreService.installApp(proposeRes.appIdentityHash, receiverChannel);
       this.log.info(
         `Receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
       );
@@ -615,14 +611,14 @@ export class TransferService {
           }
           await this.cfCoreService.uninstallApp(
             senderApp.identityHash,
-            senderApp.channel.multisigAddress,
+            senderApp.channel,
             correspondingReceiverApp.transfer.action,
           );
         } else {
           this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
           await this.cfCoreService.uninstallApp(
             senderApp.identityHash,
-            senderApp.channel.multisigAddress,
+            senderApp.channel,
           );
         }
         this.log.info(
