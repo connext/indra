@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "7.3.8",
+  "version": "7.3.9",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -15,15 +15,15 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/apps": "7.3.8",
-    "@connext/cf-core": "7.3.8",
-    "@connext/channel-provider": "7.3.8",
+    "@connext/apps": "7.3.9",
+    "@connext/cf-core": "7.3.9",
+    "@connext/channel-provider": "7.3.9",
     "@connext/contracts": "3.5.0",
-    "@connext/messaging": "7.3.8",
-    "@connext/store": "7.3.8",
-    "@connext/types": "7.3.8",
-    "@connext/utils": "7.3.8",
-    "@connext/watcher": "7.3.8",
+    "@connext/messaging": "7.3.9",
+    "@connext/store": "7.3.9",
+    "@connext/types": "7.3.9",
+    "@connext/utils": "7.3.9",
+    "@connext/watcher": "7.3.9",
     "axios": "0.19.2",
     "core-js": "3.6.5",
     "ethers": "5.0.8",
