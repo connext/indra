@@ -17,7 +17,7 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson, isNode, logTime, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { utils, providers } from "ethers";
+import { utils, providers, BigNumberish } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -286,11 +286,15 @@ export class NodeApiClient implements INodeApiClient {
     );
   }
 
-  public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral> {
+  public async requestCollateral(
+    assetId: string,
+    amount?: BigNumberish,
+  ): Promise<NodeResponses.RequestCollateral> {
     return this.send(
       `${this.userIdentifier}.${this.nodeIdentifier}.${this.chainId}.channel.request-collateral`,
       {
         assetId,
+        amount: amount?.toString(),
       },
     );
   }

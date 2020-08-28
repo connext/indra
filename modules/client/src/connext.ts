@@ -46,7 +46,7 @@ import {
   stringify,
   computeCancelDisputeHash,
 } from "@connext/utils";
-import { BigNumber, Contract, providers, constants, utils } from "ethers";
+import { BigNumber, Contract, providers, constants, utils, BigNumberish } from "ethers";
 
 import {
   DepositController,
@@ -192,8 +192,11 @@ export class ConnextClient implements IConnextClient {
     return this.node.getChannel();
   };
 
-  public requestCollateral = async (assetId: string): Promise<PublicResults.RequestCollateral> => {
-    const requestCollateralResponse = await this.node.requestCollateral(assetId);
+  public requestCollateral = async (
+    assetId: string,
+    amount?: BigNumberish,
+  ): Promise<PublicResults.RequestCollateral> => {
+    const requestCollateralResponse = await this.node.requestCollateral(assetId, amount);
     if (!requestCollateralResponse) {
       return undefined;
     }

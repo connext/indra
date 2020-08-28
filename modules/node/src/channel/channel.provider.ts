@@ -1,7 +1,7 @@
 import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { utils, constants } from "ethers";
+import { utils, constants, BigNumber } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -63,7 +63,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async requestCollateral(
     userPublicIdentifier: string,
     chainId: number,
-    data: { assetId?: string },
+    data: { assetId?: string; amount?: string },
   ): Promise<NodeResponses.RequestCollateral> {
     // do not allow clients to specify an amount to collateralize with
     const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
@@ -71,10 +71,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
       chainId,
     );
     try {
+      const requestedTarget = data.amount ? BigNumber.from(data.amount) : undefined;
       const response = await this.channelService.rebalance(
         channel.multisigAddress,
         getAddress(data.assetId || constants.AddressZero),
         RebalanceType.COLLATERALIZE,
+        requestedTarget,
       );
       return (
         response && {
@@ -136,16 +138,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
       throw new Error(`Found channel, but no setup commitment. This should not happen.`);
     }
     // get active app set state commitments
-    const setStateCommitments =
-      await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
-        channel.multisigAddress,
-      );
+    const setStateCommitments = await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
+      channel.multisigAddress,
+    );
 
     // get active app conditional transaction commitments
-    const conditionalCommitments =
-      await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
-        channel.multisigAddress,
-      );
+    const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
+      channel.multisigAddress,
+    );
     return {
       channel,
       setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),
