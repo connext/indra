@@ -5,9 +5,9 @@ import {
   Headers,
   UnauthorizedException,
   NotFoundException,
-  BadRequestException,
   Get,
   Param,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import { ConfigService } from "../config/config.service";
 
@@ -51,7 +51,7 @@ export class AdminController {
       if (e.message.includes("Channel does not exist for multisig")) {
         throw new NotFoundException("Channel not found");
       }
-      throw new BadRequestException(e.message);
+      throw new InternalServerErrorException(e.message);
     }
   }
 
@@ -86,7 +86,7 @@ export class AdminController {
       if (e.message.includes("Channel does not exist for multisig")) {
         throw new NotFoundException("Channel not found");
       }
-      throw new BadRequestException(e.message);
+      throw new InternalServerErrorException(e.message);
     }
   }
 
@@ -108,7 +108,7 @@ export class AdminController {
         assetId,
       );
       if (!res) {
-        res = await this.configService.getDefaultRebalanceProfile(assetId);
+        res = this.configService.getDefaultRebalanceProfile(assetId);
       }
       if (!res) {
         throw new NotFoundException("Rebalance profile not found");
@@ -123,7 +123,7 @@ export class AdminController {
       if (e.message.includes("Channel does not exist for multisig")) {
         throw new NotFoundException("Channel not found");
       }
-      throw new BadRequestException(e.message);
+      throw new InternalServerErrorException(e.message);
     }
   }
 }
