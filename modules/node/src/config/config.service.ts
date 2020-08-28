@@ -29,6 +29,10 @@ type PostgresConfig = {
   username: string;
 };
 
+type MaxCollateralMap<T = string> = {
+  [assetId: string]: T;
+};
+
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
@@ -293,9 +297,7 @@ export class ConfigService implements OnModuleInit {
     return parseInt(this.get(`INDRA_APP_CLEANUP_INTERVAL`) || "3600000");
   }
 
-  async getDefaultRebalanceProfile(
-    assetId: string = AddressZero,
-  ): Promise<RebalanceProfile | undefined> {
+  getDefaultRebalanceProfile(assetId: string = AddressZero): RebalanceProfile | undefined {
     if (assetId === AddressZero) {
       let defaultProfileEth = {
         collateralizeThreshold: parseEther(`0.05`),
@@ -320,8 +322,8 @@ export class ConfigService implements OnModuleInit {
       };
     }
     let defaultProfileToken = {
-      collateralizeThreshold: parseEther(`0.05`),
-      target: parseEther(`0.1`),
+      collateralizeThreshold: parseEther(`5`),
+      target: parseEther(`20`),
       reclaimThreshold: Zero,
     };
     try {
@@ -343,9 +345,17 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  async getZeroRebalanceProfile(
-    assetId: string = AddressZero,
-  ): Promise<RebalanceProfile | undefined> {
+  getMaxChannelCollateralizationForAsset(assetId: string = AddressZero): BigNumber | undefined {
+    const collateralizationMap: MaxCollateralMap | {} =
+      this.get("INDRA_MAX_CHANNEL_COLLATERALIZATION") || {};
+
+    if (collateralizationMap[assetId]) {
+      return BigNumber.from(collateralizationMap[assetId]);
+    }
+    return undefined;
+  }
+
+  getZeroRebalanceProfile(assetId: string = AddressZero): RebalanceProfile | undefined {
     if (assetId === AddressZero) {
       return {
         assetId: AddressZero,
