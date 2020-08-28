@@ -12,6 +12,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
   calculateExchangeWad,
+  maxBN,
 } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -28,7 +29,7 @@ import { DEFAULT_DECIMALS } from "../constants";
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
-const { AddressZero } = constants;
+const { AddressZero, Zero } = constants;
 const { getAddress, toUtf8Bytes, sha256 } = utils;
 
 export enum RebalanceType {
@@ -111,6 +112,7 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
+    requestedTarget: BigNumber = Zero,
   ): Promise<
     | {
         completed?: () => Promise<FreeBalanceResponse>;
@@ -149,10 +151,10 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    const { collateralizeThreshold, target, reclaimThreshold } = rebalancingTargets;
+    const { collateralizeThreshold, target: profileTarget, reclaimThreshold } = rebalancingTargets;
 
     if (
-      (collateralizeThreshold.gt(target) || reclaimThreshold.lt(target)) &&
+      (collateralizeThreshold.gt(profileTarget) || reclaimThreshold.lt(profileTarget)) &&
       !reclaimThreshold.isZero()
     ) {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
@@ -174,15 +176,25 @@ export class ChannelService {
 
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
-      if (nodeFreeBalance.lt(collateralizeThreshold)) {
-        this.log.info(
-          `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
+      const configuredMax = this.configService.getMaxChannelCollateralizationForAsset(assetId);
+      if (configuredMax && requestedTarget?.gt(configuredMax)) {
+        throw new Error(
+          `Requested target ${requestedTarget.toString()} is greater than channel max ${configuredMax.toString()}`,
         );
-        const amount = target.sub(nodeFreeBalance);
+      }
+
+      const targetToUse = maxBN([profileTarget, requestedTarget]);
+      const thresholdToUse = maxBN([collateralizeThreshold, requestedTarget]);
+
+      if (nodeFreeBalance.lt(thresholdToUse)) {
+        this.log.info(
+          `nodeFreeBalance ${nodeFreeBalance.toString()} < thresholdToUse ${thresholdToUse.toString()}, depositing to target ${requestedTarget.toString()}`,
+        );
+        const amount = targetToUse.sub(nodeFreeBalance);
         rebalanceRes = (await this.depositService.deposit(channel, amount, normalizedAssetId))!;
       } else {
         this.log.info(
-          `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
+          `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${thresholdToUse.toString()}`,
         );
       }
     } else if (rebalanceType === RebalanceType.RECLAIM) {
@@ -191,7 +203,7 @@ export class ChannelService {
         this.log.info(
           `nodeFreeBalance ${nodeFreeBalance.toString()} > reclaimThreshold ${reclaimThreshold.toString()}, withdrawing`,
         );
-        const amount = nodeFreeBalance.sub(target);
+        const amount = nodeFreeBalance.sub(profileTarget);
         const transaction = await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
         rebalanceRes.transaction = transaction;
       } else {
