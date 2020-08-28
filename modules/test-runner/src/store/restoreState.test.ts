@@ -17,7 +17,6 @@ import {
   ethProviderUrl,
   expect,
   fundChannel,
-  getNatsClient,
   getTestLoggers,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
@@ -37,7 +36,6 @@ describe(name, () => {
 
   beforeEach(async () => {
     start = Date.now();
-    const nats = getNatsClient();
     signerA = getRandomChannelSigner(ethProviderUrl);
     store = getLocalStore();
     clientA = await createClient({ signer: signerA, store, id: "A" });
@@ -50,12 +48,12 @@ describe(name, () => {
       reclaimThreshold: toBN("0"),
     };
     // set rebalancing profile to reclaim collateral
-    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
+    await addRebalanceProfile(clientA, REBALANCE_PROFILE);
     timeElapsed("beforeEach complete", start);
   });
 
   afterEach(async () => {
-    await clientA.off();
+    clientA.off();
   });
 
   it("client can delete its store and restore from a remote backup", async () => {

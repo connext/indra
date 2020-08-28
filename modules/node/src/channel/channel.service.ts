@@ -176,10 +176,11 @@ export class ChannelService {
 
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
-      const configuredMax = this.configService.getMaxChannelCollateralizationForAsset(assetId);
-      if (configuredMax && requestedTarget?.gt(configuredMax)) {
+
+      // make sure requested target is under reclaim threshold
+      if (requestedTarget?.gt(reclaimThreshold)) {
         throw new Error(
-          `Requested target ${requestedTarget.toString()} is greater than channel max ${configuredMax.toString()}`,
+          `Requested target ${requestedTarget.toString()} is greater than reclaim threshold ${reclaimThreshold.toString()}`,
         );
       }
 

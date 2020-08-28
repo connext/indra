@@ -302,7 +302,7 @@ export class ConfigService implements OnModuleInit {
       let defaultProfileEth = {
         collateralizeThreshold: parseEther(`0.05`),
         target: parseEther(`0.1`),
-        reclaimThreshold: Zero,
+        reclaimThreshold: parseEther(`0.5`),
       };
       try {
         const parsed = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_ETH"));
@@ -324,7 +324,7 @@ export class ConfigService implements OnModuleInit {
     let defaultProfileToken = {
       collateralizeThreshold: parseEther(`5`),
       target: parseEther(`20`),
-      reclaimThreshold: Zero,
+      reclaimThreshold: parseEther(`100`),
     };
     try {
       defaultProfileToken = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN"));
@@ -343,16 +343,6 @@ export class ConfigService implements OnModuleInit {
       id: 0,
       ...defaultProfileToken,
     };
-  }
-
-  getMaxChannelCollateralizationForAsset(assetId: string = AddressZero): BigNumber | undefined {
-    const collateralizationMap: MaxCollateralMap | {} =
-      this.get("INDRA_MAX_CHANNEL_COLLATERALIZATION") || {};
-
-    if (collateralizationMap[assetId]) {
-      return BigNumber.from(collateralizationMap[assetId]);
-    }
-    return undefined;
   }
 
   getZeroRebalanceProfile(assetId: string = AddressZero): RebalanceProfile | undefined {

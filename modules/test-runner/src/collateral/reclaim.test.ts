@@ -3,7 +3,6 @@ import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
-import { Client } from "ts-nats";
 
 import {
   addRebalanceProfile,
@@ -11,7 +10,6 @@ import {
   createClient,
   expect,
   fundChannel,
-  getNatsClient,
   getTestLoggers,
 } from "../util";
 
@@ -24,12 +22,9 @@ describe(name, () => {
   let clientB: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
-  let nats: Client;
   let start: number;
 
-  before(async () => {
-    nats = getNatsClient();
-  });
+  before(async () => {});
 
   beforeEach(async () => {
     start = Date.now();
@@ -45,8 +40,8 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await clientA.off();
-    await clientB.off();
+    clientA.off();
+    clientB.off();
   });
 
   it("should reclaim ETH with async transfer", async () => {
@@ -58,7 +53,7 @@ describe(name, () => {
     };
 
     // set rebalancing profile to reclaim collateral
-    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
+    await addRebalanceProfile(clientA, REBALANCE_PROFILE);
 
     // deposit client
     await fundChannel(
@@ -109,7 +104,7 @@ describe(name, () => {
     };
 
     // set rebalancing profile to reclaim collateral
-    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
+    await addRebalanceProfile(clientA, REBALANCE_PROFILE);
 
     // deposit client
     await fundChannel(
