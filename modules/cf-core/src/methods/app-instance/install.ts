@@ -7,6 +7,8 @@ import {
   PublicIdentifier,
   EventNames,
   InstallMessage,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 
 import {
@@ -32,7 +34,8 @@ import { MAX_CHANNEL_APPS } from "../../constants";
 export class InstallAppInstanceController extends MethodController {
   public readonly methodName = MethodNames.chan_install;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

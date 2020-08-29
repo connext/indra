@@ -3,6 +3,8 @@ import {
   MethodParams,
   MethodResults,
   CONVENTION_FOR_ETH_ASSET_ID,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { utils } from "ethers";
@@ -18,7 +20,8 @@ const { getAddress } = utils;
 export class GetFreeBalanceStateController extends MethodController {
   public readonly methodName = MethodNames.chan_getFreeBalanceState;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,

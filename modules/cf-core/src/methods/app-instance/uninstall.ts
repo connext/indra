@@ -7,6 +7,8 @@ import {
   EventNames,
   UninstallMessage,
   SolidityValueType,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 
 import {
@@ -27,7 +29,8 @@ import { toBN } from "@connext/utils";
 export class UninstallController extends MethodController {
   public readonly methodName = MethodNames.chan_uninstall;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

@@ -8,6 +8,8 @@ import {
   SolidityValueType,
   UpdateStateMessage,
   PublicIdentifier,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { BigNumber, errors } from "ethers";
@@ -31,7 +33,8 @@ import { MethodController } from "../controller";
 export class TakeActionController extends MethodController {
   public readonly methodName = MethodNames.chan_takeAction;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

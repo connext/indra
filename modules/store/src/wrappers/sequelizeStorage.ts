@@ -85,7 +85,7 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
   async getItem<T>(key: string): Promise<T | undefined> {
     try {
       const item = await this.ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
-      return item && (item.value as any);
+      return item && (item.value as T);
     } catch (e) {
       throw new Error(`getItem(${key}) failed: ${e.message}`);
     }

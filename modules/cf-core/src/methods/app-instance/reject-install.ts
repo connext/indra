@@ -4,6 +4,8 @@ import {
   MethodParams,
   MethodResults,
   RejectProposalMessage,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 
 import { NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH, NO_MULTISIG_IN_PARAMS } from "../../errors";
@@ -15,7 +17,8 @@ import { MethodController } from "../controller";
 export class RejectInstallController extends MethodController {
   public readonly methodName = MethodNames.chan_rejectInstall;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.RejectInstall,

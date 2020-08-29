@@ -5,6 +5,8 @@ import {
   ProtocolNames,
   EventNames,
   SyncMessage,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, NO_MULTISIG_IN_PARAMS } from "../../errors";
@@ -16,7 +18,8 @@ import { MethodController } from "../controller";
 export class SyncController extends MethodController {
   public readonly methodName = MethodNames.chan_sync;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

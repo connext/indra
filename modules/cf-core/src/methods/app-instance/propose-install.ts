@@ -5,6 +5,8 @@ import {
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
+  MethodParam,
+  MethodResult,
   ProposeMessage,
 } from "@connext/types";
 import { appIdentityToHash, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
@@ -29,7 +31,8 @@ import { MAX_CHANNEL_APPS } from "../../constants";
 export class ProposeInstallAppInstanceController extends MethodController {
   public readonly methodName = MethodNames.chan_proposeInstall;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

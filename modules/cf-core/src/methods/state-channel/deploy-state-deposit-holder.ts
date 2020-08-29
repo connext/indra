@@ -4,6 +4,8 @@ import {
   MethodResults,
   MinimalTransaction,
   TransactionReceipt,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 import {
   delay,
@@ -42,7 +44,8 @@ export class DeployStateDepositController extends MethodController {
   public readonly methodName = MethodNames.chan_deployStateDepositHolder;
   private inProgress: { [multisig: string]: boolean } = {};
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async beforeExecution(
     requestHandler: RequestHandler,

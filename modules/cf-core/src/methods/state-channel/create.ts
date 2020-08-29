@@ -4,6 +4,8 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
+  MethodParam,
+  MethodResult,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
@@ -25,7 +27,8 @@ import { MethodController } from "../controller";
 export class CreateChannelController extends MethodController {
   public readonly methodName = MethodNames.chan_create || "unknown";
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

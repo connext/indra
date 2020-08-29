@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, MethodParam, MethodResult } from "@connext/types";
 
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
@@ -9,7 +9,8 @@ import { MethodController } from "../controller";
 export class GetTokenIndexedFreeBalancesController extends MethodController {
   public readonly methodName = MethodNames.chan_getTokenIndexedFreeBalanceStates;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,

@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, MethodParam, MethodResult } from "@connext/types";
 
 import { NO_NETWORK_PROVIDER_CREATE2, NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
@@ -9,7 +9,8 @@ import { MethodController } from "../controller";
 export class GetStateDepositHolderAddressController extends MethodController {
   public readonly methodName = MethodNames.chan_getStateDepositHolderAddress;
 
-  public executeMethod = super.executeMethod;
+  public executeMethod = super.executeMethod as 
+    (req: RequestHandler, params: MethodParam) => Promise<MethodResult | undefined>;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
