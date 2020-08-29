@@ -345,6 +345,7 @@ export class DepositService {
       startingMultisigBalance,
     };
 
+    console.log("initialState: ", JSON.stringify(initialState));
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,

@@ -1,5 +1,3 @@
-import { BigNumber } from "ethers";
-
 import { isBN, toBN } from "./bigNumbers";
 import { abbreviate } from "./strings";
 
@@ -22,7 +20,7 @@ export const stringify = (value: any, abrv = false, spaces = 2): string =>
     value,
     (key: string, value: any): any =>
       value && value._hex
-        ? BigNumber.from(value).toString()
+        ? toBN(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("indra")
         ? abbreviate(value)
         : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12

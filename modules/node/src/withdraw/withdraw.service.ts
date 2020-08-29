@@ -11,7 +11,7 @@ import {
   EventNames,
   EventPayloads,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { BigNumber, constants, utils, providers } from "ethers";
 
@@ -87,7 +87,9 @@ export class WithdrawService {
     }
 
     if (!uninstallData.uninstalledApp.latestState.finalized) {
-      throw new Error(`Error, cannot reclaim on withdraw app that is not finalized. AppId: ${appIdentityHash}`);
+      throw new Error(
+        `Error, cannot reclaim on withdraw app that is not finalized. AppId: ${appIdentityHash}`,
+      );
     }
 
     const action = uninstallData!.action as WithdrawAppAction;
@@ -207,12 +209,9 @@ export class WithdrawService {
       this.log.error(`Unable to submit withdrawal tx: ${e.message}`);
     }
 
-    await this.cfCoreService.uninstallApp(
-      appInstance.identityHash,
-      channel,
-      undefined,
-      { withdrawTx: txRes?.hash },
-    );
+    await this.cfCoreService.uninstallApp(appInstance.identityHash, channel, undefined, {
+      withdrawTx: txRes?.hash,
+    });
 
     // Update db entry again
     withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
@@ -355,7 +354,7 @@ export class WithdrawService {
 
     const withdrawTracker = await this.saveWithdrawal(
       appIdentityHash,
-      BigNumber.from(amount),
+      toBN(amount),
       assetId,
       initialState.transfers[0].to,
       initialState.data,

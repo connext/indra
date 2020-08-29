@@ -10,12 +10,12 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { ConfigService } from "../config/config.service";
+import { toBN } from "@connext/utils";
 
 import { AdminService } from "./admin.service";
 import { RebalanceProfile } from "@connext/types";
 import { ChannelService } from "../channel/channel.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { BigNumber } from "ethers";
 
 export class UninstallDepositAppDto {
   multisigAddress!: string;
@@ -71,9 +71,9 @@ export class AdminController {
         channel.chainId,
         {
           ...rebalanceProfile,
-          collateralizeThreshold: BigNumber.from(rebalanceProfile.collateralizeThreshold),
-          target: BigNumber.from(rebalanceProfile.target),
-          reclaimThreshold: BigNumber.from(rebalanceProfile.reclaimThreshold),
+          collateralizeThreshold: toBN(rebalanceProfile.collateralizeThreshold),
+          target: toBN(rebalanceProfile.target),
+          reclaimThreshold: toBN(rebalanceProfile.reclaimThreshold),
         },
       );
       return {

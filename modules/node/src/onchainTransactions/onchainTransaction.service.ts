@@ -1,7 +1,7 @@
 import { MinimalTransaction, TransactionReceipt } from "@connext/types";
-import { getGasPrice, stringify } from "@connext/utils";
+import { getGasPrice, stringify, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { providers, BigNumber } from "ethers";
+import { providers } from "ethers";
 import PriorityQueue from "p-queue";
 
 import { Channel } from "../channel/channel.entity";
@@ -12,7 +12,7 @@ import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 
-const MIN_GAS_LIMIT = BigNumber.from(500_000);
+const MIN_GAS_LIMIT = toBN(500_000);
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const INVALID_NONCE = "Invalid nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
@@ -149,7 +149,9 @@ export class OnchainTransactionService implements OnModuleInit {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const queue = this.queues.get(chainId);
     if (!queue) {
-      throw new Error(`Unsupported chainId ${chainId}. Expected one of: ${Array.from(this.queues.keys())}`);
+      throw new Error(
+        `Unsupported chainId ${chainId}. Expected one of: ${Array.from(this.queues.keys())}`,
+      );
     }
     const tx: OnchainTransactionResponse = await new Promise((resolve, reject) => {
       queue.add(() => {
@@ -214,7 +216,7 @@ export class OnchainTransactionService implements OnModuleInit {
         this.log.info(`Sending tx with nonce ${nonce}`);
         tx = await wallet.sendTransaction({
           ...populatedTx,
-          gasLimit: BigNumber.from(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
+          gasLimit: toBN(populatedTx.gasLimit || 0).lt(MIN_GAS_LIMIT)
             ? MIN_GAS_LIMIT
             : populatedTx.gasLimit,
           gasPrice: getGasPrice(wallet.provider!, channel.chainId),

@@ -1,4 +1,5 @@
 import { BigNumber, constants, utils } from "ethers";
+import { toBN } from "./bigNumbers";
 
 const { EtherSymbol } = constants;
 const { commify, parseUnits, formatUnits } = utils;
@@ -52,7 +53,7 @@ export class Currency {
     this.daiRateGiven = !!daiRate;
     try {
       this.wad = this.toWad(amount._hex ? BigNumber.from(amount._hex) : amount);
-      this.ray = this.toRay(amount._hex ? BigNumber.from(amount._hex) : amount);
+      this.ray = this.toRay(amount._hex ? toBN(amount._hex) : amount);
     } catch (e) {
       throw new Error(`Invalid currency amount (${amount}): ${e}`);
     }
@@ -97,7 +98,7 @@ export class Currency {
   }
 
   public toBN() {
-    return BigNumber.from(this._round(this.amount));
+    return toBN(this._round(this.amount));
   }
 
   public format(_options?: any) {
@@ -129,7 +130,7 @@ export class Currency {
     // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
     // roundUp plays same role as 0.5 in above example
     if (typeof decimals === "number" && decimals < nDecimals) {
-      const roundUp = BigNumber.from(`5${"0".repeat(18 - decimals - 1)}`);
+      const roundUp = toBN(`5${"0".repeat(18 - decimals - 1)}`);
       const rounded = this.fromWad(this.wad.add(roundUp));
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, "");
     }

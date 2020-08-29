@@ -259,7 +259,7 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
         ...acc,
         [getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
           to,
-          amount: BigNumber.from(amount._hex),
+          amount: toBN(amount._hex),
         })),
       }),
       {},

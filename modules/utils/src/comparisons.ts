@@ -1,6 +1,6 @@
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumberish } from "ethers";
 
-import { getBigNumberishError } from "./bigNumbers";
+import { getBigNumberishError, toBN } from "./bigNumbers";
 
 // this contains all of the bn related validation
 // all functions in this library will return `undefined` if the conditions are
@@ -17,7 +17,7 @@ export const notGreaterThan = (value: any, ceil: BigNumberish): string | undefin
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return BigNumber.from(value).gt(BigNumber.from(ceil))
+  return toBN(value).gt(toBN(ceil))
     ? undefined
     : `Value (${value.toString()}) is not greater than ${ceil.toString()}`;
 };
@@ -26,7 +26,7 @@ export const notGreaterThanOrEqualTo = (value: any, ceil: BigNumberish): string 
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return BigNumber.from(value).gte(ceil)
+  return toBN(value).gte(ceil)
     ? undefined
     : `Value (${value.toString()}) is not greater than or equal to ${ceil.toString()}`;
 };
@@ -36,7 +36,7 @@ export const notLessThan = (value: any, floor: BigNumberish): string | undefined
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return BigNumber.from(value).lt(floor)
+  return toBN(value).lt(floor)
     ? undefined
     : `Value (${value.toString()}) is not less than ${floor.toString()}`;
 };
@@ -45,7 +45,7 @@ export const notLessThanOrEqualTo = (value: any, floor: BigNumberish): string | 
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return BigNumber.from(value).lte(floor)
+  return toBN(value).lte(floor)
     ? undefined
     : `Value (${value.toString()}) is not less than or equal to ${floor.toString()}`;
 };

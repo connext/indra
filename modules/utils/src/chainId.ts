@@ -1,6 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import { JsonRpcResponse } from "@connext/types";
-import { BigNumber } from "ethers";
+
+import { toBN } from "./bigNumbers";
 
 // Gets the chainId from the provider URL using a regular POST method
 // This is done as a workaround to get the network information before
@@ -17,5 +18,5 @@ export const getChainId = async (ethProviderUrl: string): Promise<number> => {
     },
     { headers: { "content-type": "application/json" } },
   );
-  return BigNumber.from(chainIdResponse.data.result).toNumber();
+  return toBN(chainIdResponse.data.result).toNumber();
 };

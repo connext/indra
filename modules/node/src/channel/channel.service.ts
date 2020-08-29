@@ -13,6 +13,7 @@ import {
   stringify,
   calculateExchangeWad,
   maxBN,
+  toBN,
 } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -423,9 +424,9 @@ export class ChannelService {
     }
     const response: RebalanceProfileType = {
       assetId: rebalancingTargets.assetId,
-      collateralizeThreshold: BigNumber.from(rebalancingTargets.collateralizeThreshold),
-      target: BigNumber.from(rebalancingTargets.target),
-      reclaimThreshold: BigNumber.from(rebalancingTargets.reclaimThreshold),
+      collateralizeThreshold: toBN(rebalancingTargets.collateralizeThreshold),
+      target: toBN(rebalancingTargets.target),
+      reclaimThreshold: toBN(rebalancingTargets.reclaimThreshold),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(

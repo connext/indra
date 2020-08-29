@@ -1,5 +1,6 @@
-import { BigNumber, utils } from "ethers";
+import { utils } from "ethers";
 import { ProtocolParams, Address, GraphBatchedTransferAppState } from "@connext/types";
+import { toBN } from "@connext/utils";
 
 import { validateSignedTransferApp } from "../SimpleSignedTransferApp";
 
@@ -28,9 +29,7 @@ export const validateGraphBatchedTransferApp = async (
   // make sure calculated within allowed amount
   const calculatedToActualDiscrepancy = expectedRate.sub(givenRate).abs();
   // i.e. (x * (100 - 5)) / 100 = 0.95 * x
-  const allowedDiscrepancy = expectedRate
-    .mul(BigNumber.from(100).sub(ALLOWED_DISCREPANCY_PCT))
-    .div(100);
+  const allowedDiscrepancy = expectedRate.mul(toBN(100).sub(ALLOWED_DISCREPANCY_PCT)).div(100);
 
   if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
     throw new Error(

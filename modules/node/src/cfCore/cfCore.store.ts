@@ -341,8 +341,8 @@ export class CFCoreStore implements IStoreService {
       numProposedApps,
       {
         ...signedSetStateCommitment,
-        versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
-        stateTimeout: BigNumber.from(signedSetStateCommitment.stateTimeout).toHexString(),
+        versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
+        stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toHexString(),
       },
       signedConditionalTxCommitment,
     ]);
@@ -427,8 +427,8 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance,
       {
         ...signedFreeBalanceUpdate,
-        versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
-        stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toHexString(),
+        versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
+        stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toHexString(),
       },
     ]);
 
@@ -458,8 +458,8 @@ export class CFCoreStore implements IStoreService {
       appJson,
       {
         ...signedSetStateCommitment,
-        versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
-        stateTimeout: BigNumber.from(signedSetStateCommitment.stateTimeout).toHexString(),
+        versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
+        stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toHexString(),
       },
     ]);
 
@@ -484,8 +484,8 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance,
       {
         ...signedFreeBalanceUpdate,
-        versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
-        stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toHexString(),
+        versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
+        stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toHexString(),
       },
     ]);
 

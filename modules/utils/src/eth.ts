@@ -1,13 +1,15 @@
 import { BigNumber, providers } from "ethers";
 
+import { toBN } from "./bigNumbers";
+
 const classicProviders = ["https://www.ethercluster.com/etc"];
 const classicChainIds = [61];
-const minGasPrice = BigNumber.from(1_000);
+const minGasPrice = toBN(1_000);
 
 export const getEthProvider = (providerUrl: string, chainId?: number): providers.JsonRpcProvider =>
   new providers.JsonRpcProvider(
     providerUrl,
-    (classicProviders.includes(providerUrl) || classicChainIds.includes(chainId))
+    classicProviders.includes(providerUrl) || classicChainIds.includes(chainId)
       ? "classic"
       : undefined,
   );
@@ -19,5 +21,5 @@ export const getGasPrice = async (
 ): Promise<BigNumber> => {
   const chainId = providedChainId || (await provider.getNetwork())?.chainId;
   const price = await provider.getGasPrice();
-  return (chainId === 100 && price.lt(minGasPrice)) ? minGasPrice : price;
+  return chainId === 100 && price.lt(minGasPrice) ? minGasPrice : price;
 };

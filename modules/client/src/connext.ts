@@ -45,6 +45,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
   computeCancelDisputeHash,
+  toBN,
 } from "@connext/utils";
 import { BigNumber, Contract, providers, constants, utils, BigNumberish } from "ethers";
 
@@ -565,8 +566,8 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[this.nodeSignerAddress] = BigNumber.from(0);
-        obj[this.signerAddress] = BigNumber.from(0);
+        obj[this.nodeSignerAddress] = toBN(0);
+        obj[this.signerAddress] = toBN(0);
         return obj;
       }
       throw e;

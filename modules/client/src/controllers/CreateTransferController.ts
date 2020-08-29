@@ -75,7 +75,6 @@ export class CreateTransferController extends AbstractController {
       | GraphBatchedTransferAppState
       | GraphSignedTransferAppState;
 
-
     // Set transferMeta & submittedMeta & initialState according to conditionType
     switch (conditionType) {
       case ConditionalTransferTypes.OnlineTransfer: {
@@ -177,7 +176,7 @@ export class CreateTransferController extends AbstractController {
 
         // indexer
         const attestationSigner = getSignerAddressFromPublicIdentifier(recipient);
-        const swapRate = BigNumber.from(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
+        const swapRate = toBN(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
 
         initialState = {
           ...baseInitialState,

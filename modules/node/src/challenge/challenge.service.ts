@@ -1,10 +1,5 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import {
-  IWatcher,
-  BigNumber,
-  ChallengeInitiatedResponse,
-  TransactionResponse,
-} from "@connext/types";
+import { IWatcher, ChallengeInitiatedResponse, TransactionResponse } from "@connext/types";
 import { Watcher } from "@connext/watcher";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
@@ -15,6 +10,7 @@ import {
   recoverAddressFromChannelMessage,
   computeCancelDisputeHash,
   getSignerAddressFromPublicIdentifier,
+  toBN,
 } from "@connext/utils";
 import { getAddress } from "ethers/lib/utils";
 
@@ -51,10 +47,7 @@ export class ChallengeService implements OnModuleInit {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash)!;
 
-    const hash = computeCancelDisputeHash(
-      app.identityHash,
-      BigNumber.from(app.latestVersionNumber),
-    );
+    const hash = computeCancelDisputeHash(app.identityHash, toBN(app.latestVersionNumber));
     const recovered = await recoverAddressFromChannelMessage(hash, userSignature);
     const userSignerAddress = getSignerAddressFromPublicIdentifier(channel.userIdentifier);
     if (getAddress(recovered) !== userSignerAddress) {
@@ -67,7 +60,7 @@ export class ChallengeService implements OnModuleInit {
     const nodeSignature = await signer.signMessage(hash);
     const req = {
       signatures: [nodeSignature, userSignature],
-      versionNumber: BigNumber.from(app.latestVersionNumber),
+      versionNumber: toBN(app.latestVersionNumber),
     };
 
     // Call cancel challenge

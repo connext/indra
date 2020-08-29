@@ -107,7 +107,7 @@ export class AppRegistryService implements OnModuleInit {
           installerChannel.multisigAddress,
           proposeInstallParams.responderDepositAssetId,
         );
-        const responderDepositBigNumber = BigNumber.from(proposeInstallParams.responderDeposit);
+        const responderDepositBigNumber = toBN(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
@@ -149,11 +149,7 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.message || e}`);
-      await this.cfCoreService.rejectInstallApp(
-        appIdentityHash,
-        installerChannel!,
-        e.message,
-      );
+      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel!, e.message);
       return;
     }
     try {
@@ -183,7 +179,7 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appIdentityHash,
-          BigNumber.from(proposeInstallParams.initiatorDeposit),
+          toBN(proposeInstallParams.initiatorDeposit),
           proposeInstallParams.initiatorDepositAssetId,
           initialState.transfers[0].to,
           initialState.data,

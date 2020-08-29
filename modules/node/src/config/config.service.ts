@@ -11,9 +11,9 @@ import {
   NetworkContexts,
   JsonRpcProvider,
 } from "@connext/types";
-import { ChannelSigner, getEthProvider } from "@connext/utils";
+import { ChannelSigner, getEthProvider, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet, Contract, providers, constants, utils, BigNumber } from "ethers";
+import { Wallet, Contract, providers, constants, utils } from "ethers";
 
 import { DEFAULT_DECIMALS } from "../constants";
 import { LoggerService } from "../logger/logger.service";
@@ -308,9 +308,9 @@ export class ConfigService implements OnModuleInit {
         const parsed = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_ETH"));
         if (parsed) {
           defaultProfileEth = {
-            collateralizeThreshold: BigNumber.from(parsed.collateralizeThreshold),
-            target: BigNumber.from(parsed.target),
-            reclaimThreshold: BigNumber.from(parsed.reclaimThreshold),
+            collateralizeThreshold: toBN(parsed.collateralizeThreshold),
+            target: toBN(parsed.target),
+            reclaimThreshold: toBN(parsed.reclaimThreshold),
           };
         }
       } catch (e) {}
@@ -331,9 +331,9 @@ export class ConfigService implements OnModuleInit {
       const parsed = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN"));
       if (parsed) {
         defaultProfileToken = {
-          collateralizeThreshold: BigNumber.from(parsed.collateralizeThreshold),
-          target: BigNumber.from(parsed.target),
-          reclaimThreshold: BigNumber.from(parsed.reclaimThreshold),
+          collateralizeThreshold: toBN(parsed.collateralizeThreshold),
+          target: toBN(parsed.target),
+          reclaimThreshold: toBN(parsed.reclaimThreshold),
         };
       }
     } catch (e) {}
@@ -368,7 +368,7 @@ export class ConfigService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     for (const [providerMappedChain, provider] of [...this.providers.entries()]) {
-      const actualChain = BigNumber.from(await provider.send("eth_chainId", [])).toNumber();
+      const actualChain = toBN(await provider.send("eth_chainId", [])).toNumber();
       if (actualChain !== providerMappedChain) {
         throw new Error(
           `actualChain !== providerMappedChain, ${actualChain} !== ${providerMappedChain}`,
