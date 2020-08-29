@@ -146,12 +146,23 @@ export class DepositService {
     let response: OnchainTransactionResponse;
 
     const cleanUpDepositRights = async () => {
-      if (appIdentityHash) {
+      const freshChannel = await this.channelRepository.findByMultisigAddressOrThrow(
+        channel.multisigAddress,
+      );
+      const depositApp = freshChannel.appInstances.find((app) => {
+        return (
+          app.appDefinition === depositRegistry!.appDefinitionAddress &&
+          app.latestState.assetId === assetId &&
+          (app.latestState as DepositAppState).transfers[0].to ===
+            getSignerAddressFromPublicIdentifier(freshChannel.nodeIdentifier)
+        );
+      });
+      if (depositApp) {
         this.log.info(
           `Releasing deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );
         try {
-          await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+          await this.rescindDepositRights(depositApp.identityHash, channel.multisigAddress);
         } catch (e) {
           this.log.warn(e.message);
         }
