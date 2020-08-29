@@ -1,17 +1,19 @@
-import { BigNumberJson } from "@connext/types";
+import { BigNumberJson, BigNumberJson2 } from "@connext/types";
 import { BigNumber, BigNumberish } from "ethers";
 
 export const isBN = BigNumber.isBigNumber;
 
 export const isBNJson = (value: any): boolean => !isBN(value) && !!value._hex;
 
-export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
+export const toBN = (n: BigNumberish | BigNumberJson | BigNumberJson2): BigNumber =>
   BigNumber.from(
-    (n && typeof (n as BigNumberJson)._hex === "string")
+    n && typeof (n as BigNumberJson)._hex === "string"
       ? (n as BigNumberJson)._hex
+      : typeof (n as BigNumberJson2).hex === "string"
+      ? (n as BigNumberJson2).hex
       : typeof n.toString === "function"
-        ? n.toString()
-        : "0",
+      ? n.toString()
+      : "0",
   );
 
 export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
