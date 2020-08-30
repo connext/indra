@@ -55,4 +55,8 @@ export class AppService {
       gauge.set(parseFloat(utils.formatEther(balance)));
     }
   }
+
+  onApplicationShutdown(signal: string) {
+    this.log.warn(`App is shutting down with signal: ${signal}`);
+  }
 }

@@ -38,7 +38,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {

@@ -14,6 +14,7 @@ import { LoggerService } from "./logger/logger.service";
   });
   const app = await NestFactory.create(AppModule, { logger: log });
   app.enableCors();
+  app.enableShutdownHooks();
   const config = app.get(ConfigService);
   await app.listen(config.getPort());
 })();

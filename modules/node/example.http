@@ -1,0 +1,37 @@
+### ADMIN REQUESTS
+
+### 
+# Force uninstall deposit app (only works if node has deposit rights)
+
+POST http://localhost:3000/api/admin/uninstall-deposit
+Content-Type: application/json
+x-auth-token: cxt1234
+
+{
+  "multisigAddress": "0x93a8eAFC6436F3e238d962Cb429893ec22875705",
+  "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8"
+}
+
+###
+# Set rebalance profile
+
+POST http://localhost:3000/api/admin/rebalance-profile
+Content-Type: application/json
+x-auth-token: cxt1234
+
+{
+  "multisigAddress": "0x93a8eAFC6436F3e238d962Cb429893ec22875705",
+  "rebalanceProfile": {
+    "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
+    "collateralizeThreshold": "5",
+    "target": "15",
+    "reclaimThreshold": "0"
+  }
+}
+
+###
+# GET rebalance profile
+
+GET http://localhost:3000/api/admin/rebalance-profile/0x93a8eAFC6436F3e238d962Cb429893ec22875705/0x0000000000000000000000000000000000000000
+Content-Type: application/json
+x-auth-token: cxt1234

@@ -29,10 +29,6 @@ import {
   ValidationMiddleware,
   ProtocolName,
   MiddlewareContext,
-  ProtocolNames,
-  ProposeMiddlewareContext,
-  UninstallMiddlewareContext,
-  InstallMiddlewareContext,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -224,8 +220,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   public removeAllListeners = (): any => {
-    this.cfCore.removeAllListeners();
-    return this.cfCore;
+    return this.cfCore.removeAllListeners();
   };
 
   public once = (

@@ -2,15 +2,8 @@ import { IConnextClient, RebalanceProfile } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { constants } from "ethers";
 import { before } from "mocha";
-import { Client } from "ts-nats";
 
-import {
-  addRebalanceProfile,
-  createClient,
-  expect,
-  getNatsClient,
-  getTestLoggers,
-} from "../util";
+import { addRebalanceProfile, createClient, expect, getTestLoggers } from "../util";
 
 const { AddressZero } = constants;
 
@@ -18,12 +11,9 @@ const name = "Collateralization Profiles";
 const { timeElapsed } = getTestLoggers(name);
 describe(name, () => {
   let client: IConnextClient;
-  let nats: Client;
   let start: number;
 
-  before(async () => {
-    nats = getNatsClient();
-  });
+  before(async () => {});
 
   beforeEach(async () => {
     start = Date.now();
@@ -32,7 +22,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    client.off();
   });
 
   it("throws error if collateral targets are higher than reclaim", async () => {
@@ -42,7 +32,7 @@ describe(name, () => {
       target: toBN("10"),
       reclaimThreshold: toBN("15"),
     };
-    const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
+    const profileResponse = await addRebalanceProfile(client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
   });
 
@@ -53,7 +43,7 @@ describe(name, () => {
       target: toBN("1"),
       reclaimThreshold: toBN("9"),
     };
-    const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
+    const profileResponse = await addRebalanceProfile(client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
   });
 
@@ -64,7 +54,7 @@ describe(name, () => {
       target: toBN("10"),
       reclaimThreshold: toBN("9"),
     };
-    const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
+    const profileResponse = await addRebalanceProfile(client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
   });
 });

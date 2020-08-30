@@ -1,5 +1,5 @@
 import {
-  IWatcherStoreService,
+  IStoreService,
   WatcherEvents,
   ChallengeStatus,
   ChallengeOutcomeSetEventData,
@@ -11,7 +11,7 @@ import { toBN } from "@connext/utils";
 export const waitForSetOutcome = async (
   appIds: string[],
   watcher: Watcher,
-  store: IWatcherStoreService,
+  store: IStoreService,
   networkContext: TestNetworkContext,
 ) => {
   const stored = await Promise.all(appIds.map((id) => store.getAppChallenge(id)));
@@ -26,12 +26,12 @@ export const waitForSetOutcome = async (
   // Get all outcome set and challenge updated events
   const events = ((await Promise.all([
     ...appIds.map((id) =>
-      watcher.waitFor(WatcherEvents.ChallengeOutcomeSetEvent, EVENT_TIMEOUT, (data) =>
+      watcher.waitFor(WatcherEvents.CHALLENGE_OUTCOME_SET_EVENT, EVENT_TIMEOUT, (data) =>
         matchesId(data, id),
       ),
     ),
     ...appIds.map((id) =>
-      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, (data) =>
+      watcher.waitFor(WatcherEvents.CHALLENGE_UPDATED_EVENT, EVENT_TIMEOUT, (data) =>
         matchesId(data, id),
       ),
     ),

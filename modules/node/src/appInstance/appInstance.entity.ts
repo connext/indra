@@ -16,11 +16,14 @@ import {
   ManyToOne,
   PrimaryColumn,
   UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
 import { transformBN } from "../utils";
+import { Transfer } from "../transfer/transfer.entity";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -103,6 +106,10 @@ export class AppInstance<T extends AppName = any> {
 
   @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
+
+  @OneToOne((type: any) => Transfer, { nullable: true, cascade: true })
+  @JoinColumn()
+  transfer!: Transfer<T>;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -9,6 +9,7 @@ import {
   Network,
   NodeResponses,
   IMessagingService,
+  IWatcher,
 } from "@connext/types";
 import { providers } from "ethers";
 
@@ -25,4 +26,5 @@ export type InternalClientOptions = {
   signer: IChannelSigner;
   store: IStoreService;
   token: Contract;
+  watcher: IWatcher;
 };

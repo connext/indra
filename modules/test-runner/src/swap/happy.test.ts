@@ -37,7 +37,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("client swaps eth for tokens successfully", async () => {

@@ -1,5 +1,5 @@
 import { IConnextClient, EventNames } from "@connext/types";
-import { constants } from "ethers";
+import { constants, utils } from "ethers";
 
 import { createClient, ETH_AMOUNT_MD, expect, getTestLoggers, TOKEN_AMOUNT } from "../util";
 
@@ -22,7 +22,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    client.off();
   });
 
   it("should collateralize ETH", async () => {
@@ -47,6 +47,19 @@ describe(name, () => {
     const { freeBalance } = await response.completed();
     expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
+  });
+
+  it("should collateralize tokens with a target", async () => {
+    const requestedTarget = utils.parseEther("50"); // 20 < requested < 100
+    const response = (await client.requestCollateral(tokenAddress, requestedTarget))!;
+    expect(response).to.be.ok;
+    expect(response.completed).to.be.ok;
+    expect(response.transaction).to.be.ok;
+    expect(response.transaction.hash).to.be.ok;
+    expect(response.depositAppIdentityHash).to.be.ok;
+    const { freeBalance } = await response.completed();
+    expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
+    expect(freeBalance[nodeSignerAddress]).to.be.least(requestedTarget);
   });
 
   it("should properly handle concurrent collateral requests", async () => {

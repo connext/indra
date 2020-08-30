@@ -1,5 +1,5 @@
-import { StateChannelJSON } from "@connext/types";
-import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
+import { StateChannelJSON, DepositAppName } from "@connext/types";
+import { Injectable } from "@nestjs/common";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -7,6 +7,7 @@ import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository, ChannelSerializer } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
+import { constants } from "ethers";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -14,7 +15,7 @@ export interface RepairCriticalAddressesResponse {
 }
 
 @Injectable()
-export class AdminService implements OnApplicationBootstrap {
+export class AdminService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
@@ -127,5 +128,30 @@ export class AdminService implements OnApplicationBootstrap {
     return toMerge;
   }
 
-  async onApplicationBootstrap() {}
+  /**
+   * Uninstall deposit app to unbrick channels in the case where collateralization got stuck.
+   */
+  async uninstallDepositAppForChannel(
+    multisigAddress: string,
+    assetId: string = constants.AddressZero,
+  ): Promise<string | undefined> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const depositAppInfo = this.cfCoreService.getAppInfoByNameAndChain(
+      DepositAppName,
+      channel.chainId,
+    );
+    const apps = await this.cfCoreService.getAppInstancesByAppDefinition(
+      multisigAddress,
+      depositAppInfo.appDefinitionAddress,
+    );
+
+    const forAssetId = apps.find((app) => app.initiatorDepositAssetId === assetId);
+    if (!forAssetId) {
+      this.log.warn(`No deposit apps found to uninstall for ${multisigAddress}`);
+      return;
+    }
+
+    await this.cfCoreService.uninstallApp(forAssetId.identityHash, channel);
+    return forAssetId.identityHash;
+  }
 }

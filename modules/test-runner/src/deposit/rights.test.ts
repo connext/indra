@@ -23,7 +23,7 @@ describe(name, () => {
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await client.off();
   });
 
   it("should request deposit rights and deposit ETH", async () => {

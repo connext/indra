@@ -9,15 +9,19 @@ import { ColorfulLogger, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber } from "ethers";
 
 import { env, expect } from "../";
+import { getTestLoggers } from "../misc";
+
+const { log, timeElapsed } = getTestLoggers("FundHelper");
 
 export const fundChannel = async (
   client: IConnextClient,
   amount: BigNumber,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<void> => {
-  const log = new ColorfulLogger("FundChannel", env.logLevel, false, "H");
+  const start = Date.now();
   const tokenAddress = getAddressFromAssetId(assetId);
   const prevFreeBalance = await client.getFreeBalance(tokenAddress);
+
   await new Promise(async (resolve, reject) => {
     let syncFailed = false;
     client.once(EventNames.SYNC_FAILED_EVENT, (msg) => {
@@ -45,13 +49,11 @@ export const fundChannel = async (
       }
       return reject(new Error(msg.error));
     });
-
     try {
       // FYI this function returns after fundChannel has returned (at resolve above)
       log.debug(`client.deposit() called`);
       const start = Date.now();
       const response = await client.deposit({ amount: amount.toString(), assetId });
-
       // TODO: remove this check once backwards compatibility is not needed
       if (response.completed) {
         await response.completed();
@@ -60,14 +62,15 @@ export const fundChannel = async (
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.signerAddress].add(amount);
       expect(freeBalance[client.signerAddress]).to.equal(expected);
-      log.info(`Got deposit confirmed event, helper wrapper is returning`);
-      log.info(`client.deposit() returned in ${Date.now() - start}`);
+      log.debug(`Got deposit confirmed event, helper wrapper is returning`);
+      log.debug(`client.deposit() returned in ${Date.now() - start}`);
       return resolve();
     } catch (e) {
-      return reject(new Error(e.stack || e.message));
+      return reject(e);
     }
   });
 
+  timeElapsed(`Funded client ${client.publicIdentifier}`, start);
   return;
 };
 

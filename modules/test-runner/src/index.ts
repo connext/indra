@@ -13,6 +13,7 @@ import "./collateral/request.test";
 import "./connect.test";
 import "./get/appRegistry.test";
 import "./get/stateChannel.test";
+import "./store/happy.test";
 import "./store/multiChannel.test";
 import "./store/restoreState.test";
 import "./transfer/asyncTransfer.test";

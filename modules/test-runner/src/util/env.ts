@@ -10,7 +10,7 @@ export const env = {
   mnemonic: process.env.INDRA_MNEMONIC || "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
   nodeUrl: process.env.INDRA_NODE_URL || "http://proxy:80",
   natsUrl: process.env.INDRA_NATS_URL || "nats://proxy:4222",
-  storeDir: process.env.STORE_DIR || "",
+  storeDir: process.env.STORE_DIR || "/tmpfs",
   adminToken: process.env.INDRA_ADMIN_TOKEN || "cxt1234",
   natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,
   natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
