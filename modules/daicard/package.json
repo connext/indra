@@ -26,7 +26,7 @@
     "classnames": "2.2.6",
     "connext": "4.2.5",
     "ethereum-blockies-png": "0.1.3",
-    "ethers": "5.0.8",
+    "ethers": "5.0.7",
     "interval-promise": "1.4.0",
     "mdi-material-ui": "6.17.0",
     "prop-types": "15.7.2",
