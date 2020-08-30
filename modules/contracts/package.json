@@ -36,7 +36,7 @@
     "@connext/utils": "7.3.10",
     "@nomiclabs/buidler": "1.4.3",
     "@openzeppelin/contracts": "3.0.2",
-    "ethers": "5.0.8",
+    "ethers": "5.0.7",
     "ganache-cli": "6.10.1",
     "keccak": "3.0.1",
     "yargs": "15.4.1"

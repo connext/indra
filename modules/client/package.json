@@ -27,7 +27,7 @@
     "@connext/watcher": "7.3.10",
     "axios": "0.19.2",
     "core-js": "3.6.5",
-    "ethers": "5.0.8",
+    "ethers": "5.0.7",
     "evt": "1.8.4",
     "regenerator-runtime": "0.13.7",
     "ts-natsutil": "1.1.1",
