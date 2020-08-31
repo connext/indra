@@ -212,19 +212,33 @@ export class ConfigService implements OnModuleInit {
           toChainId: chainId,
         });
       });
+
+    const extraSwaps: AllowedSwap[] = JSON.parse(this.get("INDRA_ALLOWED_SWAPS") || "[]");
+    allowedSwaps.concat(extraSwaps);
+
     return allowedSwaps;
   }
 
   getSupportedTokens(): { [chainId: number]: Address[] } {
     const addressBook = this.getAddressBook();
     const chains = this.getSupportedChains();
-    return chains.reduce((tokens, chainId) => {
+    const supportedTokens: { [chainId: number]: Address[] } = chains.reduce((tokens, chainId) => {
       if (!tokens[chainId]) {
         tokens[chainId] = [AddressZero];
       }
       tokens[chainId].push(addressBook[chainId]?.Token?.address);
       return tokens;
     }, {});
+    const extraTokens: { [chainId: number]: Address[] } = JSON.parse(
+      this.get("INDRA_SUPPORTED_TOKENS") || "{}",
+    );
+    Object.keys(extraTokens).forEach((chainId) => {
+      if (!supportedTokens[chainId]) {
+        throw new Error(`Unsupported chainId in INDRA_SUPPORTED_TOKENS: ${chainId}`);
+      }
+      supportedTokens[chainId].concat(extraTokens[chainId]);
+    });
+    return supportedTokens;
   }
 
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
@@ -327,7 +341,6 @@ export class ConfigService implements OnModuleInit {
       reclaimThreshold: parseEther(`100`),
     };
     try {
-      defaultProfileToken = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN"));
       const parsed = JSON.parse(this.get("INDRA_DEFAULT_REBALANCE_PROFILE_TOKEN"));
       if (parsed) {
         defaultProfileToken = {
