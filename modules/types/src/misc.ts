@@ -21,20 +21,13 @@ export type ChannelAppSequences = {
   nodeSequenceNumber: number;
 };
 
-interface PendingAsyncTransfer {
-  assetId: Address;
-  amount: BigNumber;
-  encryptedPreImage: string;
-  linkedHash: Bytes32;
-  paymentId: Bytes32;
-}
-
 ////////////////////////////////////
 // Swap Rate Management
 
 export const PriceOracleTypes = enumify({
   UNISWAP: "UNISWAP",
   HARDCODED: "HARDCODED",
+  ACCEPT_CLIENT_RATE: "ACCEPT_CLIENT_RATE",
 });
 export type PriceOracleTypes = typeof PriceOracleTypes[keyof typeof PriceOracleTypes];
 
