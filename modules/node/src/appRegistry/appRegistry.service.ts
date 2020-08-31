@@ -20,6 +20,7 @@ import {
   ConditionalTransferTypes,
   ProtocolParams,
   AppAction,
+  PriceOracleTypes,
 } from "@connext/types";
 import { getAddressFromAssetId, toBN, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -149,11 +150,7 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.message || e}`);
-      await this.cfCoreService.rejectInstallApp(
-        appIdentityHash,
-        installerChannel!,
-        e.message,
-      );
+      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel!, e.message);
       return;
     }
     try {
@@ -248,9 +245,25 @@ export class AppRegistryService implements OnModuleInit {
           stateChannel.chainId,
           params.responderDepositAssetId,
         );
+        const allowedSwaps = this.configService.getAllowedSwaps(stateChannel.chainId);
+        const swap = allowedSwaps.find(
+          (swap) =>
+            getAddressFromAssetId(swap.from) ===
+              getAddressFromAssetId(params.initiatorDepositAssetId) &&
+            getAddressFromAssetId(swap.to) ===
+              getAddressFromAssetId(params.responderDepositAssetId) &&
+            swap.fromChainId === stateChannel.chainId &&
+            swap.toChainId === stateChannel.chainId,
+        );
+        if (swap?.priceOracleType === PriceOracleTypes.ACCEPT_CLIENT_RATE) {
+          this.log.warn(
+            `Swap is configured to dangerously use client input rate! ${stringify(swap, true, 0)}`,
+          );
+          return;
+        }
         return validateSimpleSwapApp(
           params as any,
-          this.configService.getAllowedSwaps(stateChannel.chainId),
+          allowedSwaps,
           await this.swapRateService.getOrFetchRate(
             getAddressFromAssetId(params.initiatorDepositAssetId),
             getAddressFromAssetId(params.responderDepositAssetId),
