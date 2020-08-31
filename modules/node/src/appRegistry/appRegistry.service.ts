@@ -248,8 +248,10 @@ export class AppRegistryService implements OnModuleInit {
         const allowedSwaps = this.configService.getAllowedSwaps(stateChannel.chainId);
         const swap = allowedSwaps.find(
           (swap) =>
-            swap.from === getAddressFromAssetId(params.initiatorDepositAssetId) &&
-            swap.to === getAddressFromAssetId(params.responderDepositAssetId) &&
+            getAddressFromAssetId(swap.from) ===
+              getAddressFromAssetId(params.initiatorDepositAssetId) &&
+            getAddressFromAssetId(swap.to) ===
+              getAddressFromAssetId(params.responderDepositAssetId) &&
             swap.fromChainId === stateChannel.chainId &&
             swap.toChainId === stateChannel.chainId,
         );

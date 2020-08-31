@@ -185,14 +185,23 @@ export class ConfigService implements OnModuleInit {
   }
 
   getAllowedSwaps(chainId: number): AllowedSwap[] {
-    const supportedTokens = this.getSupportedTokens();
+    // configured tokens per chain in address book
+    const addressBook = this.getAddressBook();
+    const chains = this.getSupportedChains();
+    const supportedTokens: { [chainId: number]: Address[] } = chains.reduce((tokens, chainId) => {
+      if (!tokens[chainId]) {
+        tokens[chainId] = [AddressZero];
+      }
+      tokens[chainId].push(addressBook[chainId]?.Token?.address);
+      return tokens;
+    }, {});
     if (!supportedTokens[chainId]) {
       this.log.warn(`There are no supported tokens for chain ${chainId}`);
       return [];
     }
     const priceOracleType =
       chainId.toString() === "1" ? PriceOracleTypes.UNISWAP : PriceOracleTypes.HARDCODED;
-    const allowedSwaps: AllowedSwap[] = [];
+    let allowedSwaps: AllowedSwap[] = [];
     // allow token <> eth swaps per chain
     supportedTokens[chainId]
       .filter((token) => token !== AddressZero)
@@ -214,7 +223,15 @@ export class ConfigService implements OnModuleInit {
       });
 
     const extraSwaps: AllowedSwap[] = JSON.parse(this.get("INDRA_ALLOWED_SWAPS") || "[]");
-    allowedSwaps.concat(extraSwaps);
+    allowedSwaps = allowedSwaps.concat(
+      extraSwaps.map((swap) => {
+        return {
+          ...swap,
+          fromChainId: parseInt(swap.fromChainId as any),
+          toChainId: parseInt(swap.toChainId as any),
+        };
+      }),
+    );
 
     return allowedSwaps;
   }
@@ -229,6 +246,7 @@ export class ConfigService implements OnModuleInit {
       tokens[chainId].push(addressBook[chainId]?.Token?.address);
       return tokens;
     }, {});
+
     const extraTokens: { [chainId: number]: Address[] } = JSON.parse(
       this.get("INDRA_SUPPORTED_TOKENS") || "{}",
     );
@@ -236,7 +254,7 @@ export class ConfigService implements OnModuleInit {
       if (!supportedTokens[chainId]) {
         throw new Error(`Unsupported chainId in INDRA_SUPPORTED_TOKENS: ${chainId}`);
       }
-      supportedTokens[chainId].concat(extraTokens[chainId]);
+      supportedTokens[chainId] = supportedTokens[chainId].concat(extraTokens[chainId]);
     });
     return supportedTokens;
   }
