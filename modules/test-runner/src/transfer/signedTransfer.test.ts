@@ -324,7 +324,7 @@ describe(name, () => {
         data: receipt.data,
         signature: badSig,
       } as PublicParams.ResolveSignedTransfer),
-    ).to.eventually.be.rejectedWith(/invalid signature/);
+    ).to.eventually.be.rejectedWith(/invalid signature|Incorrect signer/);
   });
 
   it("if sender uninstalls, node should force uninstall receiver first", async () => {
