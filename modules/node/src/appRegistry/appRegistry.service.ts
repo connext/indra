@@ -21,6 +21,9 @@ import {
   ProtocolParams,
   AppAction,
   PriceOracleTypes,
+  InstallMiddlewareContext,
+  SimpleLinkedTransferAppName,
+  RequireOnlineApps,
 } from "@connext/types";
 import { getAddressFromAssetId, toBN, stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -222,7 +225,7 @@ export class AppRegistryService implements OnModuleInit {
           return this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
-          return;
+          return this.installMiddleware(cxt as InstallMiddlewareContext);
         }
         case ProtocolNames.uninstall: {
           return this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
@@ -273,6 +276,24 @@ export class AppRegistryService implements OnModuleInit {
           responderDecimals,
         );
       }
+    }
+  };
+
+  private installOfflineTransferMiddleware = async (
+    appInstance: AppInstanceJson,
+    role: ProtocolRoles,
+    params: ProtocolParams.Install,
+  ) => {
+    const match = await this.transferRepository.findByPaymentId(appInstance.meta.paymentId);
+    this.log.info(`installOfflineTransferMiddleware - match: ${stringify(match)}`);
+    if (match?.receiverApp) {
+      throw new Error(
+        `Node has already installed or completed linked transfer for this paymentId: ${stringify(
+          match,
+          true,
+          0,
+        )}`,
+      );
     }
   };
 
@@ -398,6 +419,22 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
     return;
+  };
+
+  private installMiddleware = async (cxt: InstallMiddlewareContext): Promise<void> => {
+    const { appInstance, role, params } = cxt;
+    const appDef = appInstance.appDefinition;
+
+    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
+    const appName = appRegistryInfo!.name;
+    const isTransfer = Object.keys(ConditionalTransferAppNames).includes(appName);
+    if (isTransfer) {
+      const requireOnline =
+        RequireOnlineApps.includes(appName) || params.proposal?.meta?.requireOnline;
+      if (!requireOnline) {
+        return this.installOfflineTransferMiddleware(appInstance, role, params);
+      }
+    }
   };
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
