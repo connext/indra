@@ -5,7 +5,7 @@ import { getRandomPrivateKey } from "@connext/utils";
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
 
 const removeUndefinedFields = <T>(obj: T): T => {
-  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
+  Object.keys(obj).forEach((key) => typeof obj[key] === "undefined" && delete obj[key]);
   return obj;
 };
 
@@ -21,7 +21,7 @@ const getGeneratedSigner = (): string => {
   return signer;
 };
 
-const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: string } => {
+export const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: string } => {
   let urlOptions;
 
   if (network.toLowerCase() === "localhost") {
@@ -31,7 +31,7 @@ const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: stri
       network.toLowerCase() === "mainnet"
         ? "indra.connext.network"
         : network.toLowerCase() === "rinkeby"
-        ? "rinkeby.indra.connext.network"
+        ? "staging.indra.connext.network"
         : null;
     if (!baseUrl) {
       throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);
