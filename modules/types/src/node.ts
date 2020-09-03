@@ -37,6 +37,8 @@ type GetHashLockTransferResponse =
       meta?: any;
       preImage: Bytes32;
       expiry: BigNumber;
+      senderAppIdentityHash?: Bytes32;
+      receiverAppIdentityHash?: Bytes32;
     }
   | undefined;
 
