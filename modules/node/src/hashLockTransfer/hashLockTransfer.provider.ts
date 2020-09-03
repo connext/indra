@@ -85,6 +85,8 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
           ? userApp.latestState.preImage
           : receiverApp?.latestState?.preImage,
       expiry: latestState.expiry,
+      senderAppIdentityHash: senderApp?.identityHash,
+      receiverAppIdentityHash: receiverApp?.identityHash,
     };
   }
 
