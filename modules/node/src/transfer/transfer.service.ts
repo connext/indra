@@ -152,8 +152,111 @@ export class TransferService {
     );
   }
 
+  // NOTE: This function is called by `transferAppInstallFlow` and 
+  // should hard error if it cannot install the sender app *ONLY*
+  // so it is properly rejected
+  // Otherwise, it should error gracefully from the function, including
+  // performing any relevant cleanup
+  private async offlineTransferFlow(
+    paymentId: string,
+    senderProposal: AppInstance,
+    proposeParams: MethodParams.ProposeInstall,
+    from: string,
+    transferType: ConditionalTransferTypes,
+  ) {
+    // Get the senders channel
+    const senderChannel = await this.channelRepository.findByAppIdentityHashOrThrow(senderProposal.identityHash);
+
+    // Install the sender app
+    this.log.info(
+      `Installing sender app ${senderProposal.identityHash} in channel ${senderChannel.multisigAddress}`,
+    );
+    await this.cfCoreService.installApp(senderProposal.identityHash, senderChannel);
+    this.log.info(
+      `Sender app ${senderProposal.identityHash} in channel ${senderChannel.multisigAddress} installed`,
+    );
+
+    // If there is no specified recipient, return
+    const recipient = proposeParams.meta.recipient;
+    if (!recipient) {
+      this.log.info(`No recipient specified for transfer, offline transfer flow complete`);
+      return;
+    }
+
+    // Set the chainId + get channel
+    const receiverChainId = proposeParams.meta.receiverChainId || senderChannel.chainId;
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
+        recipient,
+        receiverChainId,
+      );
+
+    // Propose receiver app
+    let receiverProposeRes;
+    try {
+      receiverProposeRes = (await Promise.race([
+        this.proposeReceiverAppByPaymentId(
+          from,
+          senderChannel.chainId,
+          recipient,
+          receiverChainId,
+          paymentId,
+          proposeParams.initiatorDepositAssetId,
+          proposeParams.initialState as AppStates[typeof transferType],
+          proposeParams.meta,
+          transferType,
+          receiverChannel,
+        ),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT * 3,
+          `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
+        ),
+      ])) as any;
+    } catch (e) {
+      this.log.error(`Unable to propose receiver app: ${e.message}`);
+      // IFF the receiver is offline, leave sender app installed
+      // Otherwise, uninstall sender app
+      if (e.message.includes(`IO_SEND_AND_WAIT timed out`) || e.message.includes(`Could not collateralize & propose`)) {
+        return;
+      }
+
+      // Uninstall the sender app
+      this.log.warn(`Error was not timeout error, cancelling sender payment`);
+      await this.cfCoreService.uninstallApp(
+        senderProposal.identityHash,
+        senderChannel,
+        getCancelAction(transferType),
+      );
+    }
+
+    // Try to install the receiver app, and reject the proposal if it fails
+    this.log.info(
+      `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+    );
+    try {
+      await this.cfCoreService.installApp(receiverProposeRes.appIdentityHash, receiverChannel);
+      this.log.info(
+        `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+      );
+      // Add the receiver app to the transfer
+      const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+        receiverProposeRes!.appIdentityHash,
+      );
+      await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
+    } catch (e) {
+      const msg = `Error installing or saving receiver app to transfer: ${e.message}`;
+      this.log.error(msg);
+      this.log.warn(`Rejecting receiver's proposal`);
+      await this.cfCoreService.rejectInstallApp(
+        receiverProposeRes.appIdentityHash,
+        receiverChannel,
+        msg,
+      );
+    }
+  }
+
   // NOTE: designed to be called from the proposal event handler to enforce
   // receivers are online if needed or that payment ids are unique, etc
+  // NOTE: If this function errors, the sender proposal will be rejected!
   async transferAppInstallFlow(
     senderAppIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
@@ -180,121 +283,111 @@ export class TransferService {
     const requireOnline =
       RequireOnlineApps.includes(transferType) || proposeInstallParams.meta["requireOnline"];
 
-    // ALLOW OFFLINE SENDER INSTALL
+    // If the app is allowed to be installed offline, use the offline
+    // allowed flow
     if (!requireOnline) {
-      this.log.info(
-        `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
+      await this.offlineTransferFlow(
+        paymentId,
+        existing, // sender proposal
+        proposeInstallParams,
+        from,
+        transferType,
       );
-      // if errors, it will reject the sender's proposal in the calling function
-      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel);
-      this.log.info(
-        `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
-      );
-    }
-
-    if (!proposeInstallParams.meta.recipient) {
+      this.log.info(`TransferAppInstallFlow for offline payment complete. Sender app: ${senderAppIdentityHash}`);
       return;
     }
 
-    // RECEIVER PROPOSAL
-    let receiverProposeRes: (MethodResults.ProposeInstall & { appType: AppType }) | undefined;
+    // The receiver *must* be online for this transfer to proceed.
+    if (!proposeInstallParams.meta.recipient) {
+      throw new Error(`No recipient specified in transfer meta: ${stringify(proposeInstallParams.meta)}`);
+    }
+
+    // Set the chainId + get channel
     const receiverChainId = proposeInstallParams.meta.receiverChainId
       ? proposeInstallParams.meta.receiverChainId
       : senderChannel.chainId;
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
-      proposeInstallParams.meta.recipient,
-      receiverChainId,
-    );
-
-    this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
-
-    try {
-      receiverProposeRes = (await Promise.race([
-        this.proposeReceiverAppByPaymentId(
-          from,
-          senderChannel.chainId,
-          proposeInstallParams.meta.recipient,
-          receiverChainId,
-          paymentId,
-          proposeInstallParams.initiatorDepositAssetId,
-          proposeInstallParams.initialState as AppStates[typeof transferType],
-          proposeInstallParams.meta,
-          transferType,
-          receiverChannel,
-        ),
-        // the sender client will time out after waiting for CF_METHOD_TIMEOUT * 3. do not continue installing sender app.
-        // collateralization may still complete even after this error occurs.
-        delayAndThrow(
-          CF_METHOD_TIMEOUT * 3,
-          `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
-        ),
-      ])) as any;
-    } catch (e) {
-      this.log.error(`Error proposing receiver app: ${e.message || e}`);
-      if (requireOnline) {
-        if (receiverProposeRes?.appIdentityHash) {
-          await this.cfCoreService.rejectInstallApp(
-            receiverProposeRes.appIdentityHash,
-            receiverChannel,
-            `Receiver offline for transfer`,
-          );
-        }
-      }
-      this.log.warn(
-        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver app not installed`,
+        proposeInstallParams.meta.recipient,
+        receiverChainId,
       );
-      return;
+    
+    // Try to install receiver app
+    this.log.info(`Attempting to propose receiver app to chainId ${receiverChainId}`);
+    // If the receiver app fails to install here, the sender application
+    // should be rejected.
+    const receiverProposeRes = (await Promise.race([
+      this.proposeReceiverAppByPaymentId(
+        from,
+        senderChannel.chainId,
+        proposeInstallParams.meta.recipient,
+        receiverChainId,
+        paymentId,
+        proposeInstallParams.initiatorDepositAssetId,
+        proposeInstallParams.initialState as AppStates[typeof transferType],
+        proposeInstallParams.meta,
+        transferType,
+        receiverChannel,
+      ),
+      // the sender client will time out after waiting for CF_METHOD_TIMEOUT * 3. do not continue installing sender app.
+      // collateralization may still complete even after this error occurs.
+      delayAndThrow(
+        CF_METHOD_TIMEOUT * 3,
+        `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
+      ),
+    ])) as any;
+
+    // Verify proposal
+    if (receiverProposeRes?.appIdentityHash && receiverProposeRes?.appType === AppType.PROPOSAL) {
+      throw new Error("Unable to properly propose receiver online transfer app");
     }
 
-    // REQUIRE ONLINE SENDER INSTALL
-    if (requireOnline) {
+    // Install the sender app before installing the receiver app, so the payment
+    // recipient does not get a free option
+    // NOTE: this should *NOT* error because it will trigger a `reject` on an
+    // installed app
+    try {
       this.log.info(
         `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
-      // this should throw so it doesn't install receiver app in case of error
-      // will reject in caller function
+
       await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel);
       this.log.info(
         `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
+
+    } catch (e) {
+      this.log.error(`Error installing sender app: ${e.message}`);
+      // Reject the receiver proposal
+      this.log.warn(`Rejecting receiver payment`);
+      await this.cfCoreService.rejectInstallApp(
+        receiverProposeRes.appIdentityHash,
+        receiverChannel,
+        `Receiver offline for transfer`,
+      );
+
+      // Uninstall the sender application
+      // cancel sender: https://github.com/ConnextProject/indra/issues/942
+      this.log.warn(`Canceling sender payment`);
+      await this.cfCoreService.uninstallApp(
+        senderAppIdentityHash,
+        senderChannel,
+        getCancelAction(transferType),
+      );
     }
 
-    // RECEIVER INSTALL
-    try {
-      if (receiverProposeRes?.appIdentityHash && receiverProposeRes?.appType === AppType.PROPOSAL) {
-        this.log.info(
-          `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
-        );
-        await this.cfCoreService.installApp(receiverProposeRes.appIdentityHash, receiverChannel);
-        this.log.info(
-          `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
-        );
-        // Add the receiver app to the transfer
-        const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
-          receiverProposeRes!.appIdentityHash,
-        );
-        await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
-      }
-    } catch (e) {
-      this.log.error(`Error installing receiver app: ${e.message || e}`);
-      if (requireOnline) {
-        // cancel sender: https://github.com/ConnextProject/indra/issues/942
-        this.log.warn(`Canceling sender payment`);
-        await this.cfCoreService.uninstallApp(
-          senderAppIdentityHash,
-          senderChannel,
-          getCancelAction(transferType),
-        );
-        this.log.warn(`Sender payment canceled`);
-        if (receiverProposeRes?.appIdentityHash) {
-          await this.cfCoreService.rejectInstallApp(
-            receiverProposeRes.appIdentityHash,
-            receiverChannel,
-            `Receiver offline for transfer`,
-          );
-        }
-      }
-    }
+    // Install receiver application
+    this.log.info(
+      `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+    );
+    await this.cfCoreService.installApp(receiverProposeRes.appIdentityHash, receiverChannel);
+    this.log.info(
+      `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+    );
+    // Add the receiver app to the transfer
+    const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+      receiverProposeRes!.appIdentityHash,
+    );
+    await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
     this.log.info(`TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete`);
   }
 
