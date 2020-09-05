@@ -264,25 +264,48 @@ export class TransferService {
     this.log.info(
       `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
     );
+    let receiverAppInstalled: undefined | AppInstance;
     try {
       await this.cfCoreService.installApp(receiverProposeRes.appIdentityHash, receiverChannel);
       this.log.info(
         `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
       );
       // Add the receiver app to the transfer
-      const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
+      receiverAppInstalled = await this.appInstanceRepository.findByIdentityHashOrThrow(
         receiverProposeRes!.appIdentityHash,
       );
-      await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
+      await this.transferRepository.addTransferReceiver(paymentId, receiverAppInstalled);
     } catch (e) {
       const msg = `Error installing or saving receiver app to transfer: ${e.message}`;
       this.log.error(msg);
-      this.log.warn(`Rejecting receiver's proposal`);
-      await this.cfCoreService.rejectInstallApp(
-        receiverProposeRes.appIdentityHash,
-        receiverChannel,
-        msg,
-      );
+      if (receiverAppInstalled) {
+        // must uninstall the receiver app if we couldn't add to our
+        // database, and uninstall sender app
+        // Clean up sender app
+        this.log.warn(`Cancelling sender payment`);
+        await this.cfCoreService.uninstallApp(
+          senderProposal.identityHash,
+          senderChannel,
+          getCancelAction(transferType),
+        );
+
+        // Cancel receiver payment
+        // Clean up sender app
+        this.log.warn(`Cancelling receiver payment`);
+        await this.cfCoreService.uninstallApp(
+          receiverAppInstalled.identityHash,
+          receiverChannel,
+          getCancelAction(transferType),
+        );
+      } else {
+        // Receiver app was never installed, reject proposal
+        this.log.warn(`Rejecting receiver's proposal`);
+        await this.cfCoreService.rejectInstallApp(
+          receiverProposeRes.appIdentityHash,
+          receiverChannel,
+          msg,
+        );
+      }
     }
   }
 
