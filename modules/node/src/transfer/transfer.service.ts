@@ -188,10 +188,14 @@ export class TransferService {
 
     // Set the chainId + get channel
     const receiverChainId = proposeParams.meta.receiverChainId || senderChannel.chainId;
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChain(
       recipient,
       receiverChainId,
     );
+    if (!receiverChannel) {
+      this.log.info(`No receiver channel found, waiting for them to create one.`);
+      return;
+    }
 
     // Propose receiver app
     let receiverProposeRes: (MethodResults.ProposeInstall & { appType: AppType }) | undefined;
@@ -209,31 +213,34 @@ export class TransferService {
           transferType,
           receiverChannel,
         ),
-        new Promise((resolve) =>
-          delayAndThrow(
-            CF_METHOD_TIMEOUT * 3,
-            `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
-          ).catch((e) => {
-            this.log.error(e.message);
-            return resolve(undefined);
-          }),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT * 3,
+          `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
         ),
       ])) as any;
     } catch (e) {
       this.log.error(`Unable to propose receiver app: ${e.message}`);
-      // IFF the receiver is offline, leave sender app installed
-      // Otherwise, uninstall sender app
-      if (e.message.includes(`IO_SEND_AND_WAIT timed out`)) {
-        return;
-      }
 
-      // Uninstall the sender app
-      this.log.warn(`Error was not timeout error, cancelling sender payment`);
-      await this.cfCoreService.uninstallApp(
-        senderProposal.identityHash,
-        senderChannel,
-        getCancelAction(transferType),
-      );
+      // TODO: reject if not timeout error.
+      // NOTE: the `deposit` function will swallow errors related to the
+      // protocol and return `Node failed to deposit`, so does propose
+      // `proposeAndInstall`. Will require a deeper refactor of error
+      // handling, which is out of scope of this PR
+
+      // // IFF the receiver is offline, leave sender app installed
+      // // Otherwise, uninstall sender app
+      // if (e.message.includes(`IO_SEND_AND_WAIT timed out`) || e.message.includes(`Could not collateralize & propose receiver app within`)) {
+      //   this.log.info(`Receiver was not online for transfer proposal`);
+      //   return;
+      // }
+
+      // // Uninstall the sender app
+      // this.log.warn(`Error was not timeout error, cancelling sender payment`);
+      // await this.cfCoreService.uninstallApp(
+      //   senderProposal.identityHash,
+      //   senderChannel,
+      //   getCancelAction(transferType),
+      // );
       return;
     }
 
@@ -366,7 +373,7 @@ export class TransferService {
     ])) as any;
 
     // Verify proposal
-    if (receiverProposeRes?.appIdentityHash && receiverProposeRes?.appType === AppType.PROPOSAL) {
+    if (!receiverProposeRes?.appIdentityHash || receiverProposeRes?.appType !== AppType.PROPOSAL) {
       throw new Error("Unable to properly propose receiver online transfer app");
     }
 
