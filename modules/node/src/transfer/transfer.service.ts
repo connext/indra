@@ -135,8 +135,9 @@ export class TransferService {
       `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
     const current = await this.configService.getEthProvider(channel.chainId)!.getBlockNumber();
-    const expiredApps = channel.appInstances.filter((app) =>
-      app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
+    const expiredApps = channel.appInstances.filter(
+      (app) =>
+        app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current),
     );
     this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
     for (const app of expiredApps) {
@@ -152,7 +153,7 @@ export class TransferService {
     );
   }
 
-  // NOTE: This function is called by `transferAppInstallFlow` and 
+  // NOTE: This function is called by `transferAppInstallFlow` and
   // should hard error if it cannot install the sender app *ONLY*
   // so it is properly rejected
   // Otherwise, it should error gracefully from the function, including
@@ -163,9 +164,11 @@ export class TransferService {
     proposeParams: MethodParams.ProposeInstall,
     from: string,
     transferType: ConditionalTransferTypes,
-  ) {
+  ): Promise<void> {
     // Get the senders channel
-    const senderChannel = await this.channelRepository.findByAppIdentityHashOrThrow(senderProposal.identityHash);
+    const senderChannel = await this.channelRepository.findByAppIdentityHashOrThrow(
+      senderProposal.identityHash,
+    );
 
     // Install the sender app
     this.log.info(
@@ -186,12 +189,12 @@ export class TransferService {
     // Set the chainId + get channel
     const receiverChainId = proposeParams.meta.receiverChainId || senderChannel.chainId;
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
-        recipient,
-        receiverChainId,
-      );
+      recipient,
+      receiverChainId,
+    );
 
     // Propose receiver app
-    let receiverProposeRes;
+    let receiverProposeRes: (MethodResults.ProposeInstall & { appType: AppType }) | undefined;
     try {
       receiverProposeRes = (await Promise.race([
         this.proposeReceiverAppByPaymentId(
@@ -206,16 +209,21 @@ export class TransferService {
           transferType,
           receiverChannel,
         ),
-        delayAndThrow(
-          CF_METHOD_TIMEOUT * 3,
-          `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
+        new Promise((resolve) =>
+          delayAndThrow(
+            CF_METHOD_TIMEOUT * 3,
+            `Could not collateralize & propose receiver app within ${CF_METHOD_TIMEOUT * 3}ms`,
+          ).catch((e) => {
+            this.log.error(e.message);
+            return resolve(undefined);
+          }),
         ),
       ])) as any;
     } catch (e) {
       this.log.error(`Unable to propose receiver app: ${e.message}`);
       // IFF the receiver is offline, leave sender app installed
       // Otherwise, uninstall sender app
-      if (e.message.includes(`IO_SEND_AND_WAIT timed out`) || e.message.includes(`Could not collateralize & propose`)) {
+      if (e.message.includes(`IO_SEND_AND_WAIT timed out`)) {
         return;
       }
 
@@ -226,6 +234,23 @@ export class TransferService {
         senderChannel,
         getCancelAction(transferType),
       );
+      return;
+    }
+
+    if (
+      !receiverProposeRes ||
+      !receiverProposeRes.appIdentityHash ||
+      receiverProposeRes.appType !== AppType.PROPOSAL
+    ) {
+      this.log.error(`Could not propose receiver app properly: ${stringify(receiverProposeRes)}`);
+      // Clean up sender app
+      this.log.warn(`Cancelling sender payment`);
+      await this.cfCoreService.uninstallApp(
+        senderProposal.identityHash,
+        senderChannel,
+        getCancelAction(transferType),
+      );
+      return;
     }
 
     // Try to install the receiver app, and reject the proposal if it fails
@@ -293,13 +318,17 @@ export class TransferService {
         from,
         transferType,
       );
-      this.log.info(`TransferAppInstallFlow for offline payment complete. Sender app: ${senderAppIdentityHash}`);
+      this.log.info(
+        `TransferAppInstallFlow for offline payment complete. Sender app: ${senderAppIdentityHash}`,
+      );
       return;
     }
 
     // The receiver *must* be online for this transfer to proceed.
     if (!proposeInstallParams.meta.recipient) {
-      throw new Error(`No recipient specified in transfer meta: ${stringify(proposeInstallParams.meta)}`);
+      throw new Error(
+        `No recipient specified in transfer meta: ${stringify(proposeInstallParams.meta)}`,
+      );
     }
 
     // Set the chainId + get channel
@@ -307,10 +336,10 @@ export class TransferService {
       ? proposeInstallParams.meta.receiverChainId
       : senderChannel.chainId;
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
-        proposeInstallParams.meta.recipient,
-        receiverChainId,
-      );
-    
+      proposeInstallParams.meta.recipient,
+      receiverChainId,
+    );
+
     // Try to install receiver app
     this.log.info(`Attempting to propose receiver app to chainId ${receiverChainId}`);
     // If the receiver app fails to install here, the sender application
@@ -354,7 +383,6 @@ export class TransferService {
       this.log.info(
         `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
-
     } catch (e) {
       this.log.error(`Error installing sender app: ${e.message}`);
       // Reject the receiver proposal
@@ -709,10 +737,7 @@ export class TransferService {
           );
         } else {
           this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
-          await this.cfCoreService.uninstallApp(
-            senderApp.identityHash,
-            senderApp.channel,
-          );
+          await this.cfCoreService.uninstallApp(senderApp.identityHash, senderApp.channel);
         }
         this.log.info(
           `Finished uninstalling sender app with paymentId ${senderApp.meta.paymentId}`,
