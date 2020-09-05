@@ -22,7 +22,6 @@ import {
   AppAction,
   PriceOracleTypes,
   InstallMiddlewareContext,
-  SimpleLinkedTransferAppName,
   RequireOnlineApps,
 } from "@connext/types";
 import { getAddressFromAssetId, toBN, stringify } from "@connext/utils";
