@@ -245,8 +245,7 @@ export class TransferService {
     }
 
     if (
-      !receiverProposeRes ||
-      !receiverProposeRes.appIdentityHash ||
+      !receiverProposeRes?.appIdentityHash ||
       receiverProposeRes.appType !== AppType.PROPOSAL
     ) {
       this.log.error(`Could not propose receiver app properly: ${stringify(receiverProposeRes)}`);
