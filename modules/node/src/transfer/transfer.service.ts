@@ -274,7 +274,6 @@ export class TransferService {
       receiverAppInstalled = await this.appInstanceRepository.findByIdentityHashOrThrow(
         receiverProposeRes!.appIdentityHash,
       );
-      await this.transferRepository.addTransferReceiver(paymentId, receiverAppInstalled);
     } catch (e) {
       const msg = `Error installing or saving receiver app to transfer: ${e.message}`;
       this.log.error(msg);
@@ -441,11 +440,6 @@ export class TransferService {
     this.log.info(
       `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
     );
-    // Add the receiver app to the transfer
-    const receiverApp = await this.appInstanceRepository.findByIdentityHashOrThrow(
-      receiverProposeRes!.appIdentityHash,
-    );
-    await this.transferRepository.addTransferReceiver(paymentId, receiverApp);
     this.log.info(`TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete`);
   }
 

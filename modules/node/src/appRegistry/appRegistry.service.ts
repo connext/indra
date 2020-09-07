@@ -428,6 +428,14 @@ export class AppRegistryService implements OnModuleInit {
     const appName = appRegistryInfo!.name;
     const isTransfer = Object.keys(ConditionalTransferAppNames).includes(appName);
     if (isTransfer) {
+      // Save the transfer
+      const paymentId = appInstance.meta.paymentId;
+      const match = await this.transferRepository.findByPaymentId(paymentId);
+      if (match?.receiverApp) {
+        // Add the receiver app to the transfer if it exists (which it should
+        // as soon as it is proposed)
+        await this.transferRepository.addTransferReceiver(paymentId, match.receiverApp);
+      }
       const requireOnline =
         RequireOnlineApps.includes(appName) || params.proposal?.meta?.requireOnline;
       if (!requireOnline) {
