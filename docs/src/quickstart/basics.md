@@ -48,7 +48,7 @@ const payload: AssetAmount = {
 channel.deposit(payload);
 ```
 
-You can also deposit directly into the channel by bypassing the signer address with some additional work. For more info, see [Controlling Deposit Flow](https://docs.connext.network/en/latest/user/advanced.html#controlling-deposit-flow)
+You can also deposit directly into the channel by bypassing the signer address with some additional work. For more info, see [Controlling Deposit Flow](https://docs.connext.network/en/latest/quickstart/fundingYourChannel.html#advanced-controlling-deposit-flow)
 
 ## Swaps
 
