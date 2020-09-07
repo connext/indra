@@ -251,7 +251,7 @@ export class CFCoreService {
     try {
       proposeRes = await this.proposeInstallApp(params, channel);
     } catch (err) {
-      this.log.error(`Error installing app, proposal failed. Params: ${JSON.stringify(params)}`);
+      this.log.error(`Error proposing app ${err.message}. Params: ${JSON.stringify(params)}`);
       return undefined;
     }
 
