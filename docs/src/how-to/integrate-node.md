@@ -81,6 +81,51 @@ import { Wallet } from "ethers";
 })()
 ```
 
+## Advanced Configuration
+
+The node is configured through environment variables. The easiest way to modify environment variables is to use a `.env` file in the root of the repo. Any variables in the `.env` are injected into the node at runtime. The list of supported environment variables is [here](../reference/node.md).
+
+### Adding Custom Tokens
+
+To add a custom token that the node provides collateral for, modify the node's environment variable `INDRA_SUPPORTED_TOKENS`. The varible is a JSON string with the following type signature:
+
+```typescript
+type SupportedTokens = {
+  [chainId: string]: string[];
+};
+```
+
+This allows you to add multiple tokens per `chainId` that the node supports in its `INDRA_CHAIN_PROVIDERS` config. For example:
+
+```sh
+# .env
+export INDRA_SUPPORTED_TOKENS='{"4":["0x4E72770760c011647D4873f60A3CF6cDeA896CD8","0x514910771af9ca656af840dff83e8264ecf986ca"],"5":["0x514910771af9ca656af840dff83e8264ecf986ca"]}'
+```
+
+Note: ETH and the `Token` in the `address-book.json` are always supported by default.
+
+### Adding Custom Swaps
+
+To allow the node to swap tokens in-channel, configure the environment variable `INDRA_ALLOWED_SWAPS`. The variable is a JSON string with the following type signature:
+
+```typescript
+type AllowedSwaps = {
+  from: string;
+  to: string;
+  fromChainId: string;
+  toChainId: string;
+  priceOracleType: PriceOracleTypes;
+}[];
+
+const PriceOracleTypes: {
+  UNISWAP: "UNISWAP";
+  HARDCODED: "HARDCODED";
+  ACCEPT_CLIENT_RATE: "ACCEPT_CLIENT_RATE";
+};
+```
+
+Note that `fromChainId` and `toChainId` must be the same because the in-channel swap occurs on the same chain.
+
 ## Reference Implementations
 
 ### TipDai
