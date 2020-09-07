@@ -1,13 +1,8 @@
 import { IConnextClient, ConditionalTransferTypes, EventNames } from "@connext/types";
-import { getRandomBytes32, getRandomChannelSigner } from "@connext/utils";
+import { getRandomBytes32, getRandomChannelSigner, delay } from "@connext/utils";
 import { constants } from "ethers";
 
-import {
-  createClient,
-  expect,
-  fundChannel,
-  getTestLoggers,
-} from "../util";
+import { createClient, expect, fundChannel, getTestLoggers } from "../util";
 
 const { AddressZero, One, Two } = constants;
 
@@ -74,7 +69,33 @@ describe(name, () => {
     expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
   });
 
-  it("linked transfers can be sent to an offline recipient", async () => {
+  it("linked transfers can be sent to an offline recipient without a channel", async () => {
+    const transfer = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    const offlineSigner = getRandomChannelSigner();
+    let recipient = await createClient({ id: "O", signer: offlineSigner });
+    await recipient.messaging.disconnect();
+    recipient.off();
+    await delay(10_000);
+    await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      assetId: AddressZero,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: getRandomBytes32(),
+      preImage: getRandomBytes32(),
+      recipient: recipient.publicIdentifier,
+    });
+    const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    expect(balBefore.sub(transfer.amount).toString()).to.be.equal(balMiddle.toString());
+    await delay(90_000);
+    recipient = await createClient({ id: "O", signer: offlineSigner });
+    // The pending transfer will be resolved during connect, no need to resolve it manually
+    const balAfter = (await recipient.getFreeBalance(transfer.assetId))[recipient.signerAddress];
+    expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
+  });
+
+  it("linked transfers can be sent to a recipient", async () => {
     const transfer = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
@@ -122,14 +143,16 @@ describe(name, () => {
       (await clientB.getFreeBalance(transfer.assetId))[clientB.signerAddress].toString(),
     );
     // Transfer to offline client fails
-    expect(clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      assetId: AddressZero,
-      conditionType: ConditionalTransferTypes.OnlineTransfer,
-      paymentId: getRandomBytes32(),
-      preImage: getRandomBytes32(),
-      recipient: getRandomChannelSigner().publicIdentifier,
-    })).to.be.rejected;
+    expect(
+      clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        assetId: AddressZero,
+        conditionType: ConditionalTransferTypes.OnlineTransfer,
+        paymentId: getRandomBytes32(),
+        preImage: getRandomBytes32(),
+        recipient: getRandomChannelSigner().publicIdentifier,
+      }),
+    ).to.be.rejected;
   });
 
   it("get linked transfer by payment id", async () => {
