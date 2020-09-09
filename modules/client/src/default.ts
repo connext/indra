@@ -21,7 +21,7 @@ const getGeneratedSigner = (): string => {
   return signer;
 };
 
-const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: string } => {
+export const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: string } => {
   let urlOptions;
 
   if (network.toLowerCase() === "localhost") {
@@ -31,7 +31,7 @@ const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: stri
       network.toLowerCase() === "mainnet"
         ? "indra.connext.network"
         : network.toLowerCase() === "rinkeby"
-        ? "rinkeby.indra.connext.network"
+        ? "staging.indra.connext.network"
         : null;
     if (!baseUrl) {
       throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);
