@@ -1,7 +1,6 @@
 import { CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { BigNumber, Contract, providers, constants, utils } from "ethers";
-import memoize from "memoizee";
 
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { MinimumViableMultisig, ProxyFactory } from "./contracts";
@@ -63,7 +62,7 @@ export const getCreate2MultisigAddress = async (
 
   const proxyBytecode = await proxyFactory.proxyCreationCode();
 
-  return memoizedGetAddress(
+  return getAddress(
     solidityKeccak256(
       ["bytes1", "address", "uint256", "bytes32"],
       [
@@ -93,9 +92,3 @@ export const getCreate2MultisigAddress = async (
     ).slice(-40),
   );
 };
-
-const memoizedGetAddress = memoize((params: string): string => getAddress(params), {
-  max: 100,
-  maxAge: 60 * 1000,
-  primitive: true,
-});
