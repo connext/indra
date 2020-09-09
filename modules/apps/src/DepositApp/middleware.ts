@@ -1,7 +1,5 @@
 import {
   DepositAppState,
-  Contract,
-  CONVENTION_FOR_ETH_ASSET_ID,
   ProtocolRoles,
   ProposeMiddlewareContext,
   UninstallMiddlewareContext,
@@ -9,14 +7,13 @@ import {
   InstallMiddlewareContext,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { ERC20 } from "@connext/contracts";
 import { validateDepositApp } from "./validation";
 
 export const uninstallDepositMiddleware = async (
   context: UninstallMiddlewareContext,
   provider: JsonRpcProvider,
 ) => {
-  const { role, appInstance, stateChannel, params } = context;
+  const { role, appInstance, params } = context;
 
   if (!provider || !provider.getBalance) {
     throw new Error(
@@ -29,18 +26,6 @@ export const uninstallDepositMiddleware = async (
   }
 
   const latestState = appInstance.latestState as DepositAppState;
-  const currentMultisigBalance =
-    latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
-      ? await provider.getBalance(stateChannel.multisigAddress)
-      : await new Contract(latestState.assetId, ERC20.abi, provider).balanceOf(
-          stateChannel.multisigAddress,
-        );
-
-  if (currentMultisigBalance.lt(latestState.startingMultisigBalance)) {
-    throw new Error(
-      `Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multisig balance (${latestState.startingMultisigBalance.toString()})`,
-    );
-  }
 
   if (
     role === ProtocolRoles.initiator &&
