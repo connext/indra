@@ -82,8 +82,15 @@ export class CreateChannelController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
   ) {
-    const { owners } = params;
-    const { publicIdentifier, protocolRunner, outgoing, router } = requestHandler;
+    const { chainId, owners } = params;
+    const {
+      networkContexts,
+      outgoing,
+      protocolRunner,
+      publicIdentifier,
+      router,
+      store,
+    } = requestHandler;
 
     const [responderIdentifier] = owners.filter((x) => x !== publicIdentifier);
 
@@ -110,7 +117,12 @@ export class CreateChannelController extends MethodController {
       },
     };
 
-    // await this.store.updateLatestProcessedBlock(chainId, current);
+    const networkContext = networkContexts[chainId];
+    if (!networkContext?.provider) {
+      throw new Error(NO_NETWORK_PROVIDER_FOR_CHAIN_ID(chainId));
+    }
+    const currentBlock = await networkContext.provider.getBlockNumber();
+    await store.updateLatestProcessedBlock(chainId, currentBlock);
 
     outgoing.emit(EventNames.CREATE_CHANNEL_EVENT, msg);
   }
