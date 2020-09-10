@@ -116,9 +116,13 @@ export type WatcherEventData = {
 ////////////////////////////////////////
 // Watcher interface
 
+export type ChallengeTransaction = providers.TransactionResponse & {
+  processed: Promise<void>;
+}
+
 export type ChallengeInitiatedResponse = {
-  freeBalanceChallenge: providers.TransactionResponse;
-  appChallenge: providers.TransactionResponse;
+  freeBalanceChallenge: ChallengeTransaction;
+  appChallenge: ChallengeTransaction;
 };
 
 export interface IWatcher {

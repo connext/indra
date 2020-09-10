@@ -22,7 +22,7 @@ import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
 const { AddressZero } = constants;
 const { parseEther } = utils;
 
-describe.skip("Challenges", () => {
+describe("Challenges", () => {
   const log = new ColorfulLogger("Challenges", 3, true, "Test");
 
   let app: INestApplication;
@@ -166,12 +166,16 @@ describe.skip("Challenges", () => {
     });
     log.info(`transferRes: ${stringify(transferRes)}`);
     const { appInstance: app } = (await clientA.getAppInstance(transferRes.appIdentityHash)) || {};
+    log.info(`initiating challenge on: ${app.identityHash}`);
     const challengeRes = await clientA.initiateChallenge({
       appIdentityHash: app.identityHash,
     });
     expect(challengeRes.appChallenge.hash).to.be.a("string");
     expect(challengeRes.freeBalanceChallenge.hash).to.be.a("string");
-    log.info(`freeBalanceChallenge: ${stringify(challengeRes.freeBalanceChallenge)}`);
+    log.warn(`Challenge result: ${stringify(challengeRes)}`);
+
+    await challengeRes.appChallenge.processed;
+    await challengeRes.freeBalanceChallenge.processed;
 
     const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
     const freeBalanceId = channel.freeBalanceAppInstance.identityHash;
@@ -185,7 +189,7 @@ describe.skip("Challenges", () => {
       stringify(challenges.find(c => c.identityHash === freeBalanceId ))
     }`);
     log.info(`Free Balance challenge 2: ${stringify(freeBalanceChallenge)}`);
-    expect(freeBalanceChallenge).to.be.ok;
+    expect(freeBalanceChallenge).to.be.a("string");
 
     return expect(clientA.deposit({ assetId: AddressZero, amount: parseEther("0.02") })).to.be.rejectedWith("dispute");
   });

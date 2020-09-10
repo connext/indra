@@ -8,30 +8,31 @@ import {
 import {
   AppIdentity,
   AppInstanceJson,
-  WatcherEvents,
+  ChallengeEvents,
+  ChallengeInitiatedResponse,
+  ChallengeTransaction,
+  ChallengeUpdatedEventPayload,
+  ConditionalTransactionCommitmentJSON,
+  ContractAddressBook,
   IChannelSigner,
   ILoggerService,
-  IWatcher,
+  IOnchainTransactionService,
   IStoreService,
+  IWatcher,
   MinimalTransaction,
+  SetStateCommitmentJSON,
   SignedCancelChallengeRequest,
   StateChannelJSON,
-  WatcherEvent,
-  WatcherEventData,
-  WatcherInitOptions,
-  ChallengeUpdatedEventPayload,
   StateProgressedEventPayload,
   StoredAppChallenge,
-  SetStateCommitmentJSON,
   StoredAppChallengeStatus,
-  ConditionalTransactionCommitmentJSON,
-  ChallengeInitiatedResponse,
-  ChallengeEvents,
-  ContractAddressBook,
-  IOnchainTransactionService,
+  WatcherEvent,
+  WatcherEventData,
+  WatcherEvents,
+  WatcherInitOptions,
 } from "@connext/types";
 import {
-  // ConsoleLogger,
+  ColorfulLogger,
   ChannelSigner,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
@@ -387,7 +388,7 @@ export class Watcher implements IWatcher {
   private startAppChallenge = async (
     appInstanceId: string,
     chainId: number,
-  ): Promise<providers.TransactionResponse> => {
+  ): Promise<ChallengeTransaction> => {
     this.log.debug(`Starting challenge for ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
@@ -397,12 +398,22 @@ export class Watcher implements IWatcher {
       status: StoredAppChallengeStatus.NO_CHALLENGE,
       chainId,
     };
+
+    const processed: Promise<void> = new Promise((resolve, reject) => {
+      this.once(WatcherEvents.CHALLENGE_UPDATED_EVENT, async (payload) => {
+        if (payload.identityHash === appInstanceId) {
+          resolve();
+        }
+      });
+    });
+
     const response = await this.respondToChallenge(challenge);
     if (typeof response === "string") {
       throw new Error(`Could not initiate challenge for ${appInstanceId}. ${response}`);
     }
     this.log.info(`Challenge initiated with: ${response.hash}`);
-    return response;
+
+    return { ...response, processed };
   };
 
   private advanceDisputes = async () => {
