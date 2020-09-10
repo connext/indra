@@ -208,7 +208,7 @@ export class Watcher implements IWatcher {
     // catch up to current block
     for (const chainId of Object.keys(this.providers)) {
       const provider = this.providers[chainId];
-      const saved = await this.store.getLatestProcessedBlock();
+      const saved = await this.store.getLatestProcessedBlock(parseInt(chainId, 10));
       const deployHash = addressBook[chainId]?.ChallengeRegistry?.txHash;
       const deployTx = deployHash && await provider.getTransaction(deployHash);
       const imported = deployTx?.block || 0;
@@ -243,7 +243,7 @@ export class Watcher implements IWatcher {
     for (const chainId of Object.keys(this.providers)) {
       const current = await this.providers[chainId].getBlockNumber();
       this.log.info(`Setting latest processed block to ${current}`);
-      await this.store.updateLatestProcessedBlock(current);
+      await this.store.updateLatestProcessedBlock(parseInt(chainId, 10), current);
     }
 
     this.log.debug(`Disabling listener`);
@@ -338,7 +338,7 @@ export class Watcher implements IWatcher {
       // have listener process and emit all events from block --> now
       this.registerListeners();
       await this.listener.parseLogsFrom(starting);
-      await this.store.updateLatestProcessedBlock(current);
+      await this.store.updateLatestProcessedBlock(parseInt(chainId, 10), current);
       // cleanup any listeners
       this.removeListeners();
       this.log.info(`Done processing events in blocks ${starting} - ${current}`);
@@ -375,7 +375,7 @@ export class Watcher implements IWatcher {
       this.providers[chainId].on("block", async (blockNumber: number) => {
         this.log.debug(`Provider found a new block: ${blockNumber}`);
         await this.advanceDisputes();
-        await this.store.updateLatestProcessedBlock(blockNumber);
+        await this.store.updateLatestProcessedBlock(parseInt(chainId, 10), blockNumber);
       });
     });
   };

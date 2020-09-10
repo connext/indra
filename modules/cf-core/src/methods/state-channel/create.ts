@@ -110,7 +110,7 @@ export class CreateChannelController extends MethodController {
       },
     };
 
-    // await this.store.updateLatestProcessedBlock(current);
+    // await this.store.updateLatestProcessedBlock(chainId, current);
 
     outgoing.emit(EventNames.CREATE_CHANNEL_EVENT, msg);
   }

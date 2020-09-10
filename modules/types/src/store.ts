@@ -49,16 +49,18 @@ export interface IStoreService {
 
   //// Misc Getters
   getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
-  getLatestProcessedBlock(): Promise<number>;
 
   //// Misc Setters
   addOnchainAction(appIdentityHash: Bytes32, provider: providers.JsonRpcProvider): Promise<void>;
-  updateLatestProcessedBlock(blockNumber: number): Promise<void>;
   updateNumProposedApps(
     multisigAddress: string,
     numProposedApps: number,
     stateChannel?: StateChannelJSON,
   ): Promise<void>;
+
+  //// Last processed block
+  getLatestProcessedBlock(chainId: number): Promise<number>;
+  updateLatestProcessedBlock(chainId: number, blockNumber: number): Promise<void>;
 
   //// AppChallenges
   getActiveChallenges(): Promise<StoredAppChallenge[]>;

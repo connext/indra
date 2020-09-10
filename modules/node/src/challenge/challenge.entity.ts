@@ -23,6 +23,8 @@ import { IsKeccak256Hash } from "../validate";
 @Entity()
 export class ProcessedBlock {
   @PrimaryColumn("integer", { unique: true })
+  chainId!: number;
+
   blockNumber!: number;
 }
 

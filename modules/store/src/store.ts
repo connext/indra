@@ -133,12 +133,6 @@ export class StoreService implements IStoreService {
     return channel.freeBalanceAppInstance;
   }
 
-  async getLatestProcessedBlock(): Promise<number> {
-    const key = this.storage.getKey(BLOCK_PROCESSED);
-    const item = await this.storage.getItem(key);
-    return item ? parseInt(`${item}`) : 0;
-  }
-
   ////////////////////////////////////////
   //// Misc Setters
 
@@ -231,11 +225,6 @@ export class StoreService implements IStoreService {
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
   }
 
-  updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    const key = this.storage.getKey(BLOCK_PROCESSED);
-    return this.storage.setItem(key, blockNumber);
-  }
-
   async updateNumProposedApps(
     multisigAddress: string,
     numProposedApps: number,
@@ -252,6 +241,20 @@ export class StoreService implements IStoreService {
       });
       return this.saveStore(updatedStore);
     });
+  }
+
+  ////////////////////////////////////////
+  //// Last processed block
+
+  async getLatestProcessedBlock(chainId: number): Promise<number> {
+    const key = this.storage.getKey(BLOCK_PROCESSED + ":" + chainId.toString());
+    const item = await this.storage.getItem(key);
+    return item ? parseInt(`${item}`) : 0;
+  }
+
+  updateLatestProcessedBlock(chainId: number, blockNumber: number): Promise<void> {
+    const key = this.storage.getKey(BLOCK_PROCESSED + ":" + chainId.toString());
+    return this.storage.setItem(key, blockNumber);
   }
 
   ////////////////////////////////////////

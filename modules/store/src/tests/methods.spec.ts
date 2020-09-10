@@ -521,11 +521,12 @@ describe("Methods", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to get/update latest processed blocks`, async () => {
         const block = 200;
+        const chainId = 0;
         const store = await createStore(type as StoreTypes);
 
-        expect(await store.getLatestProcessedBlock()).to.be.eq(0);
-        await store.updateLatestProcessedBlock(block);
-        expect(await store.getLatestProcessedBlock()).to.be.eq(block);
+        expect(await store.getLatestProcessedBlock(chainId)).to.be.eq(0);
+        await store.updateLatestProcessedBlock(chainId, block);
+        expect(await store.getLatestProcessedBlock(chainId)).to.be.eq(block);
         await clearAndClose(store);
       });
     });

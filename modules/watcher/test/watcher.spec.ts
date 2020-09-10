@@ -109,7 +109,7 @@ describe("Watcher.initiate", () => {
       signer: context["wallet"].privateKey,
       store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.eq(
+    expect(await store.getLatestProcessedBlock(chainId)).to.be.eq(
       await providers[chainId].getBlockNumber(),
     );
   });
@@ -210,7 +210,7 @@ describe("Watcher.cancel", () => {
       signer: context["wallet"].privateKey,
       store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.eq(
+    expect(await store.getLatestProcessedBlock(chainId)).to.be.eq(
       await providers[chainId].getBlockNumber(),
     );
   });
@@ -311,7 +311,7 @@ describe("Watcher responses", () => {
       signer: context["wallet"].privateKey,
       store,
     });
-    expect(await store.getLatestProcessedBlock()).to.be.gte(
+    expect(await store.getLatestProcessedBlock(chainId)).to.be.gte(
       (await providers[chainId].getBlockNumber()) - 1,
     );
   });

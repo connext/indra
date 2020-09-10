@@ -16,9 +16,10 @@ export const entityToStoredChallenge = (entity: Challenge): StoredAppChallenge =
 
 @EntityRepository(ProcessedBlock)
 export class ProcessedBlockRepository extends Repository<ProcessedBlock> {
-  async findLatestProcessedBlock(): Promise<ProcessedBlock> {
+  async findLatestProcessedBlock(chainId: number): Promise<ProcessedBlock> {
     return this.createQueryBuilder("processedBlock")
-      .select("MAX(processedBlock.blockNumber)")
+      .select("processedBlock.blockNumber")
+      .where("processedBlock.chainId == :chainId", { chainId })
       .getRawOne();
   }
 }

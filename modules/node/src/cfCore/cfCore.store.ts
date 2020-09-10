@@ -60,7 +60,6 @@ import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
-import { Transfer } from "../transfer/transfer.entity";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;
@@ -668,16 +667,17 @@ export class CFCoreStore implements IStoreService {
   }
 
   ///// Events
-  async getLatestProcessedBlock(): Promise<number> {
-    const latest = await this.processedBlockRepository.findLatestProcessedBlock();
+  async getLatestProcessedBlock(chainId: number): Promise<number> {
+    const latest = await this.processedBlockRepository.findLatestProcessedBlock(chainId);
     if (!latest) {
       return 0;
     }
     return latest.blockNumber;
   }
 
-  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+  async updateLatestProcessedBlock(chainId: number, blockNumber: number): Promise<void> {
     const entity = new ProcessedBlock();
+    entity.chainId = chainId;
     entity.blockNumber = blockNumber;
     await this.processedBlockRepository.save(entity);
   }
