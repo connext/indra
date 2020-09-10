@@ -89,7 +89,7 @@ export class ChallengeService implements OnModuleInit {
       store: this.cfCoreStore,
       context: this.configService.getContractAddressBook(),
       logger: this.log,
-      providers: {}, // this.configService.getIndraChainProviders(),
+      providers: this.configService.getIndraChainProviders(),
     });
   }
 }

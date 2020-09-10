@@ -147,7 +147,7 @@ export const connect = async (
   // create watcher, which is enabled by default
   const watcher = await Watcher.init({
     signer,
-    providers: {},
+    providers: { [chainId]: ethProvider },
     context: node.config.contractAddresses,
     store,
   });
