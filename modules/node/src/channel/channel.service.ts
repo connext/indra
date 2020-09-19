@@ -112,7 +112,7 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-    requestedTarget: BigNumber,
+    requestedTarget?: BigNumber,
   ): Promise<
     | {
         completed?: () => Promise<FreeBalanceResponse>;
