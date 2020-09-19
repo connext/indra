@@ -62,6 +62,7 @@ Contents
 
     reference/cf-core
     reference/client
+    reference/node
     reference/store
     reference/types
     reference/utils
