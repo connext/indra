@@ -62,6 +62,19 @@ describe(name, () => {
     expect(freeBalance[nodeSignerAddress]).to.be.least(requestedTarget);
   });
 
+  it("should collateralize tokens with a target lower than profile", async () => {
+    const requestedTarget = utils.parseEther("10"); // requested < 20
+    const response = (await client.requestCollateral(tokenAddress, requestedTarget))!;
+    expect(response).to.be.ok;
+    expect(response.completed).to.be.ok;
+    expect(response.transaction).to.be.ok;
+    expect(response.transaction.hash).to.be.ok;
+    expect(response.depositAppIdentityHash).to.be.ok;
+    const { freeBalance } = await response.completed();
+    expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
+    expect(freeBalance[nodeSignerAddress]).to.be.eq(requestedTarget);
+  });
+
   it("should properly handle concurrent collateral requests", async () => {
     const appDef = client.config.contractAddresses[client.chainId].DepositApp;
     let depositAppCount = 0;
