@@ -189,7 +189,7 @@ export class ChannelService {
 
       if (nodeFreeBalance.lt(thresholdToUse)) {
         this.log.info(
-          `nodeFreeBalance ${nodeFreeBalance.toString()} < thresholdToUse ${thresholdToUse.toString()}, depositing to target ${requestedTarget.toString()}`,
+          `nodeFreeBalance ${nodeFreeBalance.toString()} < thresholdToUse ${thresholdToUse.toString()}, depositing to target ${targetToUse.toString()}`,
         );
         const amount = targetToUse.sub(nodeFreeBalance);
         rebalanceRes = (await this.depositService.deposit(channel, amount, normalizedAssetId))!;
