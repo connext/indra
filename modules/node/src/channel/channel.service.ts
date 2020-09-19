@@ -112,7 +112,7 @@ export class ChannelService {
     multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-    requestedTarget: BigNumber = Zero,
+    requestedTarget: BigNumber,
   ): Promise<
     | {
         completed?: () => Promise<FreeBalanceResponse>;
@@ -184,8 +184,8 @@ export class ChannelService {
         );
       }
 
-      const targetToUse = maxBN([profileTarget, requestedTarget]);
-      const thresholdToUse = maxBN([collateralizeThreshold, requestedTarget]);
+      const targetToUse = requestedTarget ? requestedTarget : profileTarget;
+      const thresholdToUse = requestedTarget ? requestedTarget : collateralizeThreshold;
 
       if (nodeFreeBalance.lt(thresholdToUse)) {
         this.log.info(
