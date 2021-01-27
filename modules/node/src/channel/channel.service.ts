@@ -174,6 +174,13 @@ export class ChannelService {
       appIdentityHash?: string;
     } = {};
 
+    const targetToUse = requestedTarget ? requestedTarget : profileTarget;
+    const thresholdToUse = requestedTarget
+      ? requestedTarget
+      : rebalanceType === RebalanceType.COLLATERALIZE
+      ? collateralizeThreshold
+      : reclaimThreshold;
+
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
 
@@ -183,9 +190,6 @@ export class ChannelService {
           `Requested target ${requestedTarget.toString()} is greater than reclaim threshold ${reclaimThreshold.toString()}`,
         );
       }
-
-      const targetToUse = requestedTarget ? requestedTarget : profileTarget;
-      const thresholdToUse = requestedTarget ? requestedTarget : collateralizeThreshold;
 
       if (nodeFreeBalance.lt(thresholdToUse)) {
         this.log.info(
@@ -200,11 +204,11 @@ export class ChannelService {
       }
     } else if (rebalanceType === RebalanceType.RECLAIM) {
       // If free balance is too high, reclaim down to lower bound
-      if (nodeFreeBalance.gt(reclaimThreshold) && reclaimThreshold.gt(0)) {
+      if (nodeFreeBalance.gt(thresholdToUse) && thresholdToUse.gte(0)) {
         this.log.info(
-          `nodeFreeBalance ${nodeFreeBalance.toString()} > reclaimThreshold ${reclaimThreshold.toString()}, withdrawing`,
+          `nodeFreeBalance ${nodeFreeBalance.toString()} > reclaimThreshold ${thresholdToUse.toString()}, withdrawing`,
         );
-        const amount = nodeFreeBalance.sub(profileTarget);
+        const amount = nodeFreeBalance.sub(targetToUse);
         const transaction = await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
         rebalanceRes.transaction = transaction;
       } else {
