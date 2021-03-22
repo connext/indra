@@ -37,7 +37,7 @@ import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
 import { TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
@@ -244,10 +244,7 @@ export class TransferService {
       return;
     }
 
-    if (
-      !receiverProposeRes?.appIdentityHash ||
-      receiverProposeRes.appType !== AppType.PROPOSAL
-    ) {
+    if (!receiverProposeRes?.appIdentityHash || receiverProposeRes.appType !== AppType.PROPOSAL) {
       this.log.error(`Could not propose receiver app properly: ${stringify(receiverProposeRes)}`);
       // Clean up sender app
       this.log.warn(`Cancelling sender payment`);
@@ -701,6 +698,31 @@ export class TransferService {
     );
     this.log.debug(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
+  }
+
+  async reclaimAllCapital(senderIdentifier: string, chainId: number): Promise<void> {
+    this.log.info(`reclaimAllCapital for ${senderIdentifier} on ${chainId} started`);
+    const channel = await this.channelRepository.findByUserPublicIdentifierAndChain(
+      senderIdentifier,
+      chainId,
+    );
+    if (!channel) {
+      return;
+    }
+    const assets = channel.appInstances.find((a) => a.type === AppType.FREE_BALANCE)?.latestState
+      .tokenAddresses;
+
+    for (const asset of assets) {
+      this.log.info(`Reclaiming for ${asset} started`);
+      await this.channelService.rebalance(
+        channel.multisigAddress,
+        asset,
+        RebalanceType.RECLAIM,
+        Zero,
+      );
+      this.log.info(`Reclaiming for ${asset} complete`);
+    }
+    this.log.info(`reclaimAllCapital for ${senderIdentifier} on ${chainId} complete`);
   }
 
   // unlockable transfer:
