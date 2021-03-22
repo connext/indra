@@ -40,7 +40,7 @@ If you're looking for more information, here are a few digestible resources on h
 
 Connext's Indra network is _live_ on the Ethereum mainnet, rinkeby testnet, and support for a few other EVM-based chains is coming soon.
 
-The current network features a hub-and-spoke topology over which transactions are routed. Anyone can run a Connext node as a service provider to connect users to each other. [Connext clients](../reference/client.md) open channels to this node and can then make commitments to any other client connected to the same node. In Connext, users' funds annd transactions are entirely noncustodial - the node never holds your value _at all_.
+The current network features a hub-and-spoke topology over which transactions are routed. Anyone can run a Connext node as a service provider to connect users to each other. [Connext clients](../reference/client.md) open channels to this node and can then make commitments to any other client connected to the same node. In Connext, users' funds and transactions are entirely noncustodial - the node never holds your value _at all_.
 
 Note that this iteration of Connext is not censorship resistant. It is currently possible for a node to block a user's commitments to other users, thereby stopping the user from making instant/offchain transfers. Even if this were to happen, users are _always_ able to withdraw their funds to any account or wallet on the base blockchain. For a detailed overview of the trust assumptions and limitations that exist at present, please read [System Limitations](../background/limitations.md).
 
